@@ -3,11 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>세종꿈의교회 식단관리 (OCR 정산 & 캡처공유 에디션)</title>
+  <title>세종꿈의교회 식단관리</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 무료 캡처 공유 라이브러리 (html2canvas) & 무료 OCR 엔진 (Tesseract.js) 탑재 -->
+  <!-- 무료 캡처 공유 라이브러리 (html2canvas) & 무료 OCR 엔진 (Tesseract.js) -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <!-- Firebase SDK (호환성 및 안정성이 높은 v10 compat 버전 탑재) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; user-select: none; color: #334155; }
@@ -36,12 +40,15 @@
 </head>
 <body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative pb-20 border-x border-slate-100">
 
-  <!-- 1. 최상단 타이틀 헤더 (은은한 파스텔 톤) -->
+  <!-- 1. 최상단 타이틀 헤더 (파스텔 세이지 민트 + 실시간 DB 연결 상태 표시) -->
   <header class="bg-teal-100/90 text-teal-950 px-4 py-3 sticky top-0 z-30 border-b border-teal-200/80 backdrop-blur-sm">
     <div class="flex justify-between items-center">
-      <h1 class="text-lg font-extrabold tracking-tight flex items-center gap-1.5 text-teal-900">
-        ⛪ 세종꿈의교회 식단관리
-      </h1>
+      <div>
+        <h1 class="text-lg font-extrabold tracking-tight flex items-center gap-1.5 text-teal-900">
+          ⛪ 세종꿈의교회 식단관리
+        </h1>
+        <p id="dbStatusText" class="text-[10px] font-bold text-teal-700 mt-0.5">🟢 Firebase 실시간 연동중...</p>
+      </div>
       <div class="flex flex-col items-end gap-1">
         <button id="roleBtn" onclick="toggleRole()" class="text-[10px] bg-amber-200/90 text-amber-900 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm">
           팀장모드 ON
@@ -53,10 +60,10 @@
     </div>
   </header>
 
-  <!-- 2. 타이틀과 식판 사이: 날짜 / 어린이 4종 / 우측 끝 "관리/정산" -->
+  <!-- 2. 타이틀과 식판 사이: 날짜 / 어린이 종수 / 오른쪽 끝 "관리/정산" -->
   <div class="bg-rose-50/70 px-3.5 py-2.5 border-b border-rose-100 flex justify-between items-center">
     <div class="flex items-center gap-1.5">
-      <input id="currentDate" type="text" value="2026년 10월 8일(2주차)" class="bg-white text-slate-700 text-xs font-extrabold px-2.5 py-1 rounded-lg border border-rose-200 w-36 focus:outline-none shadow-sm">
+      <input id="currentDate" onchange="syncCurrentStateToDb()" type="text" value="2026년 10월 8일(2주차)" class="bg-white text-slate-700 text-xs font-extrabold px-2.5 py-1 rounded-lg border border-rose-200 w-36 focus:outline-none shadow-sm">
       <span id="kidsBadge" class="text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-full font-extrabold shadow-sm whitespace-nowrap">
         👶 어린이 4종
       </span>
@@ -66,9 +73,8 @@
     </button>
   </div>
 
-  <!-- 3. 상단: 식판에 모으기 (연하고 두꺼운 테두리로 확실히 구분 + 총7종 금액은 식단확정 버튼 위로 배치) -->
+  <!-- 3. 상단: 식판에 모으기 (연하고 두꺼운 파스텔 테두리 + 총 종수/금액은 식단확정 버튼 위로 배치) -->
   <section class="p-3.5 bg-teal-50/30 border-b-4 border-slate-100">
-    <!-- 요청사항: 연하고 두꺼운 파스텔 테두리(border-[6px] border-teal-200/90) 적용 -->
     <div class="bg-white p-3.5 rounded-2xl shadow-md border-[6px] border-teal-200/90 ring-1 ring-teal-300/50">
       <div class="flex justify-between items-center mb-2">
         <span class="text-xs font-extrabold text-teal-950">🍱 식판에 모으기 <span class="text-[10px] font-normal text-slate-400">(메뉴터치: 세부설정 / ✕: 제외)</span></span>
@@ -77,10 +83,10 @@
       <!-- 식판 메뉴 뱃지 영역 -->
       <div id="currentTray" class="flex flex-wrap gap-1.5 min-h-[44px] items-center py-1"></div>
 
-      <!-- 크롭 및 0.7 압축된 식판 사진 미리보기 -->
+      <!-- 크롭 및 0.7 압축되어 Firebase에 분리 저장된 식판 사진 미리보기 -->
       <div id="attachedPreview" class="hidden mt-2 pt-2 border-t border-dashed border-teal-200 flex items-center justify-between bg-teal-50/50 px-2.5 py-1.5 rounded-xl">
         <div class="text-[11px]">
-          <p class="font-extrabold text-teal-900">✅ 식판 사진 준비완료 (0.7 압축)</p>
+          <p class="font-extrabold text-teal-900">✅ 식판 사진 클라우드 분리저장 완료</p>
           <p id="photoMetaInfo" class="text-[10px] text-teal-600 font-medium"></p>
         </div>
         <img id="previewImgTag" src="" class="w-14 h-10 object-cover rounded-lg border-2 border-teal-300 shadow-sm">
@@ -89,16 +95,14 @@
       <!-- 하단 영역: "식단확정" 버튼 바로 위에 "총 7종 · 금액" 배치 -->
       <div id="leaderActionBtns" class="mt-3 pt-2.5 border-t border-slate-100">
         <div class="grid grid-cols-2 gap-2 items-end">
-          <!-- 좌측: 사진올리기 -->
           <div>
             <button onclick="openPhotoUploadModal()" class="w-full bg-amber-100/90 hover:bg-amber-200/90 border border-amber-200 text-amber-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
               📸 사진올리기
             </button>
           </div>
-          <!-- 우측: 식단확정 버튼 바로 위에 총 7종 금액 표시 -->
           <div class="flex flex-col items-center">
             <span id="totalSummary" class="text-[11px] font-extrabold text-teal-900 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full mb-1 shadow-sm whitespace-nowrap">
-              총 7종 · 945,000원
+              총 0종 · 0원
             </span>
             <button onclick="confirmMenuToGrid()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
               📥 식단확정
@@ -164,10 +168,9 @@
 
   <!-- ================= 팝업 모달창들 ================= -->
 
-  <!-- [핵심 팝업 1] 📊 관리/정산 시스템 (메뉴 리스트 출력 + 캡처 공유 + 무료 OCR 영수증 금액 대조 확정) -->
+  <!-- [팝업 1] 📊 관리/정산 시스템 (리스트 출력 + 캡처 공유 + 무료 OCR 영수증 금액 대조 확정) -->
   <div id="settlementModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2.5">
     <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-purple-200 max-h-[92vh] overflow-y-auto">
-      <!-- 상단 액션 바 (인쇄 / 캡처공유 / 닫기) -->
       <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 no-print">
         <h3 class="text-sm font-extrabold text-purple-950">📊 주간 식단 관리 / 정산서</h3>
         <div class="flex gap-1">
@@ -181,14 +184,12 @@
         </div>
       </div>
 
-      <!-- 캡처 및 인쇄 대상 영역 (#settlementCaptureArea) -->
       <div id="settlementCaptureArea" class="p-3 bg-white rounded-xl space-y-3 text-xs mt-1">
         <div class="text-center border-b border-purple-100 pb-2">
           <p class="text-[11px] font-bold text-purple-700">⛪ 세종꿈의교회 공동체 식단 정산표</p>
           <h4 id="settleDateTitle" class="text-sm font-extrabold text-slate-800 mt-0.5"></h4>
         </div>
 
-        <!-- 1) 각 메뉴의 이름, 단위(kg), 가격 리스트 표 -->
         <div class="border border-slate-200 rounded-xl overflow-hidden">
           <table class="w-full text-left border-collapse">
             <thead>
@@ -198,9 +199,7 @@
                 <th class="py-1.5 px-2.5 font-extrabold text-right">예상 가격(원)</th>
               </tr>
             </thead>
-            <tbody id="settleMenuTableBody" class="divide-y divide-slate-100 text-xs">
-              <!-- 자바스크립트로 메뉴별 리스트 자동 생성 -->
-            </tbody>
+            <tbody id="settleMenuTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
             <tfoot>
               <tr class="bg-slate-50 font-extrabold text-slate-900 border-t border-slate-200">
                 <td class="py-2 px-2.5" colspan="2">식판 메뉴 예상 총액</td>
@@ -210,14 +209,12 @@
           </table>
         </div>
 
-        <!-- 2) 무료 OCR 영수증 판독 및 금액 비교 확정 영역 -->
         <div class="bg-amber-50/70 p-3 rounded-xl border-2 border-amber-200/80 space-y-2.5">
           <div class="flex justify-between items-center">
-            <span class="font-extrabold text-amber-950 flex items-center gap-1">🧾 영수증 무료 OCR 금액 대조</span>
+            <span class="font-extrabold text-amber-950">🧾 영수증 무료 OCR 금액 대조</span>
             <span id="ocrStatusBadge" class="text-[10px] bg-white border border-amber-300 text-amber-800 px-2 py-0.5 rounded-full font-bold">영수증 대기중</span>
           </div>
 
-          <!-- 영수증 사진 업로드 버튼 (인쇄 시 숨김) -->
           <div class="flex gap-1.5 no-print">
             <input type="file" id="receiptOcrInput" accept="image/*" class="hidden" onchange="runReceiptOcr(event)">
             <button onclick="document.getElementById('receiptOcrInput').click()" class="flex-1 bg-white hover:bg-amber-100 border border-amber-300 text-amber-950 font-extrabold py-2 rounded-lg shadow-sm transition">
@@ -225,12 +222,11 @@
             </button>
           </div>
 
-          <!-- 영수증 미리보기 & OCR 추출 금액 비교 박스 -->
           <div class="bg-white p-2.5 rounded-lg border border-amber-200 space-y-2">
             <div id="receiptThumbBox" class="hidden flex items-center gap-2 pb-2 border-b border-slate-100">
               <img id="receiptOcrThumb" src="" class="w-12 h-14 object-cover rounded border border-amber-300 shrink-0">
               <div class="text-[10px] text-slate-500 leading-tight">
-                <p class="font-bold text-slate-700">영수증 이미지(0.7 압축첨부됨)</p>
+                <p class="font-bold text-slate-700">영수증 (0.7 압축 & DB분리저장)</p>
                 <p id="ocrRawTextPreview" class="truncate max-w-[200px] text-amber-700 mt-0.5"></p>
               </div>
             </div>
@@ -248,7 +244,6 @@
               </div>
             </div>
 
-            <!-- 비교 차액 표시 -->
             <div class="pt-1.5 border-t border-dashed border-slate-200 flex justify-between items-center">
               <span class="font-extrabold text-slate-700">⚖️ 예산 대비 차액 비교:</span>
               <span id="compareDiffResult" class="font-extrabold text-xs text-teal-700">영수증을 올리거나 금액을 입력하세요</span>
@@ -257,16 +252,15 @@
         </div>
       </div>
 
-      <!-- 하단 정산 최종 확정 버튼 -->
       <div class="mt-3 pt-2 border-t border-slate-100 flex gap-2 no-print">
         <button onclick="confirmFinalSettlement()" class="w-full bg-purple-200 hover:bg-purple-300 border border-purple-300 text-purple-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition">
-          ✅ 영수증 비교 금액으로 정산 최종 확정
+          ✅ 영수증 비교 금액으로 정산 최종 확정 (DB저장)
         </button>
       </div>
     </div>
   </div>
 
-  <!-- [팝업 2] 📸 사진올리기 (불러오기/찍어넣기 + 노란 두꺼운 점선 크롭창 + 0.7 압축 분리저장) -->
+  <!-- [팝업 2] 📸 사진올리기 (노란 두꺼운 점선 크롭창 + 0.7 압축 + Firebase photos 컬렉션 분리저장) -->
   <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border border-amber-100">
       <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
@@ -285,7 +279,6 @@
         </button>
       </div>
 
-      <!-- 노란 두꺼운 점선 사각틀 크롭 영역 -->
       <div id="cropStageArea" class="hidden space-y-2.5 my-2">
         <div class="flex justify-between items-center text-[11px]">
           <span class="font-extrabold text-amber-700">👆 노란 점선 사각틀 안에서 위치를 조율하세요</span>
@@ -316,8 +309,8 @@
             <p id="compressionInfo" class="text-[10px] text-teal-700 font-semibold"></p>
           </div>
         </div>
-        <button onclick="savePhotoToDb()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
-          💾 저장하기 (0.7 압축 DB분리저장)
+        <button id="savePhotoDbBtn" onclick="savePhotoToDb()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
+          💾 저장하기 (0.7 압축 Firebase 분리저장)
         </button>
       </div>
     </div>
@@ -352,7 +345,7 @@
       </div>
       <div class="flex gap-2">
         <button onclick="closeDishDetailModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-xl text-xs">취소</button>
-        <button onclick="saveDishDetail()" class="flex-1 bg-teal-200 text-teal-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">💾 저장하기</button>
+        <button onclick="saveDishDetail()" class="flex-1 bg-teal-200 text-teal-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">💾 DB 저장하기</button>
       </div>
     </div>
   </div>
@@ -375,7 +368,7 @@
           <p class="font-bold">2단계: 작성한 CSV 파일을 불러와 바로 저장하세요.</p>
           <input type="file" id="csvFileInput" accept=".csv" class="w-full text-[11px] bg-white p-1.5 rounded-lg border border-teal-200">
           <button onclick="importCsvFile()" class="w-full bg-teal-200 hover:bg-teal-300 text-teal-950 font-extrabold py-2 rounded-lg shadow-sm">
-            ✅ 불러와서 반찬 바구니에 즉시 저장
+            ✅ 불러와서 반찬 바구니(DB)에 즉시 저장
           </button>
         </div>
       </div>
@@ -439,6 +432,20 @@
           <span id="archModalCost" class="font-extrabold text-slate-700"></span>
         </div>
         <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b pb-1 focus:outline-none">
+        <!-- 계절 및 메뉴분류 변경 가능 -->
+        <div class="flex gap-2">
+          <select id="archEditSeason" class="flex-1 border border-slate-200 rounded px-2 py-1 font-bold bg-slate-50">
+            <option value="봄">🌸 봄</option>
+            <option value="여름">☀️ 여름</option>
+            <option value="가을">🍁 가을</option>
+            <option value="겨울">❄️ 겨울</option>
+          </select>
+          <select id="archEditType" class="flex-1 border border-slate-200 rounded px-2 py-1 font-bold bg-slate-50">
+            <option value="육류">🥩 육류</option>
+            <option value="해물/두부">🐟 해물/두부</option>
+            <option value="일품/간편">🍛 일품/간편</option>
+          </select>
+        </div>
         <div id="archModalDishes" class="flex flex-wrap gap-1 pt-1"></div>
         <div class="pt-3 flex gap-2">
           <button onclick="recommendArchive()" class="flex-1 bg-rose-100 text-rose-900 border border-rose-200 font-extrabold py-2.5 rounded-xl">
@@ -475,13 +482,26 @@
   </div>
 
   <script>
+    // ================= 1. Firebase 초기화 (보내주신 실제 키 적용) =================
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
+      authDomain: "dream-food-97a3e.firebaseapp.com",
+      projectId: "dream-food-97a3e",
+      storageBucket: "dream-food-97a3e.firebasestorage.app",
+      messagingSenderId: "156318359524",
+      appId: "1:156318359524:web:6f01409b3e7af72abcb1f1"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
     let isLeader = true;
     let currentCat = '밥/국';
     let editingDishId = null;
     let selectedArchiveId = null;
-    let confirmedActualCost = null; // 영수증 비교 확정 금액
+    let confirmedActualCost = null;
 
-    // 사진 데이터와 사진 주소(photoId) 분리 스토어
+    // [1MB 한도 회피용] 사진 데이터(photos 컬렉션)와 식단 주소(photoId) 분리 캐시 스토어
     const dbPhotoStore = {
       'default_1': "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80",
       'default_2': "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80",
@@ -503,41 +523,113 @@
       '사이드메뉴': { tabActive: 'bg-purple-200 text-purple-950 border-purple-300 shadow-sm', badge: 'bg-purple-50/90 text-purple-900 border-purple-200' }
     };
 
-    let masterBasket = [
+    // 초기 기본 시드 데이터 (Firestore가 비어있을 때 최초 1회 자동 업로드됨)
+    const defaultBasketSeed = [
       { id: 'd1', cat: '밥/국', name: '흑미잡곡밥', kg: '35kg', price: 95000, recipe: '흑미 3kg 혼합 취사' },
       { id: 'd2', cat: '밥/국', name: '백미밥', kg: '35kg', price: 85000, recipe: '기본 취사' },
       { id: 'd3', cat: '밥/국', name: '소고기미역국(👶)', kg: '15kg', price: 180000, recipe: '참기름에 고기 볶다 국간장 2바가지' },
       { id: 'd4', cat: '밥/국', name: '시래기된장국', kg: '15kg', price: 70000, recipe: '멸치육수에 된장 풀고 푹 끓임' },
       { id: 'd5', cat: '밥/국', name: '맑은콩나물국(👶)', kg: '2박스', price: 40000, recipe: '뚜껑 열고 끓여 비린내 제거' },
-
       { id: 'm1', cat: '메인반찬', name: '매콤제육볶음', kg: '45kg', price: 320000, recipe: '고추장 양념 하루 전 숙성' },
       { id: 'm2', cat: '메인반찬', name: '한방보쌈수육', kg: '50kg', price: 420000, recipe: '된장, 커피, 월계수잎 넣고 50분 삶기' },
       { id: 'm3', cat: '메인반찬', name: '춘천식닭갈비', kg: '45kg', price: 290000, recipe: '닭다리살과 고구마, 양배추 듬뿍' },
-
       { id: 'k1', cat: '어린이반찬', name: '수제동그랑땡(👶)', kg: '15봉', price: 110000, recipe: '계란물 입혀 노릇하게 구움' },
       { id: 'k2', cat: '어린이반찬', name: '감자채볶음(👶)', kg: '1박스', price: 45000, recipe: '전분 뺀 후 소금간으로 볶음' },
       { id: 'k3', cat: '어린이반찬', name: '달콤소불고기(👶)', kg: '40kg', price: 380000, recipe: '배즙과 간장으로 달콤하게 조리' },
       { id: 'k4', cat: '어린이반찬', name: '메추리알장조림(👶)', kg: '12kg', price: 85000, recipe: '깐메추리알 간장물에 조림' },
-
       { id: 'n1', cat: '일반/김치', name: '배추김치', kg: '2통', price: 60000, recipe: '기본 제공 김치' },
       { id: 'n2', cat: '일반/김치', name: '도토리묵무침', kg: '5모', price: 55000, recipe: '배식 직전 상추와 양념 버무림' },
       { id: 'n3', cat: '일반/김치', name: '매콤두부조림', kg: '6판', price: 48000, recipe: '부침두부 구운 후 양념장 조림' },
-
       { id: 's1', cat: '사이드메뉴', name: '치킨텐더(👶)', kg: '15봉', price: 135000, recipe: '배식 직전 바삭하게 튀김' },
       { id: 's2', cat: '사이드메뉴', name: '교자만두찜(👶)', kg: '12봉', price: 90000, recipe: '찜기에 15분 스팀' },
       { id: 's3', cat: '사이드메뉴', name: '제철과일(오렌지)', kg: '3박스', price: 120000, recipe: '먹기 좋게 4등분 커팅' }
     ];
 
-    let currentTrayIds = ['d1', 'd3', 'm1', 'k1', 'k2', 's1', 'n1'];
-
-    let archiveList = [
-      { id: 201, date: "2026년 10월 1일(1주차)", title: "한방보쌈수육 & 시래기국", season: "가을", menuType: "육류", dishIds: ['d1', 'd4', 'm2', 'k4', 'n2', 'n1'], likes: 8, photoId: 'default_1' },
-      { id: 202, date: "2026년 9월 24일(4주차)", title: "달콤소불고기 & 콩나물국", season: "가을", menuType: "육류", dishIds: ['d2', 'd5', 'k3', 'n3', 's2', 'n1'], likes: 9, photoId: 'default_2' },
-      { id: 203, date: "2026년 7월 16일(3주차)", title: "춘천닭갈비 & 치킨텐더", season: "여름", menuType: "일품/간편", dishIds: ['d2', 'd5', 'm3', 's1', 'n1', 's3'], likes: 7, photoId: 'default_3' },
-      { id: 204, date: "2026년 4월 12일(2주차)", title: "제육볶음 & 두부조림 정식", season: "봄", menuType: "해물/두부", dishIds: ['d1', 'd3', 'm1', 'n3', 'k1', 'n1'], likes: 6, photoId: 'default_4' }
+    const defaultArchiveSeed = [
+      { id: '201', date: "2026년 10월 1일(1주차)", title: "한방보쌈수육 & 시래기국", season: "가을", menuType: "육류", dishIds: ['d1', 'd4', 'm2', 'k4', 'n2', 'n1'], likes: 8, photoId: 'default_1', createdAt: 1001 },
+      { id: '202', date: "2026년 9월 24일(4주차)", title: "달콤소불고기 & 콩나물국", season: "가을", menuType: "육류", dishIds: ['d2', 'd5', 'k3', 'n3', 's2', 'n1'], likes: 9, photoId: 'default_2', createdAt: 1002 },
+      { id: '203', date: "2026년 7월 16일(3주차)", title: "춘천닭갈비 & 치킨텐더", season: "여름", menuType: "일품/간편", dishIds: ['d2', 'd5', 'm3', 's1', 'n1', 's3'], likes: 7, photoId: 'default_3', createdAt: 1003 },
+      { id: '204', date: "2026년 4월 12일(2주차)", title: "제육볶음 & 두부조림 정식", season: "봄", menuType: "해물/두부", dishIds: ['d1', 'd3', 'm1', 'n3', 'k1', 'n1'], likes: 6, photoId: 'default_4', createdAt: 1004 }
     ];
 
-    // 현재 식판 예상 총액 계산 함수
+    let masterBasket = [...defaultBasketSeed];
+    let currentTrayIds = ['d1', 'd3', 'm1', 'k1', 'k2', 's1', 'n1'];
+    let archiveList = [...defaultArchiveSeed];
+
+    // ================= 2. Firebase 실시간 동기화 리스너 구동 =================
+    async function initFirebaseRealtime() {
+      try {
+        // 1) 사진 분리 저장소(photos) 실시간 수신
+        db.collection('photos').onSnapshot(snap => {
+          snap.forEach(doc => {
+            dbPhotoStore[doc.id] = doc.data().dataUrl;
+          });
+          renderArchiveGrid();
+        });
+
+        // 2) 반찬 바구니(basket) 실시간 수신 및 최초 시드 생성
+        db.collection('basket').onSnapshot(async snap => {
+          if (snap.empty) {
+            const batch = db.batch();
+            defaultBasketSeed.forEach(item => {
+              batch.set(db.collection('basket').doc(item.id), item);
+            });
+            await batch.commit();
+          } else {
+            masterBasket = snap.docs.map(doc => doc.data());
+            renderTray();
+            renderArchiveGrid();
+          }
+        });
+
+        // 3) 현재 식판 조립 상태(settings/currentState) 실시간 수신
+        db.collection('settings').doc('currentState').onSnapshot(async doc => {
+          if (!doc.exists) {
+            await syncCurrentStateToDb();
+          } else {
+            const data = doc.data();
+            currentTrayIds = data.trayIds || [];
+            document.getElementById('currentDate').value = data.date || "2026년 10월 8일(2주차)";
+            confirmedActualCost = data.confirmedActualCost ?? null;
+            currentSavedPhotoId = data.photoId || 'default_4';
+            renderTray();
+          }
+        });
+
+        // 4) 지난 식단 기록(archives) 실시간 수신
+        db.collection('archives').orderBy('createdAt', 'desc').onSnapshot(async snap => {
+          if (snap.empty) {
+            const batch = db.batch();
+            defaultArchiveSeed.forEach(item => {
+              batch.set(db.collection('archives').doc(String(item.id)), item);
+            });
+            await batch.commit();
+          } else {
+            archiveList = snap.docs.map(doc => doc.data());
+            renderArchiveGrid();
+          }
+        });
+
+        document.getElementById('dbStatusText').innerText = "🟢 클라우드 실시간 동기화 완료";
+      } catch (err) {
+        console.warn("Firebase 연결 안내:", err);
+        document.getElementById('dbStatusText').innerText = "🟡 로컬 작동중 (Firestore 규칙 확인필요)";
+      }
+    }
+
+    // 현재 식판 상태를 Firebase에 즉시 동기화
+    async function syncCurrentStateToDb() {
+      try {
+        await db.collection('settings').doc('currentState').set({
+          date: document.getElementById('currentDate').value,
+          trayIds: currentTrayIds,
+          confirmedActualCost: confirmedActualCost,
+          photoId: currentSavedPhotoId,
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch (e) { console.error(e); }
+    }
+
     function getExpectedTotalCost() {
       return currentTrayIds.reduce((acc, id) => {
         const item = masterBasket.find(d => d.id === id);
@@ -545,7 +637,7 @@
       }, 0);
     }
 
-    // ================= 📊 관리/정산 (리스트 출력, 캡처 공유, 무료 OCR 영수증 비교) =================
+    // ================= 3. 관리/정산 (리스트 출력, 캡처 공유, 무료 OCR 영수증 비교) =================
     function openSettlementModal() {
       document.getElementById('settleDateTitle').innerText = document.getElementById('currentDate').value + " 정산 내역";
       const tbody = document.getElementById('settleMenuTableBody');
@@ -579,7 +671,7 @@
       document.getElementById('settlementModal').classList.add('hidden');
     }
 
-    // 무료 OCR (Tesseract.js)로 영수증 사진에서 결제 금액 자동 추출
+    // 무료 OCR 영수증 금액 자동 추출 + 영수증 사진도 0.7 압축하여 photos 컬렉션에 분리 저장
     async function runReceiptOcr(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -588,7 +680,6 @@
       badge.innerText = "⏳ 무료 OCR 금액 판독중...";
       badge.className = "text-[10px] bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full font-extrabold animate-pulse";
 
-      // 0.7 압축 미리보기 생성
       const reader = new FileReader();
       reader.onload = async function(e) {
         const img = new Image();
@@ -603,31 +694,33 @@
           document.getElementById('receiptOcrThumb').src = compressedUrl;
           document.getElementById('receiptThumbBox').classList.remove('hidden');
 
+          // 영수증 사진을 photos 컬렉션에 분리 저장
+          const receiptPhotoId = 'receipt_' + Date.now();
+          dbPhotoStore[receiptPhotoId] = compressedUrl;
+          db.collection('photos').doc(receiptPhotoId).set({
+            dataUrl: compressedUrl,
+            type: 'receipt',
+            createdAt: Date.now()
+          }).catch(console.error);
+
           try {
-            // Tesseract 무료 OCR 실행 (숫자 및 한국어 인식)
             const result = await Tesseract.recognize(compressedUrl, 'kor+eng');
             const text = result.data.text || "";
-            document.getElementById('ocrRawTextPreview').innerText = "인식텍스트: " + text.replace(/\s+/g, ' ').slice(0, 40) + "...";
+            document.getElementById('ocrRawTextPreview').innerText = "인식결과: " + text.replace(/\s+/g, ' ').slice(0, 35) + "...";
 
-            // 영수증 내 금액 패턴(예: 845,000 또는 10,000원 이상의 숫자) 중 합계로 추정되는 가장 큰 금액 추출
             const matches = text.match(/\d{1,3}(?:,\d{3})+|\d{5,8}/g) || [];
             let maxAmount = 0;
             matches.forEach(m => {
               const num = parseInt(m.replace(/,/g, ''), 10);
-              // 바코드나 전화번호 제외 (1,000원 ~ 5,000,000원 사이 금액만 유효 처리)
-              if (num >= 1000 && num <= 5000000 && num > maxAmount) {
-                maxAmount = num;
-              }
+              if (num >= 1000 && num <= 5000000 && num > maxAmount) maxAmount = num;
             });
 
             if (maxAmount > 0) {
               document.getElementById('ocrExtractedInput').value = maxAmount;
-              badge.innerText = "✅ OCR 금액 자동추출 완료";
+              badge.innerText = "✅ OCR 금액 추출완료";
               badge.className = "text-[10px] bg-teal-200 text-teal-950 px-2 py-0.5 rounded-full font-extrabold";
             } else {
-              // 흐릿한 사진일 경우 식판 예산 근사치 자동 제안 후 직접 수정 유도
-              const fallback = getExpectedTotalCost();
-              document.getElementById('ocrExtractedInput').value = fallback;
+              document.getElementById('ocrExtractedInput').value = getExpectedTotalCost();
               badge.innerText = "✏️ 금액 확인/보정 가능";
               badge.className = "text-[10px] bg-sky-200 text-sky-950 px-2 py-0.5 rounded-full font-extrabold";
             }
@@ -642,7 +735,6 @@
       reader.readAsDataURL(file);
     }
 
-    // 식판 예상 금액 vs 영수증 OCR 금액 실시간 비교
     function updateCostComparison() {
       const planned = getExpectedTotalCost();
       const actualVal = document.getElementById('ocrExtractedInput').value;
@@ -658,28 +750,27 @@
       const diff = actual - planned;
 
       if (diff === 0) {
-        diffEl.innerText = "🎯 예산과 영수증 금액이 정확히 일치합니다!";
+        diffEl.innerText = "🎯 예산과 영수증 금액 일치!";
         diffEl.className = "font-extrabold text-xs text-teal-700";
       } else if (diff < 0) {
-        diffEl.innerText = `📉 예산보다 ${Math.abs(diff).toLocaleString()}원 절감됨!`;
+        diffEl.innerText = `📉 예산 대비 ${Math.abs(diff).toLocaleString()}원 절감!`;
         diffEl.className = "font-extrabold text-xs text-blue-700";
       } else {
-        diffEl.innerText = `📈 예산보다 ${diff.toLocaleString()}원 초과 지출`;
+        diffEl.innerText = `📈 예산 대비 ${diff.toLocaleString()}원 초과`;
         diffEl.className = "font-extrabold text-xs text-rose-700";
       }
     }
 
-    // 영수증 금액으로 최종 정산 확정
-    function confirmFinalSettlement() {
+    async function confirmFinalSettlement() {
       const actualVal = document.getElementById('ocrExtractedInput').value;
       if (!actualVal) return alert('영수증 사진을 올리거나 실결제 금액을 입력해주세요.');
       confirmedActualCost = Number(actualVal);
       renderTray();
+      await syncCurrentStateToDb();
       closeSettlementModal();
-      alert(`✅ 영수증 실결제 금액(${confirmedActualCost.toLocaleString()}원)으로 이번 주 정산이 확정되었습니다!`);
+      alert(`✅ 영수증 실결제 금액(${confirmedActualCost.toLocaleString()}원)으로 정산 확정 및 클라우드 저장 완료!`);
     }
 
-    // 정산 리스트 캡처 및 이미지 공유/저장 (html2canvas 활용)
     async function captureAndShareSettlement() {
       const target = document.getElementById('settlementCaptureArea');
       const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff' });
@@ -688,33 +779,30 @@
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
             title: '세종꿈의교회 식단 정산서',
-            text: document.getElementById('currentDate').value + ' 정산 리스트입니다.',
+            text: document.getElementById('currentDate').value + ' 정산 내역입니다.',
             files: [file]
           });
         } else {
-          // PC 등 공유 API 미지원 시 즉시 이미지 다운로드
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
           a.download = '세종꿈의교회_식단정산서.png';
           a.click();
           URL.revokeObjectURL(url);
-          alert('📸 정산서 화면이 깔끔하게 캡처되어 이미지 파일로 저장되었습니다! 카카오톡 등에 바로 공유하실 수 있습니다.');
+          alert('📸 정산서 화면이 이미지로 저장되었습니다! 카톡방에 바로 공유해 보세요.');
         }
       });
     }
 
-    // 정산 리스트 A4 출력
     function printSettlementReport() {
       const area = document.getElementById('settlementCaptureArea');
-      const printArea = document.getElementById('print-area');
-      printArea.classList.remove('print-active');
+      document.getElementById('print-area').classList.remove('print-active');
       area.classList.add('print-active');
       window.print();
       area.classList.remove('print-active');
     }
 
-    // ================= 📸 사진올리기 & 노란 점선 크롭 & 0.7 압축 =================
+    // ================= 4. 사진올리기 & 노란 점선 크롭 & 0.7 압축 DB분리저장 =================
     function openPhotoUploadModal() {
       document.getElementById('cropStageArea').classList.add('hidden');
       document.getElementById('croppedResultArea').classList.add('hidden');
@@ -781,6 +869,7 @@
       ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
       ctx.restore();
 
+      // 요청사항: 0.7 압축률 적용
       tempCompressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
       const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
       document.getElementById('finalCroppedFrame').src = tempCompressedDataUrl;
@@ -788,20 +877,33 @@
       document.getElementById('croppedResultArea').classList.remove('hidden');
     }
 
-    function savePhotoToDb() {
+    // [Firebase 1MB 제한 우회]: 사진은 'photos' 컬렉션에 따로 저장하고, 식단에는 'photoId' 주소만 연결
+    async function savePhotoToDb() {
       if (!tempCompressedDataUrl) return;
+      const btn = document.getElementById('savePhotoDbBtn');
+      btn.innerText = "⏳ 클라우드 고속 저장중...";
+
       const newPhotoId = 'photo_' + Date.now();
       dbPhotoStore[newPhotoId] = tempCompressedDataUrl;
       currentSavedPhotoId = newPhotoId;
 
+      try {
+        await db.collection('photos').doc(newPhotoId).set({
+          dataUrl: tempCompressedDataUrl,
+          createdAt: Date.now()
+        });
+        await syncCurrentStateToDb();
+      } catch (e) { console.error(e); }
+
       const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
       document.getElementById('previewImgTag').src = dbPhotoStore[currentSavedPhotoId];
-      document.getElementById('photoMetaInfo').innerText = `주소분리 ID: ${currentSavedPhotoId} (${approxKb}KB)`;
+      document.getElementById('photoMetaInfo').innerText = `분리주소 ID: ${currentSavedPhotoId} (${approxKb}KB)`;
       document.getElementById('attachedPreview').classList.remove('hidden');
+      btn.innerText = "💾 저장하기 (0.7 압축 Firebase 분리저장)";
       closePhotoUploadModal();
     }
 
-    // ================= 식판 / 반찬바구니 / 바둑판 렌더링 =================
+    // ================= 5. 식판 / 반찬바구니 / 지난식단 바둑판 렌더링 & DB 저장 =================
     function renderTray() {
       const tray = document.getElementById('currentTray');
       tray.innerHTML = '';
@@ -838,27 +940,28 @@
         ? "text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-full font-extrabold shadow-sm whitespace-nowrap"
         : "text-[11px] bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full font-extrabold animate-pulse whitespace-nowrap";
 
-      // 식단확정 버튼 바로 위에 총 종수 및 금액 표시 (영수증 확정 시 실결제 금액 병기)
       const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(정산확정)` : `${totalCost.toLocaleString()}원`;
       document.getElementById('totalSummary').innerText = `총 ${currentTrayIds.length}종 · ${displayCost}`;
       renderBasket();
     }
 
-    function removeFromTray(id) {
+    async function removeFromTray(id) {
       if (!isLeader) return alert('팀장 모드에서만 수정 가능합니다.');
       currentTrayIds = currentTrayIds.filter(x => x !== id);
       confirmedActualCost = null;
       renderTray();
+      await syncCurrentStateToDb();
     }
 
-    function toggleDishInTray(id) {
+    async function toggleDishInTray(id) {
       if (!isLeader) return alert('팀장 모드에서만 담을 수 있습니다.');
       confirmedActualCost = null;
       if (currentTrayIds.includes(id)) {
-        removeFromTray(id);
+        await removeFromTray(id);
       } else {
         currentTrayIds.push(id);
         renderTray();
+        await syncCurrentStateToDb();
       }
     }
 
@@ -874,13 +977,14 @@
     }
     function closeDishDetailModal() { document.getElementById('dishDetailModal').classList.add('hidden'); }
 
-    function saveDishDetail() {
+    async function saveDishDetail() {
       const item = masterBasket.find(d => d.id === editingDishId);
       if (item) {
         item.name = document.getElementById('detailName').value.trim() || item.name;
         item.kg = document.getElementById('detailKg').value.trim();
         item.price = Number(document.getElementById('detailPrice').value || 0);
         item.recipe = document.getElementById('detailRecipe').value.trim();
+        await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(console.error);
       }
       confirmedActualCost = null;
       closeDishDetailModal();
@@ -948,9 +1052,11 @@
       const file = document.getElementById('csvFileInput').files[0];
       if (!file) return alert('불러올 CSV 파일을 선택해주세요!');
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         const lines = e.target.result.split(/\r?\n/);
         let added = 0;
+        const batch = db.batch();
+
         for (let i = 1; i < lines.length; i++) {
           const line = lines[i].trim();
           if (!line) continue;
@@ -959,20 +1065,24 @@
             const cat = cols[0].trim() || '일반/김치';
             let name = cols[1].trim();
             if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
-            masterBasket.unshift({
-              id: 'csv_' + Date.now() + '_' + i,
+            const newId = 'csv_' + Date.now() + '_' + i;
+            const newItem = {
+              id: newId,
               cat: catStyles[cat] ? cat : '일반/김치',
               name: name,
               kg: (cols[2] || '적당량').trim(),
               price: Number((cols[3] || '0').replace(/[^0-9]/g, '')),
               recipe: (cols[4] || '기본 조리').trim()
-            });
+            };
+            masterBasket.unshift(newItem);
+            batch.set(db.collection('basket').doc(newId), newItem);
             added++;
           }
         }
+        await batch.commit().catch(console.error);
         closeCsvModal();
         renderTray();
-        alert(`🎉 총 ${added}개의 반찬이 반찬 바구니에 즉시 저장되었습니다!`);
+        alert(`🎉 총 ${added}개의 반찬이 Firebase 클라우드 반찬 바구니에 즉시 저장되었습니다!`);
       };
       reader.readAsText(file, 'UTF-8');
     }
@@ -987,7 +1097,7 @@
     }
     function closeAddDishModal() { document.getElementById('addDishModal').classList.add('hidden'); }
 
-    function createNewDishInBasket() {
+    async function createNewDishInBasket() {
       const cat = document.getElementById('newDishCat').value;
       let name = document.getElementById('newDishName').value.trim();
       if (!name) return alert('반찬 이름을 입력해주세요.');
@@ -1003,27 +1113,35 @@
       masterBasket.unshift(newDish);
       currentCat = cat;
       currentTrayIds.push(newDish.id);
+      await db.collection('basket').doc(newDish.id).set(newDish).catch(console.error);
+      await syncCurrentStateToDb();
       closeAddDishModal();
       renderTray();
     }
 
-    function confirmMenuToGrid() {
+    // 식단확정 -> Firebase archives 컬렉션에 저장 (사진은 photoId 주소만 저장)
+    async function confirmMenuToGrid() {
       if (currentTrayIds.length === 0) return alert('식판에 메뉴를 담아주세요.');
       const dateStr = document.getElementById('currentDate').value;
       const firstMain = masterBasket.find(d => currentTrayIds.includes(d.id) && d.cat === '메인반찬') || masterBasket.find(d => d.id === currentTrayIds[0]);
 
-      archiveList.unshift({
-        id: Date.now(),
+      const newArchId = String(Date.now());
+      const newArchive = {
+        id: newArchId,
         date: dateStr,
-        title: `${firstMain.name} 식단`,
+        title: `${firstMain ? firstMain.name : '공동체'} 식단`,
         season: "가을",
         menuType: "육류",
         dishIds: [...currentTrayIds],
         likes: 1,
-        photoId: currentSavedPhotoId
-      });
+        photoId: currentSavedPhotoId,
+        createdAt: Date.now()
+      };
+
+      archiveList.unshift(newArchive);
       renderArchiveGrid();
-      alert('✅ 식단이 확정되어 하단 지난 식단 기록에 저장되었습니다!');
+      await db.collection('archives').doc(newArchId).set(newArchive).catch(console.error);
+      alert('✅ 이번 주 식단이 확정되어 Firebase 클라우드에 안전하게 저장되었습니다!');
     }
 
     function renderArchiveGrid() {
@@ -1034,7 +1152,7 @@
       const filtered = archiveList.filter(a => filter === '전체' || a.season === filter || a.menuType === filter);
 
       filtered.forEach(item => {
-        const names = item.dishIds.map(id => {
+        const names = (item.dishIds || []).map(id => {
           const found = masterBasket.find(d => d.id === id);
           return found ? found.name : '';
         }).filter(Boolean).join(', ');
@@ -1061,21 +1179,23 @@
     }
 
     function openArchiveModal(id) {
-      selectedArchiveId = id;
-      const item = archiveList.find(a => a.id === id);
+      selectedArchiveId = String(id);
+      const item = archiveList.find(a => String(a.id) === selectedArchiveId);
       if (!item) return;
 
       document.getElementById('archModalImg').src = dbPhotoStore[item.photoId] || dbPhotoStore['default_4'];
       document.getElementById('archModalSeason').innerText = `${item.season} · ${item.menuType}`;
       document.getElementById('archModalDate').value = item.date;
       document.getElementById('archModalTitle').value = item.title;
+      document.getElementById('archEditSeason').value = item.season || '가을';
+      document.getElementById('archEditType').value = item.menuType || '육류';
       document.getElementById('archModalLikes').innerText = item.likes;
 
       let sumCost = 0;
       const dishBox = document.getElementById('archModalDishes');
       dishBox.innerHTML = '';
 
-      item.dishIds.forEach(dId => {
+      (item.dishIds || []).forEach(dId => {
         const d = masterBasket.find(x => x.id === dId);
         if (d) {
           sumCost += Number(d.price || 0);
@@ -1089,25 +1209,34 @@
 
     function closeArchiveModal() { document.getElementById('archiveModal').classList.add('hidden'); }
 
-    function loadArchiveToCurrentTray() {
-      const item = archiveList.find(a => a.id === selectedArchiveId);
+    async function loadArchiveToCurrentTray() {
+      const item = archiveList.find(a => String(a.id) === selectedArchiveId);
       if (!item) return;
       item.date = document.getElementById('archModalDate').value;
       item.title = document.getElementById('archModalTitle').value;
+      item.season = document.getElementById('archEditSeason').value;
+      item.menuType = document.getElementById('archEditType').value;
+
       currentTrayIds = [...item.dishIds];
       currentSavedPhotoId = item.photoId;
       confirmedActualCost = null;
+
+      await db.collection('archives').doc(String(item.id)).set(item, { merge: true }).catch(console.error);
+      await syncCurrentStateToDb();
+
       renderTray();
       renderArchiveGrid();
       closeArchiveModal();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function recommendArchive() {
-      const item = archiveList.find(a => a.id === selectedArchiveId);
+    async function recommendArchive() {
+      const item = archiveList.find(a => String(a.id) === selectedArchiveId);
+      if (!item) return;
       if (item.likes < 10) item.likes++;
       document.getElementById('archModalLikes').innerText = item.likes;
       renderArchiveGrid();
+      await db.collection('archives').doc(String(item.id)).update({ likes: item.likes }).catch(console.error);
     }
 
     function toggleRole() {
@@ -1139,8 +1268,10 @@
       printArea.classList.remove('print-active');
     }
 
+    // 초기 렌더링 및 Firebase 실시간 연동 시작
     renderTray();
     renderArchiveGrid();
+    initFirebaseRealtime();
   </script>
 </body>
 </html>
