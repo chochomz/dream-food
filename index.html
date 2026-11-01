@@ -5,10 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>세종꿈의교회 식단관리</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- 무료 캡처 공유 라이브러리 (html2canvas) & 무료 OCR 엔진 (Tesseract.js) -->
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <!-- Firebase SDK (호환성 및 안정성이 높은 v10 compat 버전 탑재) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
@@ -17,7 +15,6 @@
     body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; user-select: none; color: #334155; }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     
-    /* 노란 두꺼운 점선 크롭 박스 */
     .crop-yellow-box {
       border: 4px dashed #facc15;
       box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
@@ -38,137 +35,186 @@
     }
   </style>
 </head>
-<body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative pb-20 border-x border-slate-100">
+<body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative border-x border-slate-100">
 
-  <!-- 1. 최상단 타이틀 헤더 (파스텔 세이지 민트 + 실시간 DB 연결 상태 표시) -->
-  <header class="bg-teal-100/90 text-teal-950 px-4 py-3 sticky top-0 z-30 border-b border-teal-200/80 backdrop-blur-sm">
-    <div class="flex justify-between items-center">
+  <!-- [보안 게이트] 주소 직접 입력 시 본문 접근을 완벽히 차단하는 필수 로그인 화면 -->
+  <div id="loginGateModal" class="fixed inset-0 bg-teal-50/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-4 border-teal-200 text-center space-y-4">
+      <div class="text-4xl">⛪</div>
       <div>
-        <h1 class="text-lg font-extrabold tracking-tight flex items-center gap-1.5 text-teal-900">
-          ⛪ 세종꿈의교회 식단관리
-        </h1>
-        <p id="dbStatusText" class="text-[10px] font-bold text-teal-700 mt-0.5">🟢 Firebase 실시간 연동중...</p>
+        <h2 class="text-lg font-extrabold text-teal-950">세종꿈의교회 식단관리</h2>
+        <p class="text-xs text-slate-500 mt-1">사전 등록된 <strong>이름</strong>과 지정된 <strong>코드번호</strong>로 로그인하세요.</p>
       </div>
-      <div class="flex flex-col items-end gap-1">
-        <button id="roleBtn" onclick="toggleRole()" class="text-[10px] bg-amber-200/90 text-amber-900 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm">
-          팀장모드 ON
-        </button>
-        <button onclick="openPrintModal()" class="text-xs bg-white/90 text-teal-900 font-extrabold px-2.5 py-1 rounded-lg border border-teal-300 shadow-sm hover:bg-teal-50">
-          🖨️ A4출력
-        </button>
-      </div>
-    </div>
-  </header>
 
-  <!-- 2. 타이틀과 식판 사이: 날짜 / 어린이 종수 / 오른쪽 끝 "관리/정산" -->
-  <div class="bg-rose-50/70 px-3.5 py-2.5 border-b border-rose-100 flex justify-between items-center">
-    <div class="flex items-center gap-1.5">
-      <input id="currentDate" onchange="syncCurrentStateToDb()" type="text" value="2026년 10월 8일(2주차)" class="bg-white text-slate-700 text-xs font-extrabold px-2.5 py-1 rounded-lg border border-rose-200 w-36 focus:outline-none shadow-sm">
-      <span id="kidsBadge" class="text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-full font-extrabold shadow-sm whitespace-nowrap">
-        👶 어린이 4종
-      </span>
+      <div class="space-y-3 text-left text-xs">
+        <div>
+          <label class="font-extrabold text-slate-700 block mb-1">👤 등록된 성함 입력 (필수)</label>
+          <input id="gateUserName" type="text" placeholder="예: 김은혜" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border-2 border-teal-200 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-teal-400">
+        </div>
+        <div>
+          <label class="font-extrabold text-slate-700 block mb-1">🔢 접속 코드번호 입력 (필수)</label>
+          <input id="gateAccessCode" type="password" placeholder="지정받은 코드번호를 입력하세요" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border-2 border-amber-200 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-amber-50/30 focus:outline-none focus:border-amber-400">
+        </div>
+      </div>
+
+      <button onclick="handleStrictLogin()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-3 rounded-xl text-sm shadow-sm transition">
+        🔒 인증 및 로그인
+      </button>
+
+      <p class="text-[11px] text-rose-500 font-bold pt-1">
+        ※ 비인가자 및 주소 직접 입력 접속은 엄격히 차단됩니다.
+      </p>
     </div>
-    <button onclick="openSettlementModal()" class="bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 text-xs font-extrabold px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
-      📊 관리/정산
-    </button>
   </div>
 
-  <!-- 3. 상단: 식판에 모으기 (연하고 두꺼운 파스텔 테두리 + 총 종수/금액은 식단확정 버튼 위로 배치) -->
-  <section class="p-3.5 bg-teal-50/30 border-b-4 border-slate-100">
-    <div class="bg-white p-3.5 rounded-2xl shadow-md border-[6px] border-teal-200/90 ring-1 ring-teal-300/50">
-      <div class="flex justify-between items-center mb-2">
-        <span class="text-xs font-extrabold text-teal-950">🍱 식판에 모으기 <span class="text-[10px] font-normal text-slate-400">(메뉴터치: 세부설정 / ✕: 제외)</span></span>
-      </div>
+  <!-- ================= 로그인 통과 전까지 완전히 잠겨있는 앱 본문 (#protectedAppContent) ================= -->
+  <div id="protectedAppContent" class="hidden pb-20">
 
-      <!-- 식판 메뉴 뱃지 영역 -->
-      <div id="currentTray" class="flex flex-wrap gap-1.5 min-h-[44px] items-center py-1"></div>
-
-      <!-- 크롭 및 0.7 압축되어 Firebase에 분리 저장된 식판 사진 미리보기 -->
-      <div id="attachedPreview" class="hidden mt-2 pt-2 border-t border-dashed border-teal-200 flex items-center justify-between bg-teal-50/50 px-2.5 py-1.5 rounded-xl">
-        <div class="text-[11px]">
-          <p class="font-extrabold text-teal-900">✅ 식판 사진 클라우드 분리저장 완료</p>
-          <p id="photoMetaInfo" class="text-[10px] text-teal-600 font-medium"></p>
+    <!-- 1. 최상단 타이틀 헤더 -->
+    <header class="bg-teal-100/90 text-teal-950 px-4 py-3 sticky top-0 z-30 border-b border-teal-200/80 backdrop-blur-sm">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-lg font-extrabold tracking-tight flex items-center gap-1.5 text-teal-900">
+            ⛪ 세종꿈의교회 식단관리
+          </h1>
+          <p id="dbStatusText" class="text-[10px] font-bold text-teal-700 mt-0.5">🟢 클라우드 실시간 연동중</p>
         </div>
-        <img id="previewImgTag" src="" class="w-14 h-10 object-cover rounded-lg border-2 border-teal-300 shadow-sm">
-      </div>
-
-      <!-- 하단 영역: "식단확정" 버튼 바로 위에 "총 7종 · 금액" 배치 -->
-      <div id="leaderActionBtns" class="mt-3 pt-2.5 border-t border-slate-100">
-        <div class="grid grid-cols-2 gap-2 items-end">
-          <div>
-            <button onclick="openPhotoUploadModal()" class="w-full bg-amber-100/90 hover:bg-amber-200/90 border border-amber-200 text-amber-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
-              📸 사진올리기
-            </button>
-          </div>
-          <div class="flex flex-col items-center">
-            <span id="totalSummary" class="text-[11px] font-extrabold text-teal-900 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full mb-1 shadow-sm whitespace-nowrap">
-              총 0종 · 0원
+        <!-- 우측: 권한 표시 & 관리자 전용 센터 이동 버튼 & 바로 밑 A4출력 -->
+        <div class="flex flex-col items-end gap-1">
+          <div class="flex items-center gap-1">
+            <span id="roleBadgeText" class="text-[10px] bg-amber-200/90 text-amber-950 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm">
+              인증됨
             </span>
-            <button onclick="confirmMenuToGrid()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
-              📥 식단확정
+            <button id="adminCenterBtn" onclick="goToAdminCenter()" class="hidden text-[10px] bg-purple-200 text-purple-950 font-extrabold px-1.5 py-0.5 rounded border border-purple-300" title="관리자 페이지">
+              ⚙️관리자설정
             </button>
+            <button onclick="logoutUser()" class="text-[10px] bg-white/90 text-rose-600 font-extrabold px-1.5 py-0.5 rounded border border-rose-200" title="로그아웃">로그아웃</button>
+          </div>
+          <button onclick="openPrintModal()" class="text-xs bg-white/90 text-teal-900 font-extrabold px-2.5 py-1 rounded-lg border border-teal-300 shadow-sm hover:bg-teal-50">
+            🖨️ A4출력
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 2. 타이틀과 식판 사이: 날짜 / 어린이 4종 / 오른쪽 끝 "관리/정산" (관리자 전용) -->
+    <div class="bg-rose-50/70 px-3.5 py-2.5 border-b border-rose-100 flex justify-between items-center">
+      <div class="flex items-center gap-1.5">
+        <input id="currentDate" onchange="syncCurrentStateToDb()" type="text" value="2026년 10월 8일(2주차)" class="bg-white text-slate-700 text-xs font-extrabold px-2.5 py-1 rounded-lg border border-rose-200 w-36 focus:outline-none shadow-sm">
+        <span id="kidsBadge" class="text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-full font-extrabold shadow-sm whitespace-nowrap">
+          👶 어린이 4종
+        </span>
+      </div>
+      <button id="adminSettlementBtn" onclick="openSettlementModal()" class="bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 text-xs font-extrabold px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
+        📊 관리/정산
+      </button>
+    </div>
+
+    <!-- 3. 상단: 식판에 모으기 (연하고 두꺼운 테두리 + 총 종수/금액은 식단확정 버튼 위) -->
+    <section class="p-3.5 bg-teal-50/30 border-b-4 border-slate-100">
+      <div class="bg-white p-3.5 rounded-2xl shadow-md border-[6px] border-teal-200/90 ring-1 ring-teal-300/50">
+        <div class="flex justify-between items-center mb-2">
+          <span class="text-xs font-extrabold text-teal-950">🍱 식판에 모으기 <span class="text-[10px] font-normal text-slate-400">(메뉴터치: 세부설정 / ✕: 제외)</span></span>
+        </div>
+
+        <div id="currentTray" class="flex flex-wrap gap-1.5 min-h-[44px] items-center py-1"></div>
+
+        <div id="attachedPreview" class="hidden mt-2 pt-2 border-t border-dashed border-teal-200 flex items-center justify-between bg-teal-50/50 px-2.5 py-1.5 rounded-xl">
+          <div class="text-[11px]">
+            <p class="font-extrabold text-teal-900">✅ 식판 사진 클라우드 분리저장 완료</p>
+            <p id="photoMetaInfo" class="text-[10px] text-teal-600 font-medium"></p>
+          </div>
+          <img id="previewImgTag" src="" class="w-14 h-10 object-cover rounded-lg border-2 border-teal-300 shadow-sm">
+        </div>
+
+        <div class="mt-3 pt-2.5 border-t border-slate-100">
+          <!-- 관리자 전용: 사진올리기 & 식단확정 -->
+          <div id="adminActionBtns" class="grid grid-cols-2 gap-2 items-end">
+            <div>
+              <button onclick="openPhotoUploadModal()" class="w-full bg-amber-100/90 hover:bg-amber-200/90 border border-amber-200 text-amber-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
+                📸 사진올리기
+              </button>
+            </div>
+            <div class="flex flex-col items-center">
+              <span id="totalSummaryAdmin" class="text-[11px] font-extrabold text-teal-900 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full mb-1 shadow-sm whitespace-nowrap">
+                총 0종 · 0원
+              </span>
+              <button onclick="confirmMenuToGrid()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
+                📥 식단확정
+              </button>
+            </div>
+          </div>
+
+          <!-- 일반 팀원용 표시줄 -->
+          <div id="memberSummaryBar" class="hidden flex justify-between items-center bg-teal-50/60 px-3 py-2 rounded-xl border border-teal-100 text-xs">
+            <span class="font-bold text-teal-900">👩‍🍳 팀원 식단 조립 모드</span>
+            <span id="totalSummaryMember" class="font-extrabold text-teal-800"></span>
           </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- 4 & 5. 중간: 반찬 바구니 -->
-  <section id="basketSection" class="p-3.5 bg-amber-50/30 border-b-4 border-slate-100">
-    <div class="flex justify-between items-center gap-1.5 mb-2.5">
-      <div class="flex items-center gap-1.5">
-        <h2 class="text-xs font-extrabold text-slate-700 whitespace-nowrap">🧺 반찬바구니</h2>
-        <div class="relative w-28">
-          <span class="absolute left-2 top-1.5 text-[10px]">🔍</span>
-          <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 검색" class="w-full pl-6 pr-1.5 py-1 text-[11px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400">
+    <!-- 4 & 5. 중간: 반찬 바구니 (팀원도 반찬등록, CSV불러오기, 반찬 담기 모두 가능 + 넉넉한 검색창) -->
+    <section id="basketSection" class="p-3.5 bg-amber-50/30 border-b-4 border-slate-100">
+      <div class="flex justify-between items-center mb-2">
+        <h2 class="text-xs font-extrabold text-slate-800 flex items-center gap-1">
+          🧺 반찬 바구니 <span class="text-[10px] font-normal text-slate-400">(터치하여 식판에 담기)</span>
+        </h2>
+        <div class="flex items-center gap-1.5">
+          <button onclick="openAddDishModal()" class="bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-200 text-[11px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
+            ＋반찬등록
+          </button>
+          <button onclick="openCsvModal()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-200 text-[11px] font-extrabold px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
+            📂CSV불러오기
+          </button>
         </div>
       </div>
-      <div class="flex items-center gap-1">
-        <button onclick="openAddDishModal()" class="bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-200 text-[11px] font-extrabold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
-          ＋반찬등록
-        </button>
-        <button onclick="openCsvModal()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-200 text-[11px] font-extrabold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
-          📂CSV불러오기
-        </button>
+
+      <!-- 사이즈를 넉넉하게 늘린 돋보기 검색창 -->
+      <div class="relative w-full mb-2.5">
+        <span class="absolute left-3 top-2 text-xs">🔍</span>
+        <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="찾으시는 반찬 이름이나 재료를 검색하세요 (예: 미역국, 제육, 두부...)" class="w-full pl-8 pr-8 py-2 text-xs font-bold bg-white border-2 border-amber-200/80 rounded-xl shadow-sm focus:outline-none focus:border-teal-400">
+        <button onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
       </div>
-    </div>
 
-    <div class="grid grid-cols-5 gap-1 mb-2.5 text-[11px] font-extrabold text-center">
-      <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1.5 rounded-lg border transition">🍚밥/국</button>
-      <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1.5 rounded-lg border transition">🥩메인</button>
-      <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1.5 rounded-lg border transition">👶어린이</button>
-      <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1.5 rounded-lg border transition">🥗일반/김치</button>
-      <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1.5 rounded-lg border transition">🥟사이드</button>
-    </div>
+      <div class="grid grid-cols-5 gap-1 mb-2.5 text-[11px] font-extrabold text-center">
+        <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1.5 rounded-lg border transition">🍚밥/국</button>
+        <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1.5 rounded-lg border transition">🥩메인</button>
+        <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1.5 rounded-lg border transition">👶어린이</button>
+        <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1.5 rounded-lg border transition">🥗일반/김치</button>
+        <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1.5 rounded-lg border transition">🥟사이드</button>
+      </div>
 
-    <div id="basketList" class="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200/80"></div>
-  </section>
+      <div id="basketList" class="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200/80"></div>
+    </section>
 
-  <!-- 6. 하단: 지난 식단 바둑판 -->
-  <section class="p-3.5 bg-white">
-    <div class="flex justify-between items-center mb-2.5">
-      <h2 class="text-xs font-extrabold text-slate-700">📋 지난 식단 기록 <span class="text-[10px] font-normal text-slate-400">(터치하여 수정/불러오기)</span></h2>
-      <select id="archiveFilter" onchange="renderArchiveGrid()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 font-bold text-slate-600 bg-slate-50 focus:outline-none">
-        <option value="전체">🔍 전체보기</option>
-        <optgroup label="🌱 계절별">
-          <option value="봄">🌸 봄 식단</option>
-          <option value="여름">☀️ 여름 식단</option>
-          <option value="가을">🍁 가을 식단</option>
-          <option value="겨울">❄️ 겨울 식단</option>
-        </optgroup>
-        <optgroup label="🥩 메뉴별">
-          <option value="육류">🥩 육류(돼지/소/닭)</option>
-          <option value="해물/두부">🐟 해물/두부/계란</option>
-          <option value="일품/간편">🍛 일품/국수/간편식</option>
-        </optgroup>
-      </select>
-    </div>
-    <div id="archiveGrid" class="grid grid-cols-2 gap-3"></div>
-  </section>
+    <!-- 6. 하단: 지난 식단 바둑판 -->
+    <section class="p-3.5 bg-white">
+      <div class="flex justify-between items-center mb-2.5">
+        <h2 class="text-xs font-extrabold text-slate-700">📋 지난 식단 기록 <span class="text-[10px] font-normal text-slate-400">(터치하여 수정/불러오기)</span></h2>
+        <select id="archiveFilter" onchange="renderArchiveGrid()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 font-bold text-slate-600 bg-slate-50 focus:outline-none">
+          <option value="전체">🔍 전체보기</option>
+          <optgroup label="🌱 계절별">
+            <option value="봄">🌸 봄 식단</option>
+            <option value="여름">☀️ 여름 식단</option>
+            <option value="가을">🍁 가을 식단</option>
+            <option value="겨울">❄️ 겨울 식단</option>
+          </optgroup>
+          <optgroup label="🥩 메뉴별">
+            <option value="육류">🥩 육류(돼지/소/닭)</option>
+            <option value="해물/두부">🐟 해물/두부/계란</option>
+            <option value="일품/간편">🍛 일품/국수/간편식</option>
+          </optgroup>
+        </select>
+      </div>
+      <div id="archiveGrid" class="grid grid-cols-2 gap-3"></div>
+    </section>
+
+  </div> <!-- //#protectedAppContent 끝 -->
 
   <!-- ================= 팝업 모달창들 ================= -->
 
-  <!-- [팝업 1] 📊 관리/정산 시스템 (리스트 출력 + 캡처 공유 + 무료 OCR 영수증 금액 대조 확정) -->
+  <!-- [팝업 1] 📊 관리/정산 시스템 (관리자 전용) -->
   <div id="settlementModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2.5">
     <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-purple-200 max-h-[92vh] overflow-y-auto">
       <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 no-print">
@@ -260,7 +306,7 @@
     </div>
   </div>
 
-  <!-- [팝업 2] 📸 사진올리기 (노란 두꺼운 점선 크롭창 + 0.7 압축 + Firebase photos 컬렉션 분리저장) -->
+  <!-- [팝업 2] 📸 사진올리기 (관리자 전용) -->
   <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border border-amber-100">
       <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
@@ -432,7 +478,6 @@
           <span id="archModalCost" class="font-extrabold text-slate-700"></span>
         </div>
         <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b pb-1 focus:outline-none">
-        <!-- 계절 및 메뉴분류 변경 가능 -->
         <div class="flex gap-2">
           <select id="archEditSeason" class="flex-1 border border-slate-200 rounded px-2 py-1 font-bold bg-slate-50">
             <option value="봄">🌸 봄</option>
@@ -482,7 +527,6 @@
   </div>
 
   <script>
-    // ================= 1. Firebase 초기화 (보내주신 실제 키 적용) =================
     const firebaseConfig = {
       apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
       authDomain: "dream-food-97a3e.firebaseapp.com",
@@ -495,13 +539,15 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    let isLeader = true;
+    let currentUser = null;
+    let isLeader = false;
+    let isRealtimeStarted = false;
+
     let currentCat = '밥/국';
     let editingDishId = null;
     let selectedArchiveId = null;
     let confirmedActualCost = null;
 
-    // [1MB 한도 회피용] 사진 데이터(photos 컬렉션)와 식단 주소(photoId) 분리 캐시 스토어
     const dbPhotoStore = {
       'default_1': "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80",
       'default_2': "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80",
@@ -511,7 +557,6 @@
     let currentSavedPhotoId = 'default_4';
     let tempCompressedDataUrl = null;
 
-    // 크롭 변수
     let cropX = 0, cropY = 0, cropScale = 1;
     let isDraggingCrop = false, startDragX = 0, startDragY = 0;
 
@@ -523,7 +568,6 @@
       '사이드메뉴': { tabActive: 'bg-purple-200 text-purple-950 border-purple-300 shadow-sm', badge: 'bg-purple-50/90 text-purple-900 border-purple-200' }
     };
 
-    // 초기 기본 시드 데이터 (Firestore가 비어있을 때 최초 1회 자동 업로드됨)
     const defaultBasketSeed = [
       { id: 'd1', cat: '밥/국', name: '흑미잡곡밥', kg: '35kg', price: 95000, recipe: '흑미 3kg 혼합 취사' },
       { id: 'd2', cat: '밥/국', name: '백미밥', kg: '35kg', price: 85000, recipe: '기본 취사' },
@@ -556,24 +600,131 @@
     let currentTrayIds = ['d1', 'd3', 'm1', 'k1', 'k2', 's1', 'n1'];
     let archiveList = [...defaultArchiveSeed];
 
-    // ================= 2. Firebase 실시간 동기화 리스너 구동 =================
+    // ================= 1. 필수 로그인 검증 (이름 + 코드번호 모두 일치해야만 잠금 해제) =================
+    async function handleStrictLogin() {
+      const nameInput = document.getElementById('gateUserName').value.trim();
+      const codeInput = document.getElementById('gateAccessCode').value.trim();
+
+      if (!nameInput || !codeInput) {
+        return alert('등록된 성함과 접속 코드번호를 모두 입력해주세요.');
+      }
+
+      const doc = await db.collection('settings').doc('authConfig').get();
+      if (!doc.exists || (!doc.data().adminCode && !doc.data().adminPassword)) {
+        alert('아직 최초 관리자 보안 설정이 완료되지 않았습니다. 관리자 설정 페이지(indexm.html)로 이동합니다.');
+        location.replace('indexm.html');
+        return;
+      }
+
+      const config = doc.data();
+      const adminCode = config.adminCode || config.adminPassword || '9999';
+      const memberCode = config.memberCode || '1004';
+      const members = config.members || [];
+
+      // 1) 사전 등록된 이름인지 확인
+      const foundMember = members.find(m => m.name === nameInput);
+      if (!foundMember) {
+        return alert('⛔ 사전 등록되지 않은 성함입니다.\n관리자에게 이름 등록을 요청해주세요.');
+      }
+
+      // 2) 입력한 코드번호 검증 (관리자 전용 코드 vs 팀원 공용 코드)
+      if (codeInput === adminCode && foundMember.role === 'admin') {
+        currentUser = foundMember.name;
+        isLeader = true;
+        sessionStorage.setItem('sejong_admin_verified', '1');
+      } else if (codeInput === memberCode || (codeInput === adminCode && foundMember.role === 'member')) {
+        currentUser = foundMember.name;
+        isLeader = false;
+        sessionStorage.removeItem('sejong_admin_verified');
+      } else {
+        return alert('❌ 접속 코드번호가 일치하지 않습니다.');
+      }
+
+      sessionStorage.setItem('sejong_user', currentUser);
+      sessionStorage.setItem('sejong_leader', isLeader ? '1' : '0');
+
+      unlockAppAndStart();
+    }
+
+    // 인증 통과 시에만 본문 잠금 해제 및 Firebase 실시간 연동 시작
+    function unlockAppAndStart() {
+      document.getElementById('loginGateModal').classList.add('hidden');
+      document.getElementById('protectedAppContent').classList.remove('hidden');
+      applyRoleUI();
+      if (!isRealtimeStarted) {
+        isRealtimeStarted = true;
+        initFirebaseRealtime();
+      }
+    }
+
+    function applyRoleUI() {
+      const badge = document.getElementById('roleBadgeText');
+      const adminCenterBtn = document.getElementById('adminCenterBtn');
+      const settleBtn = document.getElementById('adminSettlementBtn');
+      const adminActions = document.getElementById('adminActionBtns');
+      const memberBar = document.getElementById('memberSummaryBar');
+
+      if (isLeader) {
+        badge.innerText = `👨‍🍳 관리자(${currentUser})`;
+        badge.className = "text-[10px] bg-amber-200/90 text-amber-950 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm";
+        adminCenterBtn.classList.remove('hidden');
+        settleBtn.classList.remove('hidden');
+        adminActions.classList.remove('hidden');
+        memberBar.classList.add('hidden');
+      } else {
+        badge.innerText = `👩‍🍳 팀원(${currentUser})`;
+        badge.className = "text-[10px] bg-sky-100 text-sky-900 font-extrabold px-2 py-0.5 rounded-md border border-sky-200 shadow-sm";
+        adminCenterBtn.classList.add('hidden');
+        settleBtn.classList.add('hidden');
+        adminActions.classList.add('hidden');
+        memberBar.classList.remove('hidden');
+      }
+      renderTray();
+    }
+
+    function goToAdminCenter() {
+      if (!isLeader) return;
+      location.replace('indexm.html');
+    }
+
+    function logoutUser() {
+      sessionStorage.clear();
+      location.reload();
+    }
+
+    // 페이지 로드 시: 유효한 로그인 세션이 있을 때만 DB에 다시 대조하여 열어줌
+    async function verifyExistingSessionOnLoad() {
+      const savedUser = sessionStorage.getItem('sejong_user');
+      const savedLeader = sessionStorage.getItem('sejong_leader');
+      if (!savedUser) return; // 세션 없으면 무조건 로그인 게이트 유지
+
+      try {
+        const doc = await db.collection('settings').doc('authConfig').get();
+        if (!doc.exists) return;
+        const members = doc.data().members || [];
+        const stillValid = members.find(m => m.name === savedUser);
+        if (!stillValid) {
+          sessionStorage.clear();
+          return;
+        }
+        currentUser = savedUser;
+        isLeader = (savedLeader === '1' && stillValid.role === 'admin');
+        unlockAppAndStart();
+      } catch (e) { console.error(e); }
+    }
+
+    // ================= 2. Firebase 실시간 동기화 =================
     async function initFirebaseRealtime() {
       try {
-        // 1) 사진 분리 저장소(photos) 실시간 수신
         db.collection('photos').onSnapshot(snap => {
-          snap.forEach(doc => {
-            dbPhotoStore[doc.id] = doc.data().dataUrl;
-          });
+          snap.forEach(doc => { dbPhotoStore[doc.id] = doc.data().dataUrl; });
           renderArchiveGrid();
         });
 
-        // 2) 반찬 바구니(basket) 실시간 수신 및 최초 시드 생성
         db.collection('basket').onSnapshot(async snap => {
           if (snap.empty) {
             const batch = db.batch();
-            defaultBasketSeed.forEach(item => {
-              batch.set(db.collection('basket').doc(item.id), item);
-            });
+            defaultBasketSeed.forEach(item => batch.set(db.collection('basket').doc(item.id), item));
             await batch.commit();
           } else {
             masterBasket = snap.docs.map(doc => doc.data());
@@ -582,7 +733,6 @@
           }
         });
 
-        // 3) 현재 식판 조립 상태(settings/currentState) 실시간 수신
         db.collection('settings').doc('currentState').onSnapshot(async doc => {
           if (!doc.exists) {
             await syncCurrentStateToDb();
@@ -596,13 +746,10 @@
           }
         });
 
-        // 4) 지난 식단 기록(archives) 실시간 수신
         db.collection('archives').orderBy('createdAt', 'desc').onSnapshot(async snap => {
           if (snap.empty) {
             const batch = db.batch();
-            defaultArchiveSeed.forEach(item => {
-              batch.set(db.collection('archives').doc(String(item.id)), item);
-            });
+            defaultArchiveSeed.forEach(item => batch.set(db.collection('archives').doc(String(item.id)), item));
             await batch.commit();
           } else {
             archiveList = snap.docs.map(doc => doc.data());
@@ -612,12 +759,10 @@
 
         document.getElementById('dbStatusText').innerText = "🟢 클라우드 실시간 동기화 완료";
       } catch (err) {
-        console.warn("Firebase 연결 안내:", err);
-        document.getElementById('dbStatusText').innerText = "🟡 로컬 작동중 (Firestore 규칙 확인필요)";
+        document.getElementById('dbStatusText').innerText = "🟡 로컬 작동중";
       }
     }
 
-    // 현재 식판 상태를 Firebase에 즉시 동기화
     async function syncCurrentStateToDb() {
       try {
         await db.collection('settings').doc('currentState').set({
@@ -637,8 +782,9 @@
       }, 0);
     }
 
-    // ================= 3. 관리/정산 (리스트 출력, 캡처 공유, 무료 OCR 영수증 비교) =================
+    // ================= 3. 관리/정산 (관리자 전용) =================
     function openSettlementModal() {
+      if (!isLeader) return alert('관리자(팀장)만 접근할 수 있는 기능입니다.');
       document.getElementById('settleDateTitle').innerText = document.getElementById('currentDate').value + " 정산 내역";
       const tbody = document.getElementById('settleMenuTableBody');
       tbody.innerHTML = '';
@@ -667,11 +813,8 @@
       document.getElementById('settlementModal').classList.remove('hidden');
     }
 
-    function closeSettlementModal() {
-      document.getElementById('settlementModal').classList.add('hidden');
-    }
+    function closeSettlementModal() { document.getElementById('settlementModal').classList.add('hidden'); }
 
-    // 무료 OCR 영수증 금액 자동 추출 + 영수증 사진도 0.7 압축하여 photos 컬렉션에 분리 저장
     async function runReceiptOcr(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -694,7 +837,6 @@
           document.getElementById('receiptOcrThumb').src = compressedUrl;
           document.getElementById('receiptThumbBox').classList.remove('hidden');
 
-          // 영수증 사진을 photos 컬렉션에 분리 저장
           const receiptPhotoId = 'receipt_' + Date.now();
           dbPhotoStore[receiptPhotoId] = compressedUrl;
           db.collection('photos').doc(receiptPhotoId).set({
@@ -768,7 +910,7 @@
       renderTray();
       await syncCurrentStateToDb();
       closeSettlementModal();
-      alert(`✅ 영수증 실결제 금액(${confirmedActualCost.toLocaleString()}원)으로 정산 확정 및 클라우드 저장 완료!`);
+      alert(`✅ 영수증 실결제 금액(${confirmedActualCost.toLocaleString()}원)으로 정산 확정 완료!`);
     }
 
     async function captureAndShareSettlement() {
@@ -789,7 +931,7 @@
           a.download = '세종꿈의교회_식단정산서.png';
           a.click();
           URL.revokeObjectURL(url);
-          alert('📸 정산서 화면이 이미지로 저장되었습니다! 카톡방에 바로 공유해 보세요.');
+          alert('📸 정산서 화면이 이미지로 저장되었습니다!');
         }
       });
     }
@@ -802,8 +944,9 @@
       area.classList.remove('print-active');
     }
 
-    // ================= 4. 사진올리기 & 노란 점선 크롭 & 0.7 압축 DB분리저장 =================
+    // ================= 4. 사진올리기 (관리자 전용) =================
     function openPhotoUploadModal() {
+      if (!isLeader) return alert('사진 올리기는 관리자(팀장)만 가능합니다.');
       document.getElementById('cropStageArea').classList.add('hidden');
       document.getElementById('croppedResultArea').classList.add('hidden');
       document.getElementById('photoUploadModal').classList.remove('hidden');
@@ -869,7 +1012,6 @@
       ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
       ctx.restore();
 
-      // 요청사항: 0.7 압축률 적용
       tempCompressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
       const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
       document.getElementById('finalCroppedFrame').src = tempCompressedDataUrl;
@@ -877,7 +1019,6 @@
       document.getElementById('croppedResultArea').classList.remove('hidden');
     }
 
-    // [Firebase 1MB 제한 우회]: 사진은 'photos' 컬렉션에 따로 저장하고, 식단에는 'photoId' 주소만 연결
     async function savePhotoToDb() {
       if (!tempCompressedDataUrl) return;
       const btn = document.getElementById('savePhotoDbBtn');
@@ -903,7 +1044,7 @@
       closePhotoUploadModal();
     }
 
-    // ================= 5. 식판 / 반찬바구니 / 지난식단 바둑판 렌더링 & DB 저장 =================
+    // ================= 5. 식판 / 반찬바구니 렌더링 =================
     function renderTray() {
       const tray = document.getElementById('currentTray');
       tray.innerHTML = '';
@@ -941,12 +1082,12 @@
         : "text-[11px] bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full font-extrabold animate-pulse whitespace-nowrap";
 
       const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(정산확정)` : `${totalCost.toLocaleString()}원`;
-      document.getElementById('totalSummary').innerText = `총 ${currentTrayIds.length}종 · ${displayCost}`;
+      document.getElementById('totalSummaryAdmin').innerText = `총 ${currentTrayIds.length}종 · ${displayCost}`;
+      document.getElementById('totalSummaryMember').innerText = `총 ${currentTrayIds.length}종 담김`;
       renderBasket();
     }
 
     async function removeFromTray(id) {
-      if (!isLeader) return alert('팀장 모드에서만 수정 가능합니다.');
       currentTrayIds = currentTrayIds.filter(x => x !== id);
       confirmedActualCost = null;
       renderTray();
@@ -954,7 +1095,6 @@
     }
 
     async function toggleDishInTray(id) {
-      if (!isLeader) return alert('팀장 모드에서만 담을 수 있습니다.');
       confirmedActualCost = null;
       if (currentTrayIds.includes(id)) {
         await removeFromTray(id);
@@ -1082,7 +1222,7 @@
         await batch.commit().catch(console.error);
         closeCsvModal();
         renderTray();
-        alert(`🎉 총 ${added}개의 반찬이 Firebase 클라우드 반찬 바구니에 즉시 저장되었습니다!`);
+        alert(`🎉 총 ${added}개의 반찬이 클라우드 반찬 바구니에 즉시 저장되었습니다!`);
       };
       reader.readAsText(file, 'UTF-8');
     }
@@ -1119,8 +1259,8 @@
       renderTray();
     }
 
-    // 식단확정 -> Firebase archives 컬렉션에 저장 (사진은 photoId 주소만 저장)
     async function confirmMenuToGrid() {
+      if (!isLeader) return alert('식단 확정은 관리자(팀장)만 가능합니다.');
       if (currentTrayIds.length === 0) return alert('식판에 메뉴를 담아주세요.');
       const dateStr = document.getElementById('currentDate').value;
       const firstMain = masterBasket.find(d => currentTrayIds.includes(d.id) && d.cat === '메인반찬') || masterBasket.find(d => d.id === currentTrayIds[0]);
@@ -1141,7 +1281,7 @@
       archiveList.unshift(newArchive);
       renderArchiveGrid();
       await db.collection('archives').doc(newArchId).set(newArchive).catch(console.error);
-      alert('✅ 이번 주 식단이 확정되어 Firebase 클라우드에 안전하게 저장되었습니다!');
+      alert('✅ 이번 주 식단이 확정되어 지난 식단 기록에 저장되었습니다!');
     }
 
     function renderArchiveGrid() {
@@ -1239,18 +1379,6 @@
       await db.collection('archives').doc(String(item.id)).update({ likes: item.likes }).catch(console.error);
     }
 
-    function toggleRole() {
-      isLeader = !isLeader;
-      const btn = document.getElementById('roleBtn');
-      btn.innerText = isLeader ? "팀장모드 ON" : "팀원모드";
-      btn.className = isLeader
-        ? "text-[10px] bg-amber-200/90 text-amber-900 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm"
-        : "text-[10px] bg-white/80 text-slate-500 font-bold px-2 py-0.5 rounded-md border border-slate-300";
-
-      document.getElementById('leaderActionBtns').style.display = isLeader ? 'block' : 'none';
-      document.getElementById('basketSection').style.display = isLeader ? 'block' : 'none';
-    }
-
     function openPrintModal() {
       document.getElementById('printDateText').innerText = document.getElementById('currentDate').value;
       const list = document.getElementById('printList');
@@ -1268,10 +1396,8 @@
       printArea.classList.remove('print-active');
     }
 
-    // 초기 렌더링 및 Firebase 실시간 연동 시작
-    renderTray();
-    renderArchiveGrid();
-    initFirebaseRealtime();
+    // 페이지 접속 시 유효한 로그인 세션 검증 실행
+    verifyExistingSessionOnLoad();
   </script>
 </body>
 </html>

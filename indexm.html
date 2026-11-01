@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세종꿈의교회 - 관리자 보안 설정</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; color: #334155; user-select: none; }
+  </style>
+</head>
+<body class="max-w-md mx-auto bg-white min-h-screen shadow-xl border-x border-slate-100 p-4">
+
+  <!-- 1. 최초 관리자 설정 화면 (DB에 설정이 아예 없을 때 최초 1회만 열림) -->
+  <section id="initialSetupBox" class="hidden bg-amber-50/90 p-5 rounded-3xl border-2 border-amber-200 space-y-3.5 mt-6 shadow-lg">
+    <div class="text-center">
+      <span class="text-3xl">🔐</span>
+      <h2 class="text-base font-extrabold text-amber-950 mt-1">최초 보안 코드번호 설정</h2>
+      <p class="text-xs text-amber-800 mt-0.5">관리자 전용 코드번호와 팀원 접속용 코드번호를 각각 지정하세요.</p>
+    </div>
+    <div class="space-y-2.5 text-xs">
+      <div>
+        <label class="font-extrabold text-slate-700 block mb-1">👨‍🍳 관리자(팀장) 성함</label>
+        <input id="setupAdminName" type="text" placeholder="예: 홍길동" class="w-full border border-amber-300 rounded-xl px-3 py-2.5 font-bold bg-white">
+      </div>
+      <div>
+        <label class="font-extrabold text-purple-900 block mb-1">🔑 관리자 전용 코드번호 (관리자 페이지 및 팀장모드용)</label>
+        <input id="setupAdminCode" type="password" placeholder="관리자만 알 수 있는 코드 (예: 9999)" class="w-full border-2 border-purple-300 rounded-xl px-3 py-2.5 font-bold bg-white">
+      </div>
+      <div>
+        <label class="font-extrabold text-teal-900 block mb-1">🎟️ 팀원 공용 접속 코드번호 (팀원들에게 알려줄 코드)</label>
+        <input id="setupMemberCode" type="text" placeholder="팀원 로그인용 코드 (예: 1004)" class="w-full border-2 border-teal-300 rounded-xl px-3 py-2.5 font-bold bg-white">
+      </div>
+    </div>
+    <button onclick="saveInitialSetup()" class="w-full bg-amber-300 hover:bg-amber-400 text-amber-950 font-extrabold py-3 rounded-xl text-xs shadow-sm transition">
+      ✅ 보안 설정 저장 및 관리자 센터 열기
+    </button>
+  </section>
+
+  <!-- 2. 주소 직접 입력 차단용 관리자 로그인 게이트 (미인증 시 본문 완전 숨김) -->
+  <section id="adminGateBox" class="hidden bg-purple-50/80 p-6 rounded-3xl border-2 border-purple-200 space-y-4 mt-10 shadow-xl text-center">
+    <div class="text-4xl">🛡️</div>
+    <div>
+      <h2 class="text-base font-extrabold text-purple-950">관리자 전용 보안 구역</h2>
+      <p class="text-xs text-purple-700 mt-1">주소 직접 입력으로 접근할 수 없습니다.<br>등록된 관리자 성함과 <strong>관리자 전용 코드번호</strong>를 입력하세요.</p>
+    </div>
+    <div class="space-y-2.5 text-left text-xs">
+      <div>
+        <label class="font-extrabold text-slate-700 block mb-1">👤 관리자 성함</label>
+        <input id="gateAdminName" type="text" placeholder="관리자 이름 입력" class="w-full border border-purple-200 rounded-xl px-3.5 py-2.5 font-bold bg-white">
+      </div>
+      <div>
+        <label class="font-extrabold text-purple-900 block mb-1">🔑 관리자 전용 코드번호</label>
+        <input id="gateAdminCode" type="password" placeholder="관리자 전용 코드번호 입력" onkeydown="if(event.key==='Enter') verifyAdminGate()" class="w-full border border-purple-300 rounded-xl px-3.5 py-2.5 font-bold bg-white">
+      </div>
+    </div>
+    <button onclick="verifyAdminGate()" class="w-full bg-purple-200 hover:bg-purple-300 border border-purple-300 text-purple-950 font-extrabold py-3 rounded-xl text-xs shadow-sm transition">
+      🔓 관리자 인증 및 입장
+    </button>
+    <button onclick="location.replace('index.html')" class="w-full bg-white text-slate-500 border border-slate-200 font-bold py-2 rounded-xl text-xs">
+      ← 일반 식단앱 로그인 화면으로 돌아가기
+    </button>
+  </section>
+
+  <!-- 3. 인증 통과 후에만 열리는 관리자 대시보드 -->
+  <main id="adminDashboard" class="hidden space-y-5">
+    <header class="bg-purple-100/90 text-purple-950 p-4 rounded-2xl border border-purple-200 shadow-sm flex justify-between items-center">
+      <div>
+        <span class="text-[10px] bg-purple-200 text-purple-900 font-extrabold px-2 py-0.5 rounded-full">ADMIN VERIFIED</span>
+        <h1 class="text-base font-extrabold mt-1">🔐 세종꿈의교회 관리자 센터</h1>
+        <p class="text-[11px] text-purple-700">코드번호 관리 및 사전 인가자 명단 등록</p>
+      </div>
+      <div class="flex flex-col gap-1">
+        <button onclick="goToMainAppAsAdmin()" class="bg-teal-200 text-teal-950 border border-teal-300 text-xs font-extrabold px-3 py-1.5 rounded-xl shadow-sm">
+          🍱 식단앱 이동
+        </button>
+        <button onclick="adminLogout()" class="bg-white text-slate-600 border border-slate-200 text-[10px] font-bold px-2 py-1 rounded-lg">
+          로그아웃
+        </button>
+      </div>
+    </header>
+
+    <!-- A. 코드번호 2종 설정 및 변경 (관리자 코드 / 팀원 코드 분리) -->
+    <div class="bg-amber-50/60 p-4 rounded-2xl border border-amber-200 space-y-3 text-xs">
+      <h3 class="text-sm font-extrabold text-amber-950">🔑 로그인 코드번호 관리 (별도 운영)</h3>
+      
+      <div class="bg-white p-3 rounded-xl border border-amber-200 space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="font-extrabold text-purple-900">① 관리자 전용 코드번호:</span>
+          <input id="editAdminCode" type="text" class="border border-purple-200 bg-purple-50/50 rounded-lg px-2.5 py-1 font-extrabold text-purple-950 w-32 text-center">
+        </div>
+        <p class="text-[10px] text-slate-400">※ 관리자 페이지(indexm) 접속 및 식단앱에서 관리자 권한으로 로그인할 때 사용하는 비밀 코드입니다.</p>
+      </div>
+
+      <div class="bg-white p-3 rounded-xl border border-teal-200 space-y-2">
+        <div class="flex justify-between items-center">
+          <span class="font-extrabold text-teal-900">② 팀원 공용 코드번호:</span>
+          <input id="editMemberCode" type="text" class="border border-teal-200 bg-teal-50/50 rounded-lg px-2.5 py-1 font-extrabold text-teal-950 w-32 text-center">
+        </div>
+        <p class="text-[10px] text-slate-400">※ 아래 명단에 등록된 팀원들이 식단앱에 들어올 때 이름과 함께 입력해야 하는 코드번호입니다.</p>
+      </div>
+
+      <button onclick="saveBothCodes()" class="w-full bg-amber-200 hover:bg-amber-300 border border-amber-300 text-amber-950 font-extrabold py-2.5 rounded-xl shadow-sm transition">
+        💾 코드번호 변경사항 저장하기
+      </button>
+    </div>
+
+    <!-- B. 사전 등록된 인가자(이름) 명단 관리 -->
+    <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-200 space-y-3">
+      <div class="flex justify-between items-center">
+        <div>
+          <h3 class="text-sm font-extrabold text-rose-950">👥 사전 등록된 이름 명단</h3>
+          <p class="text-[11px] text-rose-700">여기에 이름이 등록된 분만 코드번호를 치고 로그인할 수 있습니다.</p>
+        </div>
+        <span id="memberCountBadge" class="text-xs bg-rose-200 text-rose-950 font-extrabold px-2.5 py-1 rounded-full">0명</span>
+      </div>
+
+      <div class="flex gap-1.5">
+        <input id="newMemberName" type="text" placeholder="이름 입력 (예: 김은혜)" onkeydown="if(event.key==='Enter') addAuthorizedMember()" class="flex-1 border border-rose-200 rounded-xl px-3 py-2 text-xs font-bold bg-white focus:outline-none">
+        <select id="newMemberRole" class="border border-rose-200 rounded-xl px-2 py-2 text-xs font-bold bg-white">
+          <option value="member">일반팀원</option>
+          <option value="admin">관리자(팀장)</option>
+        </select>
+        <button onclick="addAuthorizedMember()" class="bg-rose-200 hover:bg-rose-300 text-rose-950 font-extrabold px-3.5 py-2 rounded-xl text-xs shadow-sm whitespace-nowrap">
+          ＋ 이름등록
+        </button>
+      </div>
+
+      <ul id="memberListUl" class="space-y-2 pt-2"></ul>
+    </div>
+  </main>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
+      authDomain: "dream-food-97a3e.firebaseapp.com",
+      projectId: "dream-food-97a3e",
+      storageBucket: "dream-food-97a3e.firebasestorage.app",
+      messagingSenderId: "156318359524",
+      appId: "1:156318359524:web:6f01409b3e7af72abcb1f1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let authConfig = null;
+
+    async function initAdminPage() {
+      const doc = await db.collection('settings').doc('authConfig').get();
+
+      if (!doc.exists || (!doc.data().adminCode && !doc.data().adminPassword)) {
+        // 최초 설정 화면 표시
+        document.getElementById('initialSetupBox').classList.remove('hidden');
+      } else {
+        authConfig = doc.data();
+        // 기존 버전 호환 보정
+        if (!authConfig.adminCode) authConfig.adminCode = authConfig.adminPassword || '9999';
+        if (!authConfig.memberCode) authConfig.memberCode = '1004';
+
+        // 이미 관리자 세션이 인증되어 있는지 체크
+        const isVerifiedAdmin = sessionStorage.getItem('sejong_admin_verified') === '1';
+        if (isVerifiedAdmin) {
+          openDashboard();
+        } else {
+          document.getElementById('adminGateBox').classList.remove('hidden');
+        }
+      }
+    }
+
+    // 최초 설정 저장
+    async function saveInitialSetup() {
+      const name = document.getElementById('setupAdminName').value.trim();
+      const adminCode = document.getElementById('setupAdminCode').value.trim();
+      const memberCode = document.getElementById('setupMemberCode').value.trim();
+
+      if (!name || !adminCode || !memberCode) {
+        return alert('관리자 성함, 관리자 전용 코드번호, 팀원 공용 코드번호를 모두 입력해주세요.');
+      }
+
+      const newConfig = {
+        adminCode: adminCode,
+        memberCode: memberCode,
+        members: [
+          { name: name, role: 'admin', addedAt: Date.now() }
+        ]
+      };
+
+      await db.collection('settings').doc('authConfig').set(newConfig);
+      authConfig = newConfig;
+
+      sessionStorage.setItem('sejong_user', name);
+      sessionStorage.setItem('sejong_leader', '1');
+      sessionStorage.setItem('sejong_admin_verified', '1');
+
+      document.getElementById('initialSetupBox').classList.add('hidden');
+      openDashboard();
+      alert('🎉 최초 관리자 코드번호와 팀원 코드번호가 설정되었습니다!');
+    }
+
+    // 주소 직접 입력 시 관리자 게이트 검증 (이름 + 관리자 전용 코드번호 모두 일치해야 통과)
+    function verifyAdminGate() {
+      const name = document.getElementById('gateAdminName').value.trim();
+      const code = document.getElementById('gateAdminCode').value.trim();
+
+      if (!name || !code) return alert('관리자 성함과 관리자 전용 코드번호를 모두 입력하세요.');
+
+      const members = authConfig.members || [];
+      const foundAdmin = members.find(m => m.name === name && m.role === 'admin');
+
+      if (!foundAdmin) {
+        return alert('⛔ 등록된 관리자 성함이 아닙니다. 비인가자는 접근할 수 없습니다.');
+      }
+
+      if (code !== authConfig.adminCode) {
+        return alert('❌ 관리자 전용 코드번호가 일치하지 않습니다.');
+      }
+
+      sessionStorage.setItem('sejong_user', foundAdmin.name);
+      sessionStorage.setItem('sejong_leader', '1');
+      sessionStorage.setItem('sejong_admin_verified', '1');
+
+      document.getElementById('adminGateBox').classList.add('hidden');
+      openDashboard();
+    }
+
+    function openDashboard() {
+      document.getElementById('adminDashboard').classList.remove('hidden');
+      db.collection('settings').doc('authConfig').onSnapshot(doc => {
+        if (doc.exists) {
+          authConfig = doc.data();
+          document.getElementById('editAdminCode').value = authConfig.adminCode || authConfig.adminPassword || '';
+          document.getElementById('editMemberCode').value = authConfig.memberCode || '1004';
+          renderMemberList();
+        }
+      });
+    }
+
+    async function saveBothCodes() {
+      const newAdminCode = document.getElementById('editAdminCode').value.trim();
+      const newMemberCode = document.getElementById('editMemberCode').value.trim();
+      if (!newAdminCode || !newMemberCode) return alert('코드번호를 비워둘 수 없습니다.');
+
+      await db.collection('settings').doc('authConfig').set({
+        adminCode: newAdminCode,
+        memberCode: newMemberCode
+      }, { merge: true });
+
+      alert('✅ 관리자 전용 코드번호와 팀원 공용 코드번호가 저장되었습니다!');
+    }
+
+    function renderMemberList() {
+      const ul = document.getElementById('memberListUl');
+      ul.innerHTML = '';
+      const members = authConfig.members || [];
+      document.getElementById('memberCountBadge').innerText = `총 ${members.length}명`;
+
+      members.forEach((m, idx) => {
+        const isAdm = m.role === 'admin';
+        const li = document.createElement('li');
+        li.className = "flex justify-between items-center bg-white p-2.5 rounded-xl border border-rose-100 shadow-sm text-xs";
+        li.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="${isAdm ? 'bg-purple-200 text-purple-950' : 'bg-teal-100 text-teal-900'} font-extrabold px-2 py-0.5 rounded-md text-[10px]">
+              ${isAdm ? '👨‍🍳 관리자' : '👩‍🍳 일반팀원'}
+            </span>
+            <span class="font-extrabold text-slate-800 text-sm">${m.name}</span>
+          </div>
+          <button onclick="removeMember(${idx})" class="text-rose-500 hover:text-rose-700 font-extrabold px-2 py-1 rounded bg-rose-50">
+            삭제 ✕
+          </button>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    async function addAuthorizedMember() {
+      const name = document.getElementById('newMemberName').value.trim();
+      const role = document.getElementById('newMemberRole').value;
+      if (!name) return alert('등록할 이름을 입력해주세요.');
+
+      const members = authConfig.members || [];
+      if (members.some(m => m.name === name)) return alert('이미 등록된 이름입니다.');
+
+      members.push({ name, role, addedAt: Date.now() });
+      await db.collection('settings').doc('authConfig').update({ members });
+      document.getElementById('newMemberName').value = '';
+    }
+
+    async function removeMember(index) {
+      const members = authConfig.members || [];
+      if (members.length <= 1) return alert('최소 1명의 관리자는 남아있어야 합니다.');
+      const target = members[index];
+      if (!confirm(`[${target.name}] 님을 명단에서 삭제하시겠습니까?`)) return;
+      members.splice(index, 1);
+      await db.collection('settings').doc('authConfig').update({ members });
+    }
+
+    function goToMainAppAsAdmin() {
+      location.replace('index.html');
+    }
+
+    function adminLogout() {
+      sessionStorage.clear();
+      location.replace('index.html');
+    }
+
+    initAdminPage();
+  </script>
+</body>
+</html>
