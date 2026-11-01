@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>세종꿈의교회 식단관리 (OCR 정산 & 캡처공유 에디션)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 무료 캡처 공유 라이브러리 (html2canvas) & 무료 OCR 엔진 (Tesseract.js) 탑재 -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; user-select: none; color: #334155; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    
+    /* 노란 두꺼운 점선 크롭 박스 */
+    .crop-yellow-box {
+      border: 4px dashed #facc15;
+      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
+    }
+    .corner-dot {
+      width: 12px;
+      height: 12px;
+      background-color: #facc15;
+      border: 2px solid #ffffff;
+      position: absolute;
+    }
+
+    @media print {
+      body * { visibility: hidden; }
+      .print-active, .print-active * { visibility: visible; }
+      .print-active { position: fixed; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
+      .no-print { display: none !important; }
+    }
+  </style>
+</head>
+<body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative pb-20 border-x border-slate-100">
+
+  <!-- 1. 최상단 타이틀 헤더 (은은한 파스텔 톤) -->
+  <header class="bg-teal-100/90 text-teal-950 px-4 py-3 sticky top-0 z-30 border-b border-teal-200/80 backdrop-blur-sm">
+    <div class="flex justify-between items-center">
+      <h1 class="text-lg font-extrabold tracking-tight flex items-center gap-1.5 text-teal-900">
+        ⛪ 세종꿈의교회 식단관리
+      </h1>
+      <div class="flex flex-col items-end gap-1">
+        <button id="roleBtn" onclick="toggleRole()" class="text-[10px] bg-amber-200/90 text-amber-900 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm">
+          팀장모드 ON
+        </button>
+        <button onclick="openPrintModal()" class="text-xs bg-white/90 text-teal-900 font-extrabold px-2.5 py-1 rounded-lg border border-teal-300 shadow-sm hover:bg-teal-50">
+          🖨️ A4출력
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. 타이틀과 식판 사이: 날짜 / 어린이 4종 / 우측 끝 "관리/정산" -->
+  <div class="bg-rose-50/70 px-3.5 py-2.5 border-b border-rose-100 flex justify-between items-center">
+    <div class="flex items-center gap-1.5">
+      <input id="currentDate" type="text" value="2026년 10월 8일(2주차)" class="bg-white text-slate-700 text-xs font-extrabold px-2.5 py-1 rounded-lg border border-rose-200 w-36 focus:outline-none shadow-sm">
+      <span id="kidsBadge" class="text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-full font-extrabold shadow-sm whitespace-nowrap">
+        👶 어린이 4종
+      </span>
+    </div>
+    <button onclick="openSettlementModal()" class="bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 text-xs font-extrabold px-2.5 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
+      📊 관리/정산
+    </button>
+  </div>
+
+  <!-- 3. 상단: 식판에 모으기 (연하고 두꺼운 테두리로 확실히 구분 + 총7종 금액은 식단확정 버튼 위로 배치) -->
+  <section class="p-3.5 bg-teal-50/30 border-b-4 border-slate-100">
+    <!-- 요청사항: 연하고 두꺼운 파스텔 테두리(border-[6px] border-teal-200/90) 적용 -->
+    <div class="bg-white p-3.5 rounded-2xl shadow-md border-[6px] border-teal-200/90 ring-1 ring-teal-300/50">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-extrabold text-teal-950">🍱 식판에 모으기 <span class="text-[10px] font-normal text-slate-400">(메뉴터치: 세부설정 / ✕: 제외)</span></span>
+      </div>
+
+      <!-- 식판 메뉴 뱃지 영역 -->
+      <div id="currentTray" class="flex flex-wrap gap-1.5 min-h-[44px] items-center py-1"></div>
+
+      <!-- 크롭 및 0.7 압축된 식판 사진 미리보기 -->
+      <div id="attachedPreview" class="hidden mt-2 pt-2 border-t border-dashed border-teal-200 flex items-center justify-between bg-teal-50/50 px-2.5 py-1.5 rounded-xl">
+        <div class="text-[11px]">
+          <p class="font-extrabold text-teal-900">✅ 식판 사진 준비완료 (0.7 압축)</p>
+          <p id="photoMetaInfo" class="text-[10px] text-teal-600 font-medium"></p>
+        </div>
+        <img id="previewImgTag" src="" class="w-14 h-10 object-cover rounded-lg border-2 border-teal-300 shadow-sm">
+      </div>
+
+      <!-- 하단 영역: "식단확정" 버튼 바로 위에 "총 7종 · 금액" 배치 -->
+      <div id="leaderActionBtns" class="mt-3 pt-2.5 border-t border-slate-100">
+        <div class="grid grid-cols-2 gap-2 items-end">
+          <!-- 좌측: 사진올리기 -->
+          <div>
+            <button onclick="openPhotoUploadModal()" class="w-full bg-amber-100/90 hover:bg-amber-200/90 border border-amber-200 text-amber-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
+              📸 사진올리기
+            </button>
+          </div>
+          <!-- 우측: 식단확정 버튼 바로 위에 총 7종 금액 표시 -->
+          <div class="flex flex-col items-center">
+            <span id="totalSummary" class="text-[11px] font-extrabold text-teal-900 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full mb-1 shadow-sm whitespace-nowrap">
+              총 7종 · 945,000원
+            </span>
+            <button onclick="confirmMenuToGrid()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2 rounded-xl text-xs shadow-sm transition">
+              📥 식단확정
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 & 5. 중간: 반찬 바구니 -->
+  <section id="basketSection" class="p-3.5 bg-amber-50/30 border-b-4 border-slate-100">
+    <div class="flex justify-between items-center gap-1.5 mb-2.5">
+      <div class="flex items-center gap-1.5">
+        <h2 class="text-xs font-extrabold text-slate-700 whitespace-nowrap">🧺 반찬바구니</h2>
+        <div class="relative w-28">
+          <span class="absolute left-2 top-1.5 text-[10px]">🔍</span>
+          <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 검색" class="w-full pl-6 pr-1.5 py-1 text-[11px] bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400">
+        </div>
+      </div>
+      <div class="flex items-center gap-1">
+        <button onclick="openAddDishModal()" class="bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-200 text-[11px] font-extrabold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
+          ＋반찬등록
+        </button>
+        <button onclick="openCsvModal()" class="bg-indigo-100 hover:bg-indigo-200 text-indigo-900 border border-indigo-200 text-[11px] font-extrabold px-2 py-1 rounded-lg shadow-sm whitespace-nowrap transition">
+          📂CSV불러오기
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-5 gap-1 mb-2.5 text-[11px] font-extrabold text-center">
+      <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1.5 rounded-lg border transition">🍚밥/국</button>
+      <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1.5 rounded-lg border transition">🥩메인</button>
+      <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1.5 rounded-lg border transition">👶어린이</button>
+      <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1.5 rounded-lg border transition">🥗일반/김치</button>
+      <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1.5 rounded-lg border transition">🥟사이드</button>
+    </div>
+
+    <div id="basketList" class="grid grid-cols-2 gap-1.5 max-h-44 overflow-y-auto p-1.5 bg-white rounded-xl border border-slate-200/80"></div>
+  </section>
+
+  <!-- 6. 하단: 지난 식단 바둑판 -->
+  <section class="p-3.5 bg-white">
+    <div class="flex justify-between items-center mb-2.5">
+      <h2 class="text-xs font-extrabold text-slate-700">📋 지난 식단 기록 <span class="text-[10px] font-normal text-slate-400">(터치하여 수정/불러오기)</span></h2>
+      <select id="archiveFilter" onchange="renderArchiveGrid()" class="text-xs border border-slate-200 rounded-lg px-2 py-1 font-bold text-slate-600 bg-slate-50 focus:outline-none">
+        <option value="전체">🔍 전체보기</option>
+        <optgroup label="🌱 계절별">
+          <option value="봄">🌸 봄 식단</option>
+          <option value="여름">☀️ 여름 식단</option>
+          <option value="가을">🍁 가을 식단</option>
+          <option value="겨울">❄️ 겨울 식단</option>
+        </optgroup>
+        <optgroup label="🥩 메뉴별">
+          <option value="육류">🥩 육류(돼지/소/닭)</option>
+          <option value="해물/두부">🐟 해물/두부/계란</option>
+          <option value="일품/간편">🍛 일품/국수/간편식</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="archiveGrid" class="grid grid-cols-2 gap-3"></div>
+  </section>
+
+  <!-- ================= 팝업 모달창들 ================= -->
+
+  <!-- [핵심 팝업 1] 📊 관리/정산 시스템 (메뉴 리스트 출력 + 캡처 공유 + 무료 OCR 영수증 금액 대조 확정) -->
+  <div id="settlementModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2.5">
+    <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-purple-200 max-h-[92vh] overflow-y-auto">
+      <!-- 상단 액션 바 (인쇄 / 캡처공유 / 닫기) -->
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 no-print">
+        <h3 class="text-sm font-extrabold text-purple-950">📊 주간 식단 관리 / 정산서</h3>
+        <div class="flex gap-1">
+          <button onclick="captureAndShareSettlement()" class="bg-sky-100 hover:bg-sky-200 text-sky-900 border border-sky-200 px-2.5 py-1 rounded-lg text-[11px] font-extrabold shadow-sm">
+            📸 캡처공유
+          </button>
+          <button onclick="printSettlementReport()" class="bg-teal-100 hover:bg-teal-200 text-teal-900 border border-teal-200 px-2.5 py-1 rounded-lg text-[11px] font-extrabold shadow-sm">
+            🖨️ 리스트출력
+          </button>
+          <button onclick="closeSettlementModal()" class="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg text-xs font-bold">✕</button>
+        </div>
+      </div>
+
+      <!-- 캡처 및 인쇄 대상 영역 (#settlementCaptureArea) -->
+      <div id="settlementCaptureArea" class="p-3 bg-white rounded-xl space-y-3 text-xs mt-1">
+        <div class="text-center border-b border-purple-100 pb-2">
+          <p class="text-[11px] font-bold text-purple-700">⛪ 세종꿈의교회 공동체 식단 정산표</p>
+          <h4 id="settleDateTitle" class="text-sm font-extrabold text-slate-800 mt-0.5"></h4>
+        </div>
+
+        <!-- 1) 각 메뉴의 이름, 단위(kg), 가격 리스트 표 -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-purple-50 text-purple-950 border-b border-slate-200 text-[11px]">
+                <th class="py-1.5 px-2.5 font-extrabold">메뉴 이름</th>
+                <th class="py-1.5 px-2 font-extrabold text-center">단위(수량)</th>
+                <th class="py-1.5 px-2.5 font-extrabold text-right">예상 가격(원)</th>
+              </tr>
+            </thead>
+            <tbody id="settleMenuTableBody" class="divide-y divide-slate-100 text-xs">
+              <!-- 자바스크립트로 메뉴별 리스트 자동 생성 -->
+            </tbody>
+            <tfoot>
+              <tr class="bg-slate-50 font-extrabold text-slate-900 border-t border-slate-200">
+                <td class="py-2 px-2.5" colspan="2">식판 메뉴 예상 총액</td>
+                <td id="settleExpectedTotal" class="py-2 px-2.5 text-right text-teal-800"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- 2) 무료 OCR 영수증 판독 및 금액 비교 확정 영역 -->
+        <div class="bg-amber-50/70 p-3 rounded-xl border-2 border-amber-200/80 space-y-2.5">
+          <div class="flex justify-between items-center">
+            <span class="font-extrabold text-amber-950 flex items-center gap-1">🧾 영수증 무료 OCR 금액 대조</span>
+            <span id="ocrStatusBadge" class="text-[10px] bg-white border border-amber-300 text-amber-800 px-2 py-0.5 rounded-full font-bold">영수증 대기중</span>
+          </div>
+
+          <!-- 영수증 사진 업로드 버튼 (인쇄 시 숨김) -->
+          <div class="flex gap-1.5 no-print">
+            <input type="file" id="receiptOcrInput" accept="image/*" class="hidden" onchange="runReceiptOcr(event)">
+            <button onclick="document.getElementById('receiptOcrInput').click()" class="flex-1 bg-white hover:bg-amber-100 border border-amber-300 text-amber-950 font-extrabold py-2 rounded-lg shadow-sm transition">
+              📷 영수증 사진 올리기 (무료 OCR 자동판독)
+            </button>
+          </div>
+
+          <!-- 영수증 미리보기 & OCR 추출 금액 비교 박스 -->
+          <div class="bg-white p-2.5 rounded-lg border border-amber-200 space-y-2">
+            <div id="receiptThumbBox" class="hidden flex items-center gap-2 pb-2 border-b border-slate-100">
+              <img id="receiptOcrThumb" src="" class="w-12 h-14 object-cover rounded border border-amber-300 shrink-0">
+              <div class="text-[10px] text-slate-500 leading-tight">
+                <p class="font-bold text-slate-700">영수증 이미지(0.7 압축첨부됨)</p>
+                <p id="ocrRawTextPreview" class="truncate max-w-[200px] text-amber-700 mt-0.5"></p>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-slate-600">① 식판 예산 합계:</span>
+              <span id="comparePlannedCost" class="font-extrabold text-slate-800">0원</span>
+            </div>
+
+            <div class="flex justify-between items-center">
+              <span class="font-bold text-amber-900">② 영수증 OCR 인식 금액:</span>
+              <div class="flex items-center gap-1">
+                <input id="ocrExtractedInput" type="number" oninput="updateCostComparison()" placeholder="금액 자동입력" class="w-28 text-right font-extrabold text-rose-700 bg-rose-50/60 border border-rose-200 rounded px-2 py-1 focus:outline-none">
+                <span class="font-bold text-slate-600">원</span>
+              </div>
+            </div>
+
+            <!-- 비교 차액 표시 -->
+            <div class="pt-1.5 border-t border-dashed border-slate-200 flex justify-between items-center">
+              <span class="font-extrabold text-slate-700">⚖️ 예산 대비 차액 비교:</span>
+              <span id="compareDiffResult" class="font-extrabold text-xs text-teal-700">영수증을 올리거나 금액을 입력하세요</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 하단 정산 최종 확정 버튼 -->
+      <div class="mt-3 pt-2 border-t border-slate-100 flex gap-2 no-print">
+        <button onclick="confirmFinalSettlement()" class="w-full bg-purple-200 hover:bg-purple-300 border border-purple-300 text-purple-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition">
+          ✅ 영수증 비교 금액으로 정산 최종 확정
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 2] 📸 사진올리기 (불러오기/찍어넣기 + 노란 두꺼운 점선 크롭창 + 0.7 압축 분리저장) -->
+  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border border-amber-100">
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
+        <h3 class="text-sm font-extrabold text-slate-800">📸 식판/메뉴 사진 올리기</h3>
+        <button onclick="closePhotoUploadModal()" class="text-slate-400 font-bold">✕</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 my-3">
+        <input type="file" id="inputGallery" accept="image/*" class="hidden" onchange="startCropProcess(event)">
+        <button onclick="document.getElementById('inputGallery').click()" class="bg-sky-100 hover:bg-sky-200 text-sky-950 border border-sky-200 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
+          🖼️ 사진 불러오기
+        </button>
+        <input type="file" id="inputCamera" accept="image/*" capture="environment" class="hidden" onchange="startCropProcess(event)">
+        <button onclick="document.getElementById('inputCamera').click()" class="bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-200 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
+          📷 사진 찍어넣기
+        </button>
+      </div>
+
+      <!-- 노란 두꺼운 점선 사각틀 크롭 영역 -->
+      <div id="cropStageArea" class="hidden space-y-2.5 my-2">
+        <div class="flex justify-between items-center text-[11px]">
+          <span class="font-extrabold text-amber-700">👆 노란 점선 사각틀 안에서 위치를 조율하세요</span>
+        </div>
+        <div id="cropViewport" class="relative w-full h-52 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center cursor-move touch-none">
+          <img id="cropTargetImg" src="" class="max-w-none select-none pointer-events-none" style="transform: translate(0px, 0px) scale(1);">
+          <div id="yellowCropBox" class="crop-yellow-box relative w-64 h-40 pointer-events-none">
+            <div class="corner-dot -top-2 -left-2"></div>
+            <div class="corner-dot -top-2 -right-2"></div>
+            <div class="corner-dot -bottom-2 -left-2"></div>
+            <div class="corner-dot -bottom-2 -right-2"></div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+          <span class="text-[11px] font-bold text-slate-600 whitespace-nowrap">🔍 크기:</span>
+          <input id="zoomSlider" type="range" min="0.3" max="2.5" step="0.05" value="1" oninput="updateCropTransform()" class="w-full accent-amber-500">
+          <button onclick="confirmCropToFrame()" class="bg-amber-300 hover:bg-amber-400 text-amber-950 font-extrabold px-3 py-1 rounded-lg text-xs whitespace-nowrap shadow-sm">
+            ✂️ 확정
+          </button>
+        </div>
+      </div>
+
+      <div id="croppedResultArea" class="hidden space-y-2.5 pt-2 border-t border-slate-100">
+        <div class="bg-teal-50/70 p-2.5 rounded-xl border border-teal-200 flex items-center gap-3">
+          <img id="finalCroppedFrame" src="" class="w-24 h-16 object-cover rounded-lg border-2 border-teal-400 shadow-sm shrink-0">
+          <div class="text-[11px] space-y-0.5">
+            <p class="font-extrabold text-teal-950">🖼️ 사진틀 조율 완료!</p>
+            <p id="compressionInfo" class="text-[10px] text-teal-700 font-semibold"></p>
+          </div>
+        </div>
+        <button onclick="savePhotoToDb()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
+          💾 저장하기 (0.7 압축 DB분리저장)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 3] 식판 메뉴 세부사항 설정 -->
+  <div id="dishDetailModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-xl border border-slate-100">
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
+        <h3 class="text-sm font-extrabold text-slate-800">⚙️ 메뉴 세부사항 설정</h3>
+        <button onclick="closeDishDetailModal()" class="text-slate-400 font-bold">✕</button>
+      </div>
+      <div class="space-y-3 my-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">🏷️ 이름변경</label>
+          <input id="detailName" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold text-slate-800 bg-slate-50/50">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">⚖️ 준비 kg (단위)</label>
+            <input id="detailKg" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold text-teal-800 bg-teal-50/30">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">💰 가격 (원)</label>
+            <input id="detailPrice" type="number" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold text-rose-800 bg-rose-50/30">
+          </div>
+        </div>
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">📖 조리방법</label>
+          <textarea id="detailRecipe" rows="3" class="w-full border border-slate-200 rounded-lg p-2.5 text-slate-700 bg-slate-50/50"></textarea>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="closeDishDetailModal()" class="flex-1 bg-slate-100 text-slate-600 font-bold py-2.5 rounded-xl text-xs">취소</button>
+        <button onclick="saveDishDetail()" class="flex-1 bg-teal-200 text-teal-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">💾 저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 4] CSV 불러오기 & 양식 다운로드 -->
+  <div id="csvModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-xl border border-indigo-100">
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
+        <h3 class="text-sm font-extrabold text-indigo-950">📂 엑셀(CSV) 반찬 대량 불러오기</h3>
+        <button onclick="closeCsvModal()" class="text-slate-400 font-bold">✕</button>
+      </div>
+      <div class="my-3 space-y-3 text-xs">
+        <div class="bg-indigo-50/70 p-3 rounded-xl border border-indigo-100 text-indigo-950 space-y-2">
+          <p class="font-bold">1단계: CSV 기본 양식을 다운받아 작성하세요.</p>
+          <button onclick="downloadCsvTemplate()" class="w-full bg-white border border-indigo-300 text-indigo-900 font-extrabold py-2 rounded-lg shadow-sm hover:bg-indigo-100">
+            📥 CSV 기본양식 다운로드
+          </button>
+        </div>
+        <div class="bg-teal-50/70 p-3 rounded-xl border border-teal-100 text-teal-950 space-y-2">
+          <p class="font-bold">2단계: 작성한 CSV 파일을 불러와 바로 저장하세요.</p>
+          <input type="file" id="csvFileInput" accept=".csv" class="w-full text-[11px] bg-white p-1.5 rounded-lg border border-teal-200">
+          <button onclick="importCsvFile()" class="w-full bg-teal-200 hover:bg-teal-300 text-teal-950 font-extrabold py-2 rounded-lg shadow-sm">
+            ✅ 불러와서 반찬 바구니에 즉시 저장
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 5] 새 반찬 개별 등록 -->
+  <div id="addDishModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-xl">
+      <div class="flex justify-between items-center pb-2.5 border-b">
+        <h3 class="text-sm font-extrabold text-slate-800">＋ 새로운 반찬 직접 등록</h3>
+        <button onclick="closeAddDishModal()" class="text-slate-400 font-bold">✕</button>
+      </div>
+      <div class="space-y-3 my-3 text-xs">
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">📂 카테고리</label>
+          <select id="newDishCat" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-slate-50">
+            <option value="밥/국">🍚 밥/국</option>
+            <option value="메인반찬">🥩 메인반찬</option>
+            <option value="어린이반찬">👶 어린이반찬</option>
+            <option value="일반/김치">🥗 일반/김치</option>
+            <option value="사이드메뉴">🥟 사이드메뉴</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">🍽️ 반찬 이름</label>
+          <input id="newDishName" type="text" placeholder="예: 오징어볶음" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold">
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">⚖️ 준비 kg</label>
+            <input id="newDishKg" type="text" placeholder="예: 30kg" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+          </div>
+          <div>
+            <label class="font-bold text-slate-600 block mb-1">💰 가격(원)</label>
+            <input id="newDishPrice" type="number" placeholder="예: 150000" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+          </div>
+        </div>
+        <div>
+          <label class="font-bold text-slate-600 block mb-1">📖 조리방법</label>
+          <input id="newDishRecipe" type="text" placeholder="조리 요약 메모" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+        </div>
+      </div>
+      <button onclick="createNewDishInBasket()" class="w-full bg-rose-200 hover:bg-rose-300 text-rose-950 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
+        🧺 바구니에 저장 완료
+      </button>
+    </div>
+  </div>
+
+  <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
+  <div id="archiveModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full overflow-hidden shadow-xl">
+      <div class="relative h-40">
+        <img id="archModalImg" src="" class="w-full h-full object-cover">
+        <button onclick="closeArchiveModal()" class="absolute top-2 right-2 bg-white/80 text-slate-700 rounded-full w-8 h-8 font-bold">✕</button>
+        <span id="archModalSeason" class="absolute top-2 left-2 bg-teal-100 text-teal-900 text-[10px] px-2 py-0.5 rounded-md font-extrabold"></span>
+      </div>
+      <div class="p-4 text-xs space-y-2.5">
+        <div class="flex justify-between items-center">
+          <input id="archModalDate" type="text" class="font-extrabold text-teal-900 bg-teal-50 px-2 py-1 rounded border border-teal-200 w-44">
+          <span id="archModalCost" class="font-extrabold text-slate-700"></span>
+        </div>
+        <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b pb-1 focus:outline-none">
+        <div id="archModalDishes" class="flex flex-wrap gap-1 pt-1"></div>
+        <div class="pt-3 flex gap-2">
+          <button onclick="recommendArchive()" class="flex-1 bg-rose-100 text-rose-900 border border-rose-200 font-extrabold py-2.5 rounded-xl">
+            👍 팀원추천 (<span id="archModalLikes"></span>/10)
+          </button>
+          <button onclick="loadArchiveToCurrentTray()" class="flex-1 bg-teal-200 text-teal-950 border border-teal-300 font-extrabold py-2.5 rounded-xl shadow-sm">
+            👆 식판으로 불러오기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 7] A4 식단표 출력 모달 -->
+  <div id="printModal" class="fixed inset-0 bg-slate-900/50 z-50 hidden flex items-center justify-center p-2">
+    <div class="bg-white rounded-xl max-w-lg w-full p-4">
+      <div class="flex justify-between items-center pb-3 border-b no-print">
+        <span class="font-bold text-sm">🖨️ A4 식단표 출력 미리보기</span>
+        <div class="space-x-1">
+          <button onclick="printA4Menu()" class="bg-teal-200 text-teal-950 px-4 py-1.5 rounded-lg text-xs font-extrabold">인쇄하기</button>
+          <button onclick="document.getElementById('printModal').classList.add('hidden')" class="bg-slate-100 px-3 py-1.5 rounded-lg text-xs font-bold">닫기</button>
+        </div>
+      </div>
+      <div id="print-area" class="p-8 border-4 border-double border-teal-700 mt-3 text-center">
+        <p class="text-lg font-bold text-teal-800">⛪ 세종꿈의교회 공동체 식사</p>
+        <p id="printDateText" class="text-xl font-extrabold text-slate-500 mt-1 mb-6"></p>
+        <h1 class="text-4xl font-extrabold text-slate-900 mb-8 pb-4 border-b-2 border-slate-200">🍱 오늘의 식단표</h1>
+        <div id="printList" class="space-y-4 my-8 text-3xl font-extrabold text-slate-800"></div>
+        <div class="mt-10 p-3 bg-sky-50 border border-sky-200 rounded-xl inline-block">
+          <p class="text-base font-bold text-sky-900">👶 표시는 어린이도 맛있게 먹을 수 있는 반찬입니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let isLeader = true;
+    let currentCat = '밥/국';
+    let editingDishId = null;
+    let selectedArchiveId = null;
+    let confirmedActualCost = null; // 영수증 비교 확정 금액
+
+    // 사진 데이터와 사진 주소(photoId) 분리 스토어
+    const dbPhotoStore = {
+      'default_1': "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80",
+      'default_2': "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=500&q=80",
+      'default_3': "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=500&q=80",
+      'default_4': "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=500&q=80"
+    };
+    let currentSavedPhotoId = 'default_4';
+    let tempCompressedDataUrl = null;
+
+    // 크롭 변수
+    let cropX = 0, cropY = 0, cropScale = 1;
+    let isDraggingCrop = false, startDragX = 0, startDragY = 0;
+
+    const catStyles = {
+      '밥/국': { tabActive: 'bg-amber-200 text-amber-950 border-amber-300 shadow-sm', badge: 'bg-amber-50/90 text-amber-900 border-amber-200' },
+      '메인반찬': { tabActive: 'bg-rose-200 text-rose-950 border-rose-300 shadow-sm', badge: 'bg-rose-50/90 text-rose-900 border-rose-200' },
+      '어린이반찬': { tabActive: 'bg-sky-200 text-sky-950 border-sky-300 shadow-sm', badge: 'bg-sky-50/90 text-sky-900 border-sky-200' },
+      '일반/김치': { tabActive: 'bg-teal-200 text-teal-950 border-teal-300 shadow-sm', badge: 'bg-teal-50/90 text-teal-900 border-teal-200' },
+      '사이드메뉴': { tabActive: 'bg-purple-200 text-purple-950 border-purple-300 shadow-sm', badge: 'bg-purple-50/90 text-purple-900 border-purple-200' }
+    };
+
+    let masterBasket = [
+      { id: 'd1', cat: '밥/국', name: '흑미잡곡밥', kg: '35kg', price: 95000, recipe: '흑미 3kg 혼합 취사' },
+      { id: 'd2', cat: '밥/국', name: '백미밥', kg: '35kg', price: 85000, recipe: '기본 취사' },
+      { id: 'd3', cat: '밥/국', name: '소고기미역국(👶)', kg: '15kg', price: 180000, recipe: '참기름에 고기 볶다 국간장 2바가지' },
+      { id: 'd4', cat: '밥/국', name: '시래기된장국', kg: '15kg', price: 70000, recipe: '멸치육수에 된장 풀고 푹 끓임' },
+      { id: 'd5', cat: '밥/국', name: '맑은콩나물국(👶)', kg: '2박스', price: 40000, recipe: '뚜껑 열고 끓여 비린내 제거' },
+
+      { id: 'm1', cat: '메인반찬', name: '매콤제육볶음', kg: '45kg', price: 320000, recipe: '고추장 양념 하루 전 숙성' },
+      { id: 'm2', cat: '메인반찬', name: '한방보쌈수육', kg: '50kg', price: 420000, recipe: '된장, 커피, 월계수잎 넣고 50분 삶기' },
+      { id: 'm3', cat: '메인반찬', name: '춘천식닭갈비', kg: '45kg', price: 290000, recipe: '닭다리살과 고구마, 양배추 듬뿍' },
+
+      { id: 'k1', cat: '어린이반찬', name: '수제동그랑땡(👶)', kg: '15봉', price: 110000, recipe: '계란물 입혀 노릇하게 구움' },
+      { id: 'k2', cat: '어린이반찬', name: '감자채볶음(👶)', kg: '1박스', price: 45000, recipe: '전분 뺀 후 소금간으로 볶음' },
+      { id: 'k3', cat: '어린이반찬', name: '달콤소불고기(👶)', kg: '40kg', price: 380000, recipe: '배즙과 간장으로 달콤하게 조리' },
+      { id: 'k4', cat: '어린이반찬', name: '메추리알장조림(👶)', kg: '12kg', price: 85000, recipe: '깐메추리알 간장물에 조림' },
+
+      { id: 'n1', cat: '일반/김치', name: '배추김치', kg: '2통', price: 60000, recipe: '기본 제공 김치' },
+      { id: 'n2', cat: '일반/김치', name: '도토리묵무침', kg: '5모', price: 55000, recipe: '배식 직전 상추와 양념 버무림' },
+      { id: 'n3', cat: '일반/김치', name: '매콤두부조림', kg: '6판', price: 48000, recipe: '부침두부 구운 후 양념장 조림' },
+
+      { id: 's1', cat: '사이드메뉴', name: '치킨텐더(👶)', kg: '15봉', price: 135000, recipe: '배식 직전 바삭하게 튀김' },
+      { id: 's2', cat: '사이드메뉴', name: '교자만두찜(👶)', kg: '12봉', price: 90000, recipe: '찜기에 15분 스팀' },
+      { id: 's3', cat: '사이드메뉴', name: '제철과일(오렌지)', kg: '3박스', price: 120000, recipe: '먹기 좋게 4등분 커팅' }
+    ];
+
+    let currentTrayIds = ['d1', 'd3', 'm1', 'k1', 'k2', 's1', 'n1'];
+
+    let archiveList = [
+      { id: 201, date: "2026년 10월 1일(1주차)", title: "한방보쌈수육 & 시래기국", season: "가을", menuType: "육류", dishIds: ['d1', 'd4', 'm2', 'k4', 'n2', 'n1'], likes: 8, photoId: 'default_1' },
+      { id: 202, date: "2026년 9월 24일(4주차)", title: "달콤소불고기 & 콩나물국", season: "가을", menuType: "육류", dishIds: ['d2', 'd5', 'k3', 'n3', 's2', 'n1'], likes: 9, photoId: 'default_2' },
+      { id: 203, date: "2026년 7월 16일(3주차)", title: "춘천닭갈비 & 치킨텐더", season: "여름", menuType: "일품/간편", dishIds: ['d2', 'd5', 'm3', 's1', 'n1', 's3'], likes: 7, photoId: 'default_3' },
+      { id: 204, date: "2026년 4월 12일(2주차)", title: "제육볶음 & 두부조림 정식", season: "봄", menuType: "해물/두부", dishIds: ['d1', 'd3', 'm1', 'n3', 'k1', 'n1'], likes: 6, photoId: 'default_4' }
+    ];
+
+    // 현재 식판 예상 총액 계산 함수
+    function getExpectedTotalCost() {
+      return currentTrayIds.reduce((acc, id) => {
+        const item = masterBasket.find(d => d.id === id);
+        return acc + (item ? Number(item.price || 0) : 0);
+      }, 0);
+    }
+
+    // ================= 📊 관리/정산 (리스트 출력, 캡처 공유, 무료 OCR 영수증 비교) =================
+    function openSettlementModal() {
+      document.getElementById('settleDateTitle').innerText = document.getElementById('currentDate').value + " 정산 내역";
+      const tbody = document.getElementById('settleMenuTableBody');
+      tbody.innerHTML = '';
+
+      let expectedSum = 0;
+      currentTrayIds.forEach(id => {
+        const d = masterBasket.find(x => x.id === id);
+        if (!d) return;
+        expectedSum += Number(d.price || 0);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="py-1.5 px-2.5 font-bold text-slate-800">${d.name}</td>
+          <td class="py-1.5 px-2 text-center text-slate-600">${d.kg}</td>
+          <td class="py-1.5 px-2.5 text-right font-bold text-slate-800">${Number(d.price).toLocaleString()}원</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('settleExpectedTotal').innerText = `${expectedSum.toLocaleString()}원`;
+      document.getElementById('comparePlannedCost').innerText = `${expectedSum.toLocaleString()}원`;
+
+      if (confirmedActualCost !== null) {
+        document.getElementById('ocrExtractedInput').value = confirmedActualCost;
+      }
+      updateCostComparison();
+      document.getElementById('settlementModal').classList.remove('hidden');
+    }
+
+    function closeSettlementModal() {
+      document.getElementById('settlementModal').classList.add('hidden');
+    }
+
+    // 무료 OCR (Tesseract.js)로 영수증 사진에서 결제 금액 자동 추출
+    async function runReceiptOcr(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const badge = document.getElementById('ocrStatusBadge');
+      badge.innerText = "⏳ 무료 OCR 금액 판독중...";
+      badge.className = "text-[10px] bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full font-extrabold animate-pulse";
+
+      // 0.7 압축 미리보기 생성
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const img = new Image();
+        img.onload = async function() {
+          const canvas = document.createElement('canvas');
+          const scale = Math.min(1, 900 / Math.max(img.width, img.height));
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+          document.getElementById('receiptOcrThumb').src = compressedUrl;
+          document.getElementById('receiptThumbBox').classList.remove('hidden');
+
+          try {
+            // Tesseract 무료 OCR 실행 (숫자 및 한국어 인식)
+            const result = await Tesseract.recognize(compressedUrl, 'kor+eng');
+            const text = result.data.text || "";
+            document.getElementById('ocrRawTextPreview').innerText = "인식텍스트: " + text.replace(/\s+/g, ' ').slice(0, 40) + "...";
+
+            // 영수증 내 금액 패턴(예: 845,000 또는 10,000원 이상의 숫자) 중 합계로 추정되는 가장 큰 금액 추출
+            const matches = text.match(/\d{1,3}(?:,\d{3})+|\d{5,8}/g) || [];
+            let maxAmount = 0;
+            matches.forEach(m => {
+              const num = parseInt(m.replace(/,/g, ''), 10);
+              // 바코드나 전화번호 제외 (1,000원 ~ 5,000,000원 사이 금액만 유효 처리)
+              if (num >= 1000 && num <= 5000000 && num > maxAmount) {
+                maxAmount = num;
+              }
+            });
+
+            if (maxAmount > 0) {
+              document.getElementById('ocrExtractedInput').value = maxAmount;
+              badge.innerText = "✅ OCR 금액 자동추출 완료";
+              badge.className = "text-[10px] bg-teal-200 text-teal-950 px-2 py-0.5 rounded-full font-extrabold";
+            } else {
+              // 흐릿한 사진일 경우 식판 예산 근사치 자동 제안 후 직접 수정 유도
+              const fallback = getExpectedTotalCost();
+              document.getElementById('ocrExtractedInput').value = fallback;
+              badge.innerText = "✏️ 금액 확인/보정 가능";
+              badge.className = "text-[10px] bg-sky-200 text-sky-950 px-2 py-0.5 rounded-full font-extrabold";
+            }
+            updateCostComparison();
+          } catch (err) {
+            badge.innerText = "✏️ 수동 입력 모드";
+            updateCostComparison();
+          }
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // 식판 예상 금액 vs 영수증 OCR 금액 실시간 비교
+    function updateCostComparison() {
+      const planned = getExpectedTotalCost();
+      const actualVal = document.getElementById('ocrExtractedInput').value;
+      const diffEl = document.getElementById('compareDiffResult');
+
+      if (!actualVal) {
+        diffEl.innerText = "영수증을 올리거나 금액을 입력하세요";
+        diffEl.className = "font-bold text-xs text-slate-400";
+        return;
+      }
+
+      const actual = Number(actualVal);
+      const diff = actual - planned;
+
+      if (diff === 0) {
+        diffEl.innerText = "🎯 예산과 영수증 금액이 정확히 일치합니다!";
+        diffEl.className = "font-extrabold text-xs text-teal-700";
+      } else if (diff < 0) {
+        diffEl.innerText = `📉 예산보다 ${Math.abs(diff).toLocaleString()}원 절감됨!`;
+        diffEl.className = "font-extrabold text-xs text-blue-700";
+      } else {
+        diffEl.innerText = `📈 예산보다 ${diff.toLocaleString()}원 초과 지출`;
+        diffEl.className = "font-extrabold text-xs text-rose-700";
+      }
+    }
+
+    // 영수증 금액으로 최종 정산 확정
+    function confirmFinalSettlement() {
+      const actualVal = document.getElementById('ocrExtractedInput').value;
+      if (!actualVal) return alert('영수증 사진을 올리거나 실결제 금액을 입력해주세요.');
+      confirmedActualCost = Number(actualVal);
+      renderTray();
+      closeSettlementModal();
+      alert(`✅ 영수증 실결제 금액(${confirmedActualCost.toLocaleString()}원)으로 이번 주 정산이 확정되었습니다!`);
+    }
+
+    // 정산 리스트 캡처 및 이미지 공유/저장 (html2canvas 활용)
+    async function captureAndShareSettlement() {
+      const target = document.getElementById('settlementCaptureArea');
+      const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff' });
+      canvas.toBlob(async blob => {
+        const file = new File([blob], '세종꿈의교회_식단정산서.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: '세종꿈의교회 식단 정산서',
+            text: document.getElementById('currentDate').value + ' 정산 리스트입니다.',
+            files: [file]
+          });
+        } else {
+          // PC 등 공유 API 미지원 시 즉시 이미지 다운로드
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = '세종꿈의교회_식단정산서.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          alert('📸 정산서 화면이 깔끔하게 캡처되어 이미지 파일로 저장되었습니다! 카카오톡 등에 바로 공유하실 수 있습니다.');
+        }
+      });
+    }
+
+    // 정산 리스트 A4 출력
+    function printSettlementReport() {
+      const area = document.getElementById('settlementCaptureArea');
+      const printArea = document.getElementById('print-area');
+      printArea.classList.remove('print-active');
+      area.classList.add('print-active');
+      window.print();
+      area.classList.remove('print-active');
+    }
+
+    // ================= 📸 사진올리기 & 노란 점선 크롭 & 0.7 압축 =================
+    function openPhotoUploadModal() {
+      document.getElementById('cropStageArea').classList.add('hidden');
+      document.getElementById('croppedResultArea').classList.add('hidden');
+      document.getElementById('photoUploadModal').classList.remove('hidden');
+    }
+    function closePhotoUploadModal() { document.getElementById('photoUploadModal').classList.add('hidden'); }
+
+    function startCropProcess(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = document.getElementById('cropTargetImg');
+        img.onload = function() {
+          cropX = 0; cropY = 0;
+          const baseScale = Math.max(256 / img.naturalWidth, 160 / img.naturalHeight);
+          cropScale = Number(baseScale.toFixed(2));
+          const slider = document.getElementById('zoomSlider');
+          slider.min = (cropScale * 0.5).toFixed(2);
+          slider.max = (cropScale * 3).toFixed(2);
+          slider.value = cropScale;
+          updateCropTransform();
+        };
+        img.src = e.target.result;
+        document.getElementById('cropStageArea').classList.remove('hidden');
+        document.getElementById('croppedResultArea').classList.add('hidden');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateCropTransform() {
+      cropScale = parseFloat(document.getElementById('zoomSlider').value);
+      document.getElementById('cropTargetImg').style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
+    }
+
+    const viewport = document.getElementById('cropViewport');
+    viewport.addEventListener('pointerdown', e => {
+      isDraggingCrop = true;
+      startDragX = e.clientX - cropX;
+      startDragY = e.clientY - cropY;
+      viewport.setPointerCapture(e.pointerId);
+    });
+    viewport.addEventListener('pointermove', e => {
+      if (!isDraggingCrop) return;
+      cropX = e.clientX - startDragX;
+      cropY = e.clientY - startDragY;
+      updateCropTransform();
+    });
+    viewport.addEventListener('pointerup', () => { isDraggingCrop = false; });
+
+    function confirmCropToFrame() {
+      const img = document.getElementById('cropTargetImg');
+      const canvas = document.createElement('canvas');
+      const outW = 640, outH = 400;
+      canvas.width = outW; canvas.height = outH;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, outW, outH);
+
+      const ratio = outW / 256;
+      ctx.save();
+      ctx.translate(outW / 2 + cropX * ratio, outH / 2 + cropY * ratio);
+      ctx.scale(cropScale * ratio, cropScale * ratio);
+      ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
+      ctx.restore();
+
+      tempCompressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
+      document.getElementById('finalCroppedFrame').src = tempCompressedDataUrl;
+      document.getElementById('compressionInfo').innerText = `압축률 0.7 적용 · 약 ${approxKb}KB`;
+      document.getElementById('croppedResultArea').classList.remove('hidden');
+    }
+
+    function savePhotoToDb() {
+      if (!tempCompressedDataUrl) return;
+      const newPhotoId = 'photo_' + Date.now();
+      dbPhotoStore[newPhotoId] = tempCompressedDataUrl;
+      currentSavedPhotoId = newPhotoId;
+
+      const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
+      document.getElementById('previewImgTag').src = dbPhotoStore[currentSavedPhotoId];
+      document.getElementById('photoMetaInfo').innerText = `주소분리 ID: ${currentSavedPhotoId} (${approxKb}KB)`;
+      document.getElementById('attachedPreview').classList.remove('hidden');
+      closePhotoUploadModal();
+    }
+
+    // ================= 식판 / 반찬바구니 / 바둑판 렌더링 =================
+    function renderTray() {
+      const tray = document.getElementById('currentTray');
+      tray.innerHTML = '';
+
+      let kidsCnt = 0;
+      let totalCost = getExpectedTotalCost();
+
+      currentTrayIds.forEach(id => {
+        const item = masterBasket.find(d => d.id === id);
+        if (!item) return;
+
+        if (item.cat === '어린이반찬' || item.name.includes('👶')) kidsCnt++;
+
+        const style = catStyles[item.cat] ? catStyles[item.cat].badge : 'bg-slate-100 text-slate-700';
+
+        const chip = document.createElement('div');
+        chip.className = `${style} border px-2.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm`;
+        chip.innerHTML = `
+          <button onclick="openDishDetailModal('${item.id}')" class="hover:underline text-left">
+            ${item.name} <span class="text-[10px] font-normal opacity-75">(${item.kg})</span>
+          </button>
+          <button onclick="removeFromTray('${item.id}')" class="text-rose-500 hover:text-rose-700 font-extrabold px-0.5">✕</button>
+        `;
+        tray.appendChild(chip);
+      });
+
+      if (currentTrayIds.length === 0) {
+        tray.innerHTML = `<span class="text-xs text-slate-400">아래 반찬 바구니에서 메뉴를 터치해 담아주세요.</span>`;
+      }
+
+      const kb = document.getElementById('kidsBadge');
+      kb.innerText = `👶 어린이 ${kidsCnt}종`;
+      kb.className = kidsCnt > 0
+        ? "text-[11px] bg-sky-100 text-sky-800 border border-sky-200 px-2.5 py-1 rounded-full font-extrabold shadow-sm whitespace-nowrap"
+        : "text-[11px] bg-rose-100 text-rose-700 border border-rose-200 px-2.5 py-1 rounded-full font-extrabold animate-pulse whitespace-nowrap";
+
+      // 식단확정 버튼 바로 위에 총 종수 및 금액 표시 (영수증 확정 시 실결제 금액 병기)
+      const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(정산확정)` : `${totalCost.toLocaleString()}원`;
+      document.getElementById('totalSummary').innerText = `총 ${currentTrayIds.length}종 · ${displayCost}`;
+      renderBasket();
+    }
+
+    function removeFromTray(id) {
+      if (!isLeader) return alert('팀장 모드에서만 수정 가능합니다.');
+      currentTrayIds = currentTrayIds.filter(x => x !== id);
+      confirmedActualCost = null;
+      renderTray();
+    }
+
+    function toggleDishInTray(id) {
+      if (!isLeader) return alert('팀장 모드에서만 담을 수 있습니다.');
+      confirmedActualCost = null;
+      if (currentTrayIds.includes(id)) {
+        removeFromTray(id);
+      } else {
+        currentTrayIds.push(id);
+        renderTray();
+      }
+    }
+
+    function openDishDetailModal(id) {
+      editingDishId = id;
+      const item = masterBasket.find(d => d.id === id);
+      if (!item) return;
+      document.getElementById('detailName').value = item.name;
+      document.getElementById('detailKg').value = item.kg;
+      document.getElementById('detailPrice').value = item.price;
+      document.getElementById('detailRecipe').value = item.recipe;
+      document.getElementById('dishDetailModal').classList.remove('hidden');
+    }
+    function closeDishDetailModal() { document.getElementById('dishDetailModal').classList.add('hidden'); }
+
+    function saveDishDetail() {
+      const item = masterBasket.find(d => d.id === editingDishId);
+      if (item) {
+        item.name = document.getElementById('detailName').value.trim() || item.name;
+        item.kg = document.getElementById('detailKg').value.trim();
+        item.price = Number(document.getElementById('detailPrice').value || 0);
+        item.recipe = document.getElementById('detailRecipe').value.trim();
+      }
+      confirmedActualCost = null;
+      closeDishDetailModal();
+      renderTray();
+    }
+
+    function selectCategory(cat) {
+      currentCat = cat;
+      document.getElementById('basketSearch').value = '';
+      renderBasket();
+    }
+
+    function renderBasket() {
+      Object.keys(catStyles).forEach(cat => {
+        const btn = document.getElementById(`tab-${cat}`);
+        btn.className = cat === currentCat
+          ? `py-1.5 rounded-lg border font-extrabold transition ${catStyles[cat].tabActive}`
+          : "py-1.5 rounded-lg border bg-white text-slate-500 border-slate-200 hover:bg-slate-50";
+      });
+
+      const keyword = document.getElementById('basketSearch').value.trim();
+      const listEl = document.getElementById('basketList');
+      listEl.innerHTML = '';
+
+      const filtered = keyword
+        ? masterBasket.filter(d => d.name.includes(keyword) || d.recipe.includes(keyword))
+        : masterBasket.filter(d => d.cat === currentCat);
+
+      filtered.forEach(dish => {
+        const inTray = currentTrayIds.includes(dish.id);
+        const btn = document.createElement('button');
+        btn.onclick = () => toggleDishInTray(dish.id);
+        btn.className = inTray
+          ? "flex justify-between items-center p-2 rounded-xl bg-teal-100/90 border border-teal-300 text-teal-950 text-xs font-extrabold shadow-sm text-left"
+          : "flex justify-between items-center p-2 rounded-xl bg-slate-50/70 hover:bg-rose-50/50 border border-slate-200/80 text-slate-700 text-xs font-bold text-left";
+        btn.innerHTML = `
+          <div class="truncate pr-1">
+            <p class="truncate">${dish.name}</p>
+            <p class="text-[10px] ${inTray ? 'text-teal-700' : 'text-slate-400'} font-normal">${dish.kg} · ${(dish.price/10000).toFixed(0)}만원</p>
+          </div>
+          <span class="text-[10px] whitespace-nowrap ${inTray ? 'text-teal-800' : 'text-slate-400'}">${inTray ? '✓담김' : '＋담기'}</span>
+        `;
+        listEl.appendChild(btn);
+      });
+    }
+
+    function openCsvModal() { document.getElementById('csvModal').classList.remove('hidden'); }
+    function closeCsvModal() { document.getElementById('csvModal').classList.add('hidden'); }
+
+    function downloadCsvTemplate() {
+      const csvContent = "\uFEFF카테고리,반찬이름,준비kg,가격(원),조리방법\n"
+        + "밥/국,강황쌀밥,35kg,90000,강황가루 풀어 취사\n"
+        + "메인반찬,오징어채소볶음,35kg,280000,양배추와 매콤하게 볶음\n"
+        + "어린이반찬,비엔나소시지케첩볶음(👶),15kg,110000,케첩과 올리고당 코팅\n";
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '세종꿈의교회_반찬바구니_양식.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importCsvFile() {
+      const file = document.getElementById('csvFileInput').files[0];
+      if (!file) return alert('불러올 CSV 파일을 선택해주세요!');
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const lines = e.target.result.split(/\r?\n/);
+        let added = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(',');
+          if (cols.length >= 2) {
+            const cat = cols[0].trim() || '일반/김치';
+            let name = cols[1].trim();
+            if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+            masterBasket.unshift({
+              id: 'csv_' + Date.now() + '_' + i,
+              cat: catStyles[cat] ? cat : '일반/김치',
+              name: name,
+              kg: (cols[2] || '적당량').trim(),
+              price: Number((cols[3] || '0').replace(/[^0-9]/g, '')),
+              recipe: (cols[4] || '기본 조리').trim()
+            });
+            added++;
+          }
+        }
+        closeCsvModal();
+        renderTray();
+        alert(`🎉 총 ${added}개의 반찬이 반찬 바구니에 즉시 저장되었습니다!`);
+      };
+      reader.readAsText(file, 'UTF-8');
+    }
+
+    function openAddDishModal() {
+      document.getElementById('newDishCat').value = currentCat;
+      document.getElementById('newDishName').value = '';
+      document.getElementById('newDishKg').value = '';
+      document.getElementById('newDishPrice').value = '';
+      document.getElementById('newDishRecipe').value = '';
+      document.getElementById('addDishModal').classList.remove('hidden');
+    }
+    function closeAddDishModal() { document.getElementById('addDishModal').classList.add('hidden'); }
+
+    function createNewDishInBasket() {
+      const cat = document.getElementById('newDishCat').value;
+      let name = document.getElementById('newDishName').value.trim();
+      if (!name) return alert('반찬 이름을 입력해주세요.');
+      if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+      const newDish = {
+        id: 'custom_' + Date.now(),
+        cat: cat,
+        name: name,
+        kg: document.getElementById('newDishKg').value.trim() || '적당량',
+        price: Number(document.getElementById('newDishPrice').value || 50000),
+        recipe: document.getElementById('newDishRecipe').value.trim() || '기본 조리'
+      };
+      masterBasket.unshift(newDish);
+      currentCat = cat;
+      currentTrayIds.push(newDish.id);
+      closeAddDishModal();
+      renderTray();
+    }
+
+    function confirmMenuToGrid() {
+      if (currentTrayIds.length === 0) return alert('식판에 메뉴를 담아주세요.');
+      const dateStr = document.getElementById('currentDate').value;
+      const firstMain = masterBasket.find(d => currentTrayIds.includes(d.id) && d.cat === '메인반찬') || masterBasket.find(d => d.id === currentTrayIds[0]);
+
+      archiveList.unshift({
+        id: Date.now(),
+        date: dateStr,
+        title: `${firstMain.name} 식단`,
+        season: "가을",
+        menuType: "육류",
+        dishIds: [...currentTrayIds],
+        likes: 1,
+        photoId: currentSavedPhotoId
+      });
+      renderArchiveGrid();
+      alert('✅ 식단이 확정되어 하단 지난 식단 기록에 저장되었습니다!');
+    }
+
+    function renderArchiveGrid() {
+      const filter = document.getElementById('archiveFilter').value;
+      const grid = document.getElementById('archiveGrid');
+      grid.innerHTML = '';
+
+      const filtered = archiveList.filter(a => filter === '전체' || a.season === filter || a.menuType === filter);
+
+      filtered.forEach(item => {
+        const names = item.dishIds.map(id => {
+          const found = masterBasket.find(d => d.id === id);
+          return found ? found.name : '';
+        }).filter(Boolean).join(', ');
+
+        const imgSrc = dbPhotoStore[item.photoId] || dbPhotoStore['default_4'];
+
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden cursor-pointer hover:ring-2 hover:ring-teal-300 transition";
+        card.onclick = () => openArchiveModal(item.id);
+        card.innerHTML = `
+          <div class="relative h-28">
+            <img src="${imgSrc}" class="w-full h-full object-cover">
+            <span class="absolute top-1.5 left-1.5 bg-white/85 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">${item.season}·${item.menuType}</span>
+            <span class="absolute bottom-1.5 right-1.5 bg-rose-100 text-rose-900 border border-rose-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">👍 ${item.likes}/10</span>
+          </div>
+          <div class="p-2.5">
+            <p class="text-[10px] text-teal-700 font-bold">${item.date}</p>
+            <h4 class="font-extrabold text-xs text-slate-800 truncate mt-0.5">${item.title}</h4>
+            <p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">${names}</p>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function openArchiveModal(id) {
+      selectedArchiveId = id;
+      const item = archiveList.find(a => a.id === id);
+      if (!item) return;
+
+      document.getElementById('archModalImg').src = dbPhotoStore[item.photoId] || dbPhotoStore['default_4'];
+      document.getElementById('archModalSeason').innerText = `${item.season} · ${item.menuType}`;
+      document.getElementById('archModalDate').value = item.date;
+      document.getElementById('archModalTitle').value = item.title;
+      document.getElementById('archModalLikes').innerText = item.likes;
+
+      let sumCost = 0;
+      const dishBox = document.getElementById('archModalDishes');
+      dishBox.innerHTML = '';
+
+      item.dishIds.forEach(dId => {
+        const d = masterBasket.find(x => x.id === dId);
+        if (d) {
+          sumCost += Number(d.price || 0);
+          dishBox.innerHTML += `<span class="bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold text-slate-700">${d.name} (${d.kg})</span>`;
+        }
+      });
+
+      document.getElementById('archModalCost').innerText = `총 ${sumCost.toLocaleString()}원`;
+      document.getElementById('archiveModal').classList.remove('hidden');
+    }
+
+    function closeArchiveModal() { document.getElementById('archiveModal').classList.add('hidden'); }
+
+    function loadArchiveToCurrentTray() {
+      const item = archiveList.find(a => a.id === selectedArchiveId);
+      if (!item) return;
+      item.date = document.getElementById('archModalDate').value;
+      item.title = document.getElementById('archModalTitle').value;
+      currentTrayIds = [...item.dishIds];
+      currentSavedPhotoId = item.photoId;
+      confirmedActualCost = null;
+      renderTray();
+      renderArchiveGrid();
+      closeArchiveModal();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function recommendArchive() {
+      const item = archiveList.find(a => a.id === selectedArchiveId);
+      if (item.likes < 10) item.likes++;
+      document.getElementById('archModalLikes').innerText = item.likes;
+      renderArchiveGrid();
+    }
+
+    function toggleRole() {
+      isLeader = !isLeader;
+      const btn = document.getElementById('roleBtn');
+      btn.innerText = isLeader ? "팀장모드 ON" : "팀원모드";
+      btn.className = isLeader
+        ? "text-[10px] bg-amber-200/90 text-amber-900 font-extrabold px-2 py-0.5 rounded-md border border-amber-300 shadow-sm"
+        : "text-[10px] bg-white/80 text-slate-500 font-bold px-2 py-0.5 rounded-md border border-slate-300";
+
+      document.getElementById('leaderActionBtns').style.display = isLeader ? 'block' : 'none';
+      document.getElementById('basketSection').style.display = isLeader ? 'block' : 'none';
+    }
+
+    function openPrintModal() {
+      document.getElementById('printDateText').innerText = document.getElementById('currentDate').value;
+      const list = document.getElementById('printList');
+      list.innerHTML = currentTrayIds.map(id => {
+        const d = masterBasket.find(x => x.id === id);
+        return d ? `<p>${d.name}</p>` : '';
+      }).join('');
+      document.getElementById('printModal').classList.remove('hidden');
+    }
+
+    function printA4Menu() {
+      const printArea = document.getElementById('print-area');
+      printArea.classList.add('print-active');
+      window.print();
+      printArea.classList.remove('print-active');
+    }
+
+    renderTray();
+    renderArchiveGrid();
+  </script>
+</body>
+</html>
