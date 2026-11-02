@@ -132,8 +132,12 @@
     <div class="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center justify-start gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
       <div class="flex items-center gap-1.5 shrink-0">
         <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자 선택</span>
-        <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="bg-pink-50 text-pink-900 text-xs font-bold px-2 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap w-auto">
+        <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="hidden">
         </select>
+        <button type="button" id="customDateTriggerBtn" onclick="openCustomCalendarModal()" class="bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition">
+          <span id="customDateTriggerText"></span>
+          <span class="text-[10px] opacity-80">▼</span>
+        </button>
       </div>
       <span id="kidsBadge" class="text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0">
         어린이 반찬 0종
@@ -685,6 +689,37 @@
     </div>
   </div>
 
+  <!-- [팝업 10] 📅 커스텀 3개월 상하 스크롤 달력 모달 -->
+  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-3.5 shadow-2xl border border-slate-200 flex flex-col max-h-[86vh]">
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 shrink-0">
+        <div>
+          <h3 class="text-sm font-extrabold text-slate-800">📅 주간 식단 일자 선택</h3>
+          <p class="text-[10px] text-slate-500 mt-0.5">위·아래로 밀어 전월/현재월/다음월의 일요일을 선택하세요</p>
+        </div>
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="selectTodayWeekInCalendar()" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 text-[11px] font-extrabold px-2 py-1 rounded-lg">이번주</button>
+          <button type="button" onclick="closeCustomCalendarModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1 rounded-lg text-xs font-bold">✕</button>
+        </div>
+      </div>
+
+      <!-- 요일 고정 헤더 -->
+      <div class="grid grid-cols-7 text-center text-[11px] font-extrabold py-1.5 border-b border-slate-100 bg-slate-50/70 rounded-t-lg mt-1.5 shrink-0">
+        <span class="text-rose-600">일</span>
+        <span class="text-slate-600">월</span>
+        <span class="text-slate-600">화</span>
+        <span class="text-slate-600">수</span>
+        <span class="text-slate-600">목</span>
+        <span class="text-slate-600">금</span>
+        <span class="text-sky-600">토</span>
+      </div>
+
+      <!-- 상하 터치 스크롤 영역 (전월 / 현재월(중앙) / 다음월) -->
+      <div id="calendarScrollContainer" class="overflow-y-auto space-y-3 py-2 px-1 flex-1" style="max-height: 62vh; -webkit-overflow-scrolling: touch;">
+      </div>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
@@ -1122,13 +1157,188 @@
 
       sel.value = targetVal;
 
+      const triggerBtn = document.getElementById('customDateTriggerBtn');
+      const triggerText = document.getElementById('customDateTriggerText');
+      if (triggerText) triggerText.innerText = targetVal;
+
       if (targetVal === todayWeekStr) {
         sel.className = "bg-pink-50 text-pink-900 text-xs font-bold px-2 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap w-auto";
+        if (triggerBtn) triggerBtn.className = "bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition";
       } else {
         sel.className = "bg-slate-50 text-slate-800 text-xs font-bold px-2 py-1 rounded-lg border border-slate-300 focus:outline-none cursor-pointer whitespace-nowrap w-auto";
+        if (triggerBtn) triggerBtn.className = "bg-slate-50 text-slate-800 text-xs font-bold px-2.5 py-1 rounded-lg border border-slate-300 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition";
       }
 
       applySeasonalTrayBorder(targetVal);
+    }
+
+    // ================= 커스텀 3개월 스크롤 달력 로직 =================
+    function getConfirmedSundaySet() {
+      const set = new Set();
+      if (Array.isArray(archiveList)) {
+        archiveList.forEach(a => {
+          if (a && a.date) set.add(normalizeCompactDateStr(a.date));
+        });
+      }
+      return set;
+    }
+
+    function getSundayStatusFootnote(sundayDateObj, isConfirmed) {
+      if (!isConfirmed) return null;
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const currentWeekSunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (dayOfWeek === 0 ? 0 : (7 - dayOfWeek)));
+      currentWeekSunday.setHours(0, 0, 0, 0);
+
+      const targetSun = new Date(sundayDateObj.getFullYear(), sundayDateObj.getMonth(), sundayDateObj.getDate());
+      targetSun.setHours(0, 0, 0, 0);
+
+      const nowYearMonth = now.getFullYear() * 12 + now.getMonth();
+      const sunYearMonth = targetSun.getFullYear() * 12 + targetSun.getMonth();
+
+      // 1) 지난 주 일요일 (과거 일요일): "완료"
+      if (targetSun.getTime() < currentWeekSunday.getTime()) {
+        return {
+          label: '완료',
+          cls: 'bg-slate-600 text-white border-slate-700'
+        };
+      }
+      // 2) 현재월보다 미래의 일요일 (또는 미래 주간): "예정확정"
+      if (sunYearMonth > nowYearMonth || targetSun.getTime() > currentWeekSunday.getTime()) {
+        return {
+          label: '예정확정',
+          cls: 'bg-indigo-600 text-white border-indigo-700'
+        };
+      }
+      // 3) 현재월 확정 주간 일요일: "확정"
+      return {
+        label: '확정',
+        cls: 'bg-rose-600 text-white border-rose-700'
+      };
+    }
+
+    function openCustomCalendarModal() {
+      const modal = document.getElementById('customCalendarModal');
+      if (!modal) return;
+      renderCustomScrollCalendar();
+      modal.classList.remove('hidden');
+
+      requestAnimationFrame(() => {
+        const container = document.getElementById('calendarScrollContainer');
+        const currentMonthEl = document.getElementById('cal-month-offset-0');
+        if (container && currentMonthEl) {
+          const scrollTarget = currentMonthEl.offsetTop - container.offsetTop - (container.clientHeight - currentMonthEl.clientHeight) / 2;
+          container.scrollTop = Math.max(0, scrollTarget);
+        }
+      });
+    }
+
+    function closeCustomCalendarModal() {
+      const modal = document.getElementById('customCalendarModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function selectTodayWeekInCalendar() {
+      const todayWeekStr = getCurrentWeekSundayString();
+      handleDateDropdownChange(todayWeekStr);
+      closeCustomCalendarModal();
+    }
+
+    function selectCalendarWeekDate(sundayStr) {
+      handleDateDropdownChange(sundayStr);
+      closeCustomCalendarModal();
+    }
+
+    function renderCustomScrollCalendar() {
+      const container = document.getElementById('calendarScrollContainer');
+      if (!container) return;
+      container.innerHTML = '';
+
+      const now = new Date();
+      const baseYear = now.getFullYear();
+      const baseMonth = now.getMonth();
+
+      const selectedDateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
+      const todayWeekStr = getCurrentWeekSundayString();
+      const confirmedSet = getConfirmedSundaySet();
+
+      for (let offset = -3; offset <= 3; offset++) {
+        const monthDate = new Date(baseYear, baseMonth + offset, 1);
+        const y = monthDate.getFullYear();
+        const m = monthDate.getMonth();
+        const firstDayOfWeek = new Date(y, m, 1).getDay();
+        const lastDate = new Date(y, m + 1, 0).getDate();
+
+        const isCurrentMonth = (offset === 0);
+        const monthCard = document.createElement('div');
+        monthCard.id = `cal-month-offset-${offset}`;
+        monthCard.className = isCurrentMonth
+          ? "p-2.5 rounded-2xl border-2 border-pink-300 bg-pink-50/25 shadow-2xs"
+          : "p-2.5 rounded-2xl border border-slate-200 bg-white";
+
+        let tagLabel = '';
+        if (offset === -1) tagLabel = '<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">전월</span>';
+        else if (offset === 0) tagLabel = '<span class="text-[10px] bg-pink-100 text-pink-800 px-1.5 py-0.5 rounded font-extrabold">현재월</span>';
+        else if (offset === 1) tagLabel = '<span class="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold">다음월</span>';
+
+        let cellsHtml = '';
+        for (let b = 0; b < firstDayOfWeek; b++) {
+          cellsHtml += `<div class="h-11"></div>`;
+        }
+
+        for (let d = 1; d <= lastDate; d++) {
+          const curObj = new Date(y, m, d);
+          const dow = curObj.getDay();
+          const isSunday = (dow === 0);
+
+          const targetSundayObj = new Date(y, m, d + (dow === 0 ? 0 : (7 - dow)));
+          const sundayStr = formatWeekOptionString(targetSundayObj);
+
+          if (isSunday) {
+            const thisSundayStr = formatWeekOptionString(curObj);
+            const isSelected = (thisSundayStr === selectedDateStr);
+            const isTodaySunday = (thisSundayStr === todayWeekStr);
+            const isConfirmed = confirmedSet.has(thisSundayStr);
+            const footnote = getSundayStatusFootnote(curObj, isConfirmed);
+
+            const boxStyle = isSelected
+              ? "border-2 border-rose-600 bg-rose-100/90 text-rose-950 font-black shadow-2xs ring-2 ring-rose-200"
+              : isTodaySunday
+                ? "border-2 border-pink-400 bg-pink-50 text-rose-700 font-extrabold"
+                : "border-2 border-rose-300 bg-rose-50/40 text-rose-700 font-extrabold hover:bg-rose-100/60";
+
+            const footnoteHtml = footnote
+              ? `<span class="absolute -top-1.5 -right-1 ${footnote.cls} text-[8px] leading-none font-extrabold px-1 py-0.5 rounded shadow-2xs border whitespace-nowrap z-10">${footnote.label}</span>`
+              : '';
+
+            cellsHtml += `
+              <button type="button" onclick="selectCalendarWeekDate('${thisSundayStr}')" class="relative h-11 rounded-xl flex flex-col items-center justify-center transition active:scale-95 ${boxStyle}">
+                ${footnoteHtml}
+                <span class="text-xs leading-none">${d}</span>
+                <span class="text-[8px] opacity-75 mt-0.5 leading-none">${Math.ceil(d / 7)}주</span>
+              </button>
+            `;
+          } else {
+            const textColor = (dow === 6) ? 'text-sky-600' : 'text-slate-600';
+            cellsHtml += `
+              <button type="button" onclick="selectCalendarWeekDate('${sundayStr}')" class="h-11 rounded-lg flex items-center justify-center text-xs font-medium ${textColor} hover:bg-slate-100 transition">
+                ${d}
+              </button>
+            `;
+          }
+        }
+
+        monthCard.innerHTML = `
+          <div class="flex items-center justify-between mb-1.5 px-1">
+            <span class="text-xs font-extrabold text-slate-800">${y}년 ${m + 1}월</span>
+            ${tagLabel}
+          </div>
+          <div class="grid grid-cols-7 gap-1 text-center">
+            ${cellsHtml}
+          </div>
+        `;
+        container.appendChild(monthCard);
+      }
     }
 
     async function handleDateDropdownChange(selectedDateStr) {
