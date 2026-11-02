@@ -578,6 +578,74 @@
     </div>
   </div>
 
+  
+  <!-- [팝업 8] ⚙️ 관리자 보안 설정 센터 모달 (클릭 시 0.01초 즉시 오픈 & DB 실시간 연동) -->
+  <div id="adminCenterModal" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border-2 border-purple-200 max-h-[92vh] overflow-y-auto space-y-4">
+      <div class="bg-purple-100/90 text-purple-950 p-3.5 rounded-2xl border border-purple-200 shadow-sm flex justify-between items-center">
+        <div>
+          <span class="text-[10px] bg-purple-200 text-purple-900 font-extrabold px-2 py-0.5 rounded-full">ADMIN VERIFIED</span>
+          <h3 class="text-sm font-extrabold mt-1">🔐 세종꿈의교회 관리자 센터</h3>
+          <p class="text-[10.5px] text-purple-700">코드번호 관리 및 사전 인가자 명단 등록</p>
+        </div>
+        <div class="flex flex-col items-end gap-1">
+          <button type="button" onclick="closeAdminCenterModal()" class="bg-white text-slate-700 border border-slate-200 text-xs font-extrabold px-2.5 py-1 rounded-lg shadow-2xs">
+            ✕ 닫기
+          </button>
+          <button type="button" onclick="navigateToExternalIndexM()" class="bg-purple-200 hover:bg-purple-300 text-purple-950 border border-purple-300 text-[10px] font-extrabold px-2 py-1 rounded-lg">
+            ↗ 전체화면(indexm)
+          </button>
+        </div>
+      </div>
+
+      <!-- A. 코드번호 2종 설정 및 변경 -->
+      <div class="bg-amber-50/60 p-3.5 rounded-2xl border border-amber-200 space-y-2.5 text-xs">
+        <h4 class="text-xs font-extrabold text-amber-950">🔑 로그인 코드번호 관리 (별도 운영)</h4>
+        <div class="bg-white p-2.5 rounded-xl border border-amber-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="font-extrabold text-purple-900">① 관리자 전용 코드번호:</span>
+            <input id="inAppEditAdminCode" type="text" value="9999" class="border border-purple-200 bg-purple-50/50 rounded-lg px-2.5 py-1 font-extrabold text-purple-950 w-28 text-center">
+          </div>
+          <p class="text-[10px] text-slate-400">※ 관리자 설정 및 관리자 권한 로그인에 사용하는 비밀 코드입니다.</p>
+        </div>
+        <div class="bg-white p-2.5 rounded-xl border border-teal-200 space-y-1.5">
+          <div class="flex justify-between items-center">
+            <span class="font-extrabold text-teal-900">② 팀원 공용 코드번호:</span>
+            <input id="inAppEditMemberCode" type="text" value="1004" class="border border-teal-200 bg-teal-50/50 rounded-lg px-2.5 py-1 font-extrabold text-teal-950 w-28 text-center">
+          </div>
+          <p class="text-[10px] text-slate-400">※ 아래 명단에 등록된 팀원들이 식단앱에 들어올 때 사용하는 코드입니다.</p>
+        </div>
+        <button type="button" onclick="saveInAppBothCodes()" class="w-full bg-amber-200 hover:bg-amber-300 border border-amber-300 text-amber-950 font-extrabold py-2.5 rounded-xl shadow-sm transition active:scale-95">
+          💾 코드번호 변경사항 저장하기
+        </button>
+      </div>
+
+      <!-- B. 사전 등록된 인가자(이름) 명단 관리 -->
+      <div class="bg-rose-50/50 p-3.5 rounded-2xl border border-rose-200 space-y-2.5 text-xs">
+        <div class="flex justify-between items-center">
+          <div>
+            <h4 class="text-xs font-extrabold text-rose-950">👥 사전 등록된 이름 명단</h4>
+            <p class="text-[10.5px] text-rose-700">여기에 이름이 등록된 분만 코드번호를 치고 로그인할 수 있습니다.</p>
+          </div>
+          <span id="inAppMemberCountBadge" class="text-[11px] bg-rose-200 text-rose-950 font-extrabold px-2.5 py-0.5 rounded-full shrink-0">0명</span>
+        </div>
+
+        <div class="flex gap-1.5">
+          <input id="inAppNewMemberName" type="text" placeholder="이름 입력 (예: 김은혜)" onkeydown="if(event.key==='Enter') addInAppAuthorizedMember()" class="flex-1 min-w-0 border border-rose-200 rounded-xl px-2.5 py-2 text-xs font-bold bg-white focus:outline-none">
+          <select id="inAppNewMemberRole" class="border border-rose-200 rounded-xl px-2 py-2 text-xs font-bold bg-white shrink-0">
+            <option value="member">일반팀원</option>
+            <option value="admin">관리자(팀장)</option>
+          </select>
+          <button type="button" onclick="addInAppAuthorizedMember()" class="bg-rose-200 hover:bg-rose-300 text-rose-950 font-extrabold px-3 py-2 rounded-xl text-xs shadow-sm whitespace-nowrap shrink-0 active:scale-95">
+            ＋ 등록
+          </button>
+        </div>
+
+        <ul id="inAppMemberListUl" class="space-y-1.5 pt-1 max-h-48 overflow-y-auto"></ul>
+      </div>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
@@ -727,7 +795,34 @@
           return;
         }
       } catch (err) {
-        console.warn("DB 조회 실패, 기본 안내:", err);
+        console.warn("DB 조회 실패, 로컬 백업 확인:", err);
+      }
+
+      // 로컬 백업(sejong_auth_config_backup)에서 추가 확인
+      loadLocalAuthBackup();
+      if (inAppAuthConfig && Array.isArray(inAppAuthConfig.members)) {
+        const foundLocal = inAppAuthConfig.members.find(m => m.name === nameInput);
+        if (foundLocal) {
+          const admC = String(inAppAuthConfig.adminCode || '9999');
+          const memC = String(inAppAuthConfig.memberCode || '1004');
+          if (codeInput === admC && foundLocal.role === 'admin') {
+            currentUser = foundLocal.name;
+            isLeader = true;
+            sessionStorage.setItem('sejong_user', currentUser);
+            sessionStorage.setItem('sejong_leader', '1');
+            sessionStorage.setItem('sejong_admin_verified', '1');
+            unlockAppAndStart();
+            return;
+          } else if (codeInput === memC || (codeInput === admC && foundLocal.role === 'member')) {
+            currentUser = foundLocal.name;
+            isLeader = false;
+            sessionStorage.setItem('sejong_user', currentUser);
+            sessionStorage.setItem('sejong_leader', '0');
+            sessionStorage.removeItem('sejong_admin_verified');
+            unlockAppAndStart();
+            return;
+          }
+        }
       }
 
       alert('⛔ 일치하는 로그인 정보가 없습니다.\n초기 접속 시 [성함: 관리자 / 코드번호: 9999] 또는 하단의 [바로입장] 버튼을 눌러주세요!');
@@ -787,9 +882,162 @@
       renderTray();
     }
 
+    let inAppAuthConfig = {
+      adminCode: '9999',
+      memberCode: '1004',
+      members: [
+        { name: '관리자', role: 'admin', addedAt: Date.now() },
+        { name: '팀장', role: 'admin', addedAt: Date.now() },
+        { name: '팀원', role: 'member', addedAt: Date.now() }
+      ]
+    };
+
+    function loadLocalAuthBackup() {
+      try {
+        const raw = localStorage.getItem('sejong_auth_config_backup');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            inAppAuthConfig = {
+              adminCode: String(parsed.adminCode || parsed.adminPassword || '9999'),
+              memberCode: String(parsed.memberCode || '1004'),
+              members: Array.isArray(parsed.members) && parsed.members.length > 0 ? parsed.members : inAppAuthConfig.members
+            };
+          }
+        }
+      } catch (e) {}
+    }
+    loadLocalAuthBackup();
+
+    function saveLocalAuthBackup(cfg) {
+      try {
+        localStorage.setItem('sejong_auth_config_backup', JSON.stringify(cfg));
+      } catch (e) {}
+    }
+
     function goToAdminCenter() {
-      if (!isLeader) return;
-      location.replace('indexm.html');
+      if (!isLeader) {
+        alert('관리자(팀장) 권한으로 로그인했을 때만 설정할 수 있습니다.');
+        return;
+      }
+      sessionStorage.setItem('sejong_admin_verified', '1');
+      loadLocalAuthBackup();
+      renderInAppAdminModalUI();
+      document.getElementById('adminCenterModal').classList.remove('hidden');
+
+      if (db) {
+        db.collection('settings').doc('authConfig').get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            inAppAuthConfig = {
+              adminCode: String(data.adminCode || data.adminPassword || '9999'),
+              memberCode: String(data.memberCode || '1004'),
+              members: Array.isArray(data.members) && data.members.length > 0 ? data.members : inAppAuthConfig.members
+            };
+            saveLocalAuthBackup(inAppAuthConfig);
+            renderInAppAdminModalUI();
+          }
+        }).catch(err => console.warn(err));
+      }
+    }
+
+    function closeAdminCenterModal() {
+      const modal = document.getElementById('adminCenterModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function navigateToExternalIndexM() {
+      sessionStorage.setItem('sejong_admin_verified', '1');
+      window.location.href = 'indexm.html';
+    }
+
+    function renderInAppAdminModalUI() {
+      const admInput = document.getElementById('inAppEditAdminCode');
+      const memInput = document.getElementById('inAppEditMemberCode');
+      if (admInput) admInput.value = inAppAuthConfig.adminCode || '9999';
+      if (memInput) memInput.value = inAppAuthConfig.memberCode || '1004';
+
+      const ul = document.getElementById('inAppMemberListUl');
+      const badge = document.getElementById('inAppMemberCountBadge');
+      if (!ul) return;
+      const members = inAppAuthConfig.members || [];
+      if (badge) badge.innerText = '총 ' + members.length + '명';
+
+      ul.innerHTML = '';
+      members.forEach((m, idx) => {
+        const isAdm = m.role === 'admin';
+        const li = document.createElement('li');
+        li.className = "flex justify-between items-center bg-white p-2 rounded-xl border border-rose-100 shadow-2xs text-xs";
+        li.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="${isAdm ? 'bg-purple-200 text-purple-950' : 'bg-teal-100 text-teal-900'} font-extrabold px-2 py-0.5 rounded-md text-[10px]">
+              ${isAdm ? '👨‍🍳 관리자' : '👩‍🍳 일반팀원'}
+            </span>
+            <span class="font-extrabold text-slate-800 text-xs">${m.name}</span>
+          </div>
+          <button type="button" onclick="removeInAppMember(${idx})" class="text-rose-500 hover:text-rose-700 font-extrabold px-2 py-0.5 rounded bg-rose-50 text-[11px]">
+            삭제 ✕
+          </button>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    async function saveInAppBothCodes() {
+      const newAdminCode = document.getElementById('inAppEditAdminCode').value.trim();
+      const newMemberCode = document.getElementById('inAppEditMemberCode').value.trim();
+      if (!newAdminCode || !newMemberCode) return alert('코드번호를 비워둘 수 없습니다.');
+
+      inAppAuthConfig.adminCode = newAdminCode;
+      inAppAuthConfig.memberCode = newMemberCode;
+      saveLocalAuthBackup(inAppAuthConfig);
+
+      if (db) {
+        try {
+          await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true });
+        } catch (e) { console.warn(e); }
+      }
+      alert('✅ 관리자 전용 코드번호와 팀원 공용 코드번호가 저장되었습니다!');
+    }
+
+    async function addInAppAuthorizedMember() {
+      const nameEl = document.getElementById('inAppNewMemberName');
+      const roleEl = document.getElementById('inAppNewMemberRole');
+      const name = nameEl.value.trim();
+      const role = roleEl.value;
+      if (!name) return alert('등록할 이름을 입력해주세요.');
+
+      const members = inAppAuthConfig.members || [];
+      if (members.some(m => m.name === name)) return alert('이미 등록된 이름입니다.');
+
+      members.push({ name: name, role: role, addedAt: Date.now() });
+      inAppAuthConfig.members = members;
+      saveLocalAuthBackup(inAppAuthConfig);
+      nameEl.value = '';
+      renderInAppAdminModalUI();
+
+      if (db) {
+        try {
+          await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true });
+        } catch (e) { console.warn(e); }
+      }
+    }
+
+    async function removeInAppMember(index) {
+      const members = inAppAuthConfig.members || [];
+      if (members.length <= 1) return alert('최소 1명의 관리자는 남아있어야 합니다.');
+      const target = members[index];
+      if (!confirm('[' + target.name + '] 님을 명단에서 삭제하시겠습니까?')) return;
+      members.splice(index, 1);
+      inAppAuthConfig.members = members;
+      saveLocalAuthBackup(inAppAuthConfig);
+      renderInAppAdminModalUI();
+
+      if (db) {
+        try {
+          await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true });
+        } catch (e) { console.warn(e); }
+      }
     }
 
     function logoutUser() {
