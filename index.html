@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>세종꿈의교회 식단관리</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -12,7 +12,13 @@
 
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-    body { font-family: 'Pretendard', sans-serif; background-color: #f8fafc; user-select: none; color: #334155; }
+    body { 
+      font-family: 'Pretendard', sans-serif; 
+      background-color: #f8fafc; 
+      user-select: none; 
+      color: #334155; 
+      padding-top: env(safe-area-inset-top, 0px);
+    }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     
     .crop-yellow-box {
@@ -25,6 +31,14 @@
       background-color: #facc15;
       border: 2px solid #ffffff;
       position: absolute;
+    }
+
+    /* 반쯤 열린 문 회색 톤 스타일 */
+    .half-door-gray {
+      display: inline-block;
+      filter: grayscale(100%) contrast(70%) opacity(0.65);
+      transform: scale(0.95);
+      vertical-align: middle;
     }
 
     @media print {
@@ -85,37 +99,37 @@
   <!-- ================= 로그인 통과 후 열리는 앱 본문 (#protectedAppContent) ================= -->
   <div id="protectedAppContent" class="hidden pb-16 bg-white">
 
-    <!-- 1. 최상단 타이틀 헤더: 로고 테두리 박스와 세종꿈의교회 타이틀 이미지 높이(h-9) 1:1 완전 일치 -->
+    <!-- 1. 최상단 타이틀 헤더: 아이폰 상부 url 바와 완전히 밀착되도록 초밀착 패딩 적용 -->
     <header class="bg-white sticky top-0 z-30 border-b border-slate-200">
-      <div class="px-2 py-1.5 flex items-center justify-center">
-        <div class="flex items-center justify-center gap-2 whitespace-nowrap">
-          <div class="h-9 px-1.5 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
-            <img src="tlogo.png" alt="로고" class="h-7 w-auto object-contain shrink-0">
+      <div class="px-2 pt-0.5 pb-1 flex items-center justify-center">
+        <div class="flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <div class="h-8 px-1 rounded-lg border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
+            <img src="tlogo.png" alt="로고" class="h-6 w-auto object-contain shrink-0">
           </div>
-          <img src="ttitle.png" alt="타이틀" class="h-9 w-auto object-contain shrink-0">
+          <img src="ttitle.png" alt="타이틀" class="h-8 w-auto object-contain shrink-0">
         </div>
       </div>
 
-      <!-- 타이틀 바로 밑: 우측 끝으로 통일 (관리/정산, A4출력, ⚙️, [연동램프이모지], 팀장 000 🚪) -->
-      <div class="bg-slate-50 px-2 py-1 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
-        <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
+      <!-- 타이틀 바로 밑: 2차 확인 후 진행 적용, 테두리 제거된 램프 및 팀장 무테두리, 반개방 회색문 이모지 -->
+      <div class="bg-slate-50 px-2 py-0.5 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
+        <button id="adminSettlementBtn" onclick="openSettlementModalWithConfirm()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           관리/정산
         </button>
-        <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
+        <button onclick="openPrintModalWithConfirm()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           A4출력
         </button>
-        <button id="adminCenterBtn" onclick="goToAdminCenter()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-6 h-5 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
+        <button id="adminCenterBtn" onclick="goToAdminCenterWithConfirm()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-6 h-5 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
           ⚙️
         </button>
 
-        <!-- [지시사항 2] 클라우드 연동 상태 램프 이모지 (문자 없이 이모지만 표시) -->
-        <span id="cloudStatusLamp" title="클라우드 연동 상태" class="text-xs px-1 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 shrink-0 flex items-center justify-center leading-none transition-all duration-200">
+        <!-- [지시사항 3] 클라우드 연동 램프: 테두리 완전 삭제, 아주 연한 파스텔 배경, 이모지만 표시 -->
+        <span id="cloudStatusLamp" title="클라우드 연동 상태" class="text-[11px] px-1 py-0.5 rounded bg-emerald-50/50 shrink-0 flex items-center justify-center leading-none transition-all duration-200">
           🟢
         </span>
 
-        <!-- [지시사항 1] "팀장 000 : 로그아웃" -> "팀장 000 🚪" -->
-        <button onclick="logoutUser()" title="로그아웃" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0 flex items-center gap-1">
-          <span id="roleBadgeText">팀장 관리자 🚪</span>
+        <!-- [지시사항 3] 팀장 000 테두리 삭제, 반쯤 열린 회색 문 이모지 -->
+        <button onclick="logoutUser()" title="로그아웃" class="text-[11px] text-slate-700 font-bold px-1.5 py-0.5 rounded hover:bg-slate-200/50 transition whitespace-nowrap shrink-0 flex items-center gap-1">
+          <span id="roleBadgeText">팀장 관리자 <span class="half-door-gray">🚪</span></span>
         </button>
       </div>
     </header>
@@ -440,7 +454,6 @@
         </div>
         <div class="bg-teal-50/70 p-3 rounded-xl border border-teal-100 text-teal-950 space-y-2">
           <p class="font-bold">2단계: 작성한 CSV 파일을 불러와 바로 저장하세요.</p>
-          <!-- 모바일 지원 확장을 위한 accept 파라미터 보강 -->
           <input type="file" id="csvFileInput" accept=".csv, text/csv, text/plain, application/vnd.ms-excel" class="w-full text-[11px] bg-white p-1.5 rounded-lg border border-teal-200">
           <button id="importCsvBtn" onclick="importCsvFile()" class="w-full bg-teal-200 hover:bg-teal-300 text-teal-950 font-extrabold py-2 rounded-lg shadow-sm">
             ✅ 불러와서 반찬 바구니(DB)에 즉시 저장
@@ -676,20 +689,38 @@
     let selectedArchiveId = null;
     let confirmedActualCost = null;
 
-    // [지시사항 2] 클라우드 연동 상태 램프 UI 변경 함수 (문자 없음, 이모지만 표시)
+    // [지시사항 3] 클라우드 연동 램프 UI: 테두리 삭제 & 한층 더 연한 파스텔 배경
     function setCloudStatusLamp(status) {
       const lamp = document.getElementById('cloudStatusLamp');
       if (!lamp) return;
       if (status === 'connected') {
-        lamp.innerText = '🟢'; // 연동 (연한 초록색)
-        lamp.className = "text-xs px-1 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 shrink-0 flex items-center justify-center leading-none";
+        lamp.innerText = '🟢';
+        lamp.className = "text-[11px] px-1 py-0.5 rounded bg-emerald-50/40 shrink-0 flex items-center justify-center leading-none";
       } else if (status === 'saving') {
-        lamp.innerText = '🔵'; // 저장중 (연한 파란색)
-        lamp.className = "text-xs px-1 py-0.5 rounded-md border border-sky-200 bg-sky-50 shrink-0 flex items-center justify-center leading-none animate-pulse";
+        lamp.innerText = '🔵';
+        lamp.className = "text-[11px] px-1 py-0.5 rounded bg-sky-50/40 shrink-0 flex items-center justify-center leading-none animate-pulse";
       } else {
-        lamp.innerText = '🔴'; // 연동안됨 (연한 붉은색)
-        lamp.className = "text-xs px-1 py-0.5 rounded-md border border-rose-200 bg-rose-50 shrink-0 flex items-center justify-center leading-none";
+        lamp.innerText = '🔴';
+        lamp.className = "text-[11px] px-1 py-0.5 rounded bg-rose-50/40 shrink-0 flex items-center justify-center leading-none";
       }
+    }
+
+    // [지시사항 2] 관리/정산 터치 시 2차 확인 후 진행
+    function openSettlementModalWithConfirm() {
+      if (!confirm('주간 식단 관리 및 정산서를 확인하시겠습니까?')) return;
+      openSettlementModal();
+    }
+
+    // [지시사항 2] A4출력 터치 시 2차 확인 후 진행
+    function openPrintModalWithConfirm() {
+      if (!confirm('A4 식단표 출력 미리보기 화면으로 이동하시겠습니까?')) return;
+      openPrintModal();
+    }
+
+    // [지시사항 2] 설정(⚙️) 터치 시 2차 확인 후 진행
+    function goToAdminCenterWithConfirm() {
+      if (!confirm('관리자 전용 보안 설정 센터로 이동하시겠습니까?')) return;
+      goToAdminCenter();
     }
 
     const dbPhotoStore = {
@@ -1123,7 +1154,6 @@
       await syncCurrentStateToDb();
     }
 
-    // [지시사항 1] "팀장 000 : 로그아웃" -> "팀장 000 🚪" 변경
     function applyRoleUI() {
       const badge = document.getElementById('roleBadgeText');
       const adminCenterBtn = document.getElementById('adminCenterBtn');
@@ -1140,13 +1170,13 @@
       }
 
       if (isLeader) {
-        badge.innerText = `팀장 ${currentUser} 🚪`;
+        badge.innerHTML = `팀장 ${currentUser} <span class="half-door-gray">🚪</span>`;
         adminCenterBtn.classList.remove('hidden');
         settleBtn.classList.remove('hidden');
         adminActions.classList.remove('hidden');
         memberBar.classList.add('hidden');
       } else {
-        badge.innerText = `팀원 ${currentUser} 🚪`;
+        badge.innerHTML = `팀원 ${currentUser} <span class="half-door-gray">🚪</span>`;
         adminCenterBtn.classList.add('hidden');
         settleBtn.classList.add('hidden');
         adminActions.classList.add('hidden');
@@ -1329,6 +1359,7 @@
     }
 
     function logoutUser() {
+      if (!confirm('로그아웃 하시겠습니까?')) return;
       sessionStorage.clear();
       location.reload();
     }
@@ -1916,7 +1947,6 @@
       URL.revokeObjectURL(url);
     }
 
-    // [모바일 완벽 대응] 한글 인코딩(UTF-8 / EUC-KR) 자동 감지 및 CSV 파서
     function parseCsvLine(line) {
       const result = [];
       let insideQuote = false;
@@ -1949,12 +1979,10 @@
         let buffer = e.target.result;
         let text = "";
 
-        // 1차: UTF-8 디코딩 시도
         try {
           const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
           text = utf8Decoder.decode(buffer);
         } catch (err) {
-          // 2차: 모바일 엑셀 기본인 EUC-KR / CP949 자동 폴백 디코딩
           try {
             const euckrDecoder = new TextDecoder('euc-kr');
             text = euckrDecoder.decode(buffer);
@@ -2019,14 +2047,13 @@
         }
 
         if (firstAddedCat) {
-          currentCat = firstAddedCat; // 추가된 카테고리 탭으로 즉시 화면 전환
+          currentCat = firstAddedCat;
         }
 
         closeCsvModal();
         if (importBtn) importBtn.innerText = "✅ 불러와서 반찬 바구니(DB)에 즉시 저장";
         fileInput.value = '';
 
-        // [중요] 모바일에서 즉시 보이도록 반찬 바구니 및 식판 동시 리렌더링
         renderBasket();
         renderTray();
 
