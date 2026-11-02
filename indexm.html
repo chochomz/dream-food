@@ -147,25 +147,45 @@
 
     let authConfig = null;
 
+    function getFallbackAuthConfig() {
+      try {
+        const raw = localStorage.getItem('sejong_auth_config_backup');
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return {
+        adminCode: '9999',
+        memberCode: '1004',
+        members: [
+          { name: '관리자', role: 'admin', addedAt: Date.now() },
+          { name: '팀장', role: 'admin', addedAt: Date.now() },
+          { name: '팀원', role: 'member', addedAt: Date.now() }
+        ]
+      };
+    }
+
     async function initAdminPage() {
-      const doc = await db.collection('settings').doc('authConfig').get();
+      let docData = null;
+      try {
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 1200));
+        const doc = await Promise.race([db.collection('settings').doc('authConfig').get(), timeoutPromise]);
+        if (doc && doc.exists) docData = doc.data();
+      } catch (e) {
+        console.warn('Firestore 로드 지연, 로컬/기본 설정으로 즉시 오픈:', e);
+      }
 
-      if (!doc.exists || (!doc.data().adminCode && !doc.data().adminPassword)) {
-        // 최초 설정 화면 표시
-        document.getElementById('initialSetupBox').classList.remove('hidden');
+      authConfig = docData || getFallbackAuthConfig();
+      if (!authConfig.adminCode) authConfig.adminCode = authConfig.adminPassword || '9999';
+      if (!authConfig.memberCode) authConfig.memberCode = '1004';
+      if (!Array.isArray(authConfig.members) || authConfig.members.length === 0) {
+        authConfig.members = getFallbackAuthConfig().members;
+      }
+      try { localStorage.setItem('sejong_auth_config_backup', JSON.stringify(authConfig)); } catch (e) {}
+
+      const isVerifiedAdmin = sessionStorage.getItem('sejong_admin_verified') === '1' || sessionStorage.getItem('sejong_leader') === '1';
+      if (isVerifiedAdmin) {
+        openDashboard();
       } else {
-        authConfig = doc.data();
-        // 기존 버전 호환 보정
-        if (!authConfig.adminCode) authConfig.adminCode = authConfig.adminPassword || '9999';
-        if (!authConfig.memberCode) authConfig.memberCode = '1004';
-
-        // 이미 관리자 세션이 인증되어 있는지 체크
-        const isVerifiedAdmin = sessionStorage.getItem('sejong_admin_verified') === '1';
-        if (isVerifiedAdmin) {
-          openDashboard();
-        } else {
-          document.getElementById('adminGateBox').classList.remove('hidden');
-        }
+        document.getElementById('adminGateBox').classList.remove('hidden');
       }
     }
 
@@ -227,6 +247,11 @@
 
     function openDashboard() {
       document.getElementById('adminDashboard').classList.remove('hidden');
+      if (authConfig) {
+        document.getElementById('editAdminCode').value = authConfig.adminCode || '9999';
+        document.getElementById('editMemberCode').value = authConfig.memberCode || '1004';
+        renderMemberList();
+      }
       db.collection('settings').doc('authConfig').onSnapshot(doc => {
         if (doc.exists) {
           authConfig = doc.data();
