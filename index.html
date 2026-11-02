@@ -94,10 +94,9 @@
           </div>
           <img src="ttitle.png" alt="타이틀" class="h-9 w-auto object-contain shrink-0">
         </div>
-        <p id="dbStatusText" class="hidden">클라우드 연동중</p>
       </div>
 
-      <!-- 타이틀 바로 밑: 우측 끝으로 하나로 통일 (순서: 관리/정산, A4출력, ⚙️, 팀장 000 : 로그아웃) -->
+      <!-- 타이틀 바로 밑: 우측 끝으로 통일 (관리/정산, A4출력, ⚙️, [연동램프이모지], 팀장 000 🚪) -->
       <div class="bg-slate-50 px-2 py-1 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
         <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           관리/정산
@@ -108,8 +107,15 @@
         <button id="adminCenterBtn" onclick="goToAdminCenter()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-6 h-5 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
           ⚙️
         </button>
-        <button onclick="logoutUser()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
-          <span id="roleBadgeText">팀장 관리자 : 로그아웃</span>
+
+        <!-- [지시사항 2] 클라우드 연동 상태 램프 이모지 (문자 없이 이모지만 표시) -->
+        <span id="cloudStatusLamp" title="클라우드 연동 상태" class="text-xs px-1 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 shrink-0 flex items-center justify-center leading-none transition-all duration-200">
+          🟢
+        </span>
+
+        <!-- [지시사항 1] "팀장 000 : 로그아웃" -> "팀장 000 🚪" -->
+        <button onclick="logoutUser()" title="로그아웃" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0 flex items-center gap-1">
+          <span id="roleBadgeText">팀장 관리자 🚪</span>
         </button>
       </div>
     </header>
@@ -418,7 +424,7 @@
     </div>
   </div>
 
-  <!-- [팝업 4] CSV 불러오기 & 양식 다운로드 -->
+  <!-- [팝업 4] CSV 불러오기 & 양식 다운로드 (모바일 확장 인풋 지원) -->
   <div id="csvModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-xl border border-indigo-100">
       <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
@@ -434,8 +440,9 @@
         </div>
         <div class="bg-teal-50/70 p-3 rounded-xl border border-teal-100 text-teal-950 space-y-2">
           <p class="font-bold">2단계: 작성한 CSV 파일을 불러와 바로 저장하세요.</p>
-          <input type="file" id="csvFileInput" accept=".csv" class="w-full text-[11px] bg-white p-1.5 rounded-lg border border-teal-200">
-          <button onclick="importCsvFile()" class="w-full bg-teal-200 hover:bg-teal-300 text-teal-950 font-extrabold py-2 rounded-lg shadow-sm">
+          <!-- 모바일 지원 확장을 위한 accept 파라미터 보강 -->
+          <input type="file" id="csvFileInput" accept=".csv, text/csv, text/plain, application/vnd.ms-excel" class="w-full text-[11px] bg-white p-1.5 rounded-lg border border-teal-200">
+          <button id="importCsvBtn" onclick="importCsvFile()" class="w-full bg-teal-200 hover:bg-teal-300 text-teal-950 font-extrabold py-2 rounded-lg shadow-sm">
             ✅ 불러와서 반찬 바구니(DB)에 즉시 저장
           </button>
         </div>
@@ -561,8 +568,7 @@
     </div>
   </div>
 
-  
-  <!-- [팝업 8] ⚙️ 관리자 보안 설정 센터 모달 (클릭 시 0.01초 즉시 오픈 & DB 실시간 연동) -->
+  <!-- [팝업 8] ⚙️ 관리자 보안 설정 센터 모달 -->
   <div id="adminCenterModal" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border-2 border-purple-200 max-h-[92vh] overflow-y-auto space-y-4">
       <div class="bg-purple-100/90 text-purple-950 p-3.5 rounded-2xl border border-purple-200 shadow-sm flex justify-between items-center">
@@ -629,7 +635,6 @@
     </div>
   </div>
 
-  
   <!-- [팝업 9] 식판 메뉴 제외 Y/N 확인 모달 -->
   <div id="removeTrayConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-xl border border-slate-200 text-center space-y-3">
@@ -670,6 +675,22 @@
     let editingDishId = null;
     let selectedArchiveId = null;
     let confirmedActualCost = null;
+
+    // [지시사항 2] 클라우드 연동 상태 램프 UI 변경 함수 (문자 없음, 이모지만 표시)
+    function setCloudStatusLamp(status) {
+      const lamp = document.getElementById('cloudStatusLamp');
+      if (!lamp) return;
+      if (status === 'connected') {
+        lamp.innerText = '🟢'; // 연동 (연한 초록색)
+        lamp.className = "text-xs px-1 py-0.5 rounded-md border border-emerald-200 bg-emerald-50 shrink-0 flex items-center justify-center leading-none";
+      } else if (status === 'saving') {
+        lamp.innerText = '🔵'; // 저장중 (연한 파란색)
+        lamp.className = "text-xs px-1 py-0.5 rounded-md border border-sky-200 bg-sky-50 shrink-0 flex items-center justify-center leading-none animate-pulse";
+      } else {
+        lamp.innerText = '🔴'; // 연동안됨 (연한 붉은색)
+        lamp.className = "text-xs px-1 py-0.5 rounded-md border border-rose-200 bg-rose-50 shrink-0 flex items-center justify-center leading-none";
+      }
+    }
 
     const dbPhotoStore = {
       'default_1': "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=500&q=80",
@@ -743,7 +764,6 @@
     let currentTrayIds = ['d1', 'd3', 'm1', 'k1', 'k2', 's1', 'n1'];
     let archiveList = [...defaultArchiveSeed];
 
-    // 원클릭 자동 입력 및 즉시 로그인 헬퍼
     let cachedGateAuth = {
       adminCode: '9999',
       memberCode: '1004',
@@ -828,7 +848,6 @@
     let nameAdvanceTimer = null;
     let lastAutoAdvancedName = '';
 
-    // 한글 조합(IME)이 완전히 끝난 뒤 안전하게 코드 입력칸으로 포커스 이동
     function handleGateNameAutoAdvance(inputEl, evt, isCompositionEnd = false) {
       if (nameAdvanceTimer) clearTimeout(nameAdvanceTimer);
       if (evt && evt.isComposing && !isCompositionEnd) return;
@@ -857,7 +876,6 @@
       }, delay);
     }
 
-    // 코드 칸에 숫자 외 한글 조합 잔상이 섞였을 경우 정리 후 즉시 자동 로그인 판별
     function handleGateCodeAutoSubmit(inputEl) {
       if (!inputEl) return;
       const rawVal = inputEl.value || '';
@@ -870,7 +888,6 @@
       }
     }
 
-    // 무음 보안 로그인 (ID나 코드가 틀려도 어떠한 알림 메시지도 띄우지 않음)
     async function handleStrictLogin(isAutoTrigger = false) {
       const nameEl = document.getElementById('gateUserName');
       const codeEl = document.getElementById('gateAccessCode');
@@ -898,7 +915,6 @@
         ensureDefaultAuthInDb();
       };
 
-      // 1단계: 캐시 및 기본 인가자 대조
       const matched = findMatchedGateMember(nameInput);
       if (matched) {
         if (matched.role === 'admin' && (codeInput === admCode || codeInput === '9999')) {
@@ -913,7 +929,6 @@
 
       if (isAutoTrigger) return;
 
-      // 2단계: 로그인 버튼 클릭/엔터 시 DB 최신 명단 조회
       if (!db) return;
       try {
         const doc = await db.collection('settings').doc('authConfig').get();
@@ -984,7 +999,6 @@
 
     function normalizeCompactDateStr(str) {
       if (!str) return '';
-      // "2026년 10월 8일(2주차)" -> "2026년 10월8일(2주)" 형태로 공백과 '차'를 줄여 가로폭 최소화
       return String(str)
         .replace(/월\s+(\d)/g, '월$1')
         .replace(/(\d)주차\)/g, '$1주)')
@@ -1010,7 +1024,6 @@
       return formatWeekOptionString(targetSunday);
     }
 
-    // 선택된 일자(월)에 따라 봄·여름·가을·겨울 4계절 연한 식판 테두리 색상 자동 지정
     function applySeasonalTrayBorder(dateStr) {
       const trayBox = document.getElementById('trayCardBox');
       const seasonBadge = document.getElementById('seasonBorderBadge');
@@ -1022,7 +1035,6 @@
         month = parseInt(mMatch[1], 10);
       }
 
-      // 기본 및 봄(3~5월): 두껍고 연한 그린색, 여름(6~8월): 연한 하늘/민트, 가을(9~11월): 연한 살구/앰버, 겨울(12~2월): 연한 라벤더
       if (month >= 3 && month <= 5) {
         trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-emerald-200/90 shadow-2xs transition-colors duration-300";
         if (seasonBadge) { seasonBadge.textContent = "봄 식판"; seasonBadge.className = "text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50"; }
@@ -1067,7 +1079,7 @@
       Array.from(dateSet).forEach(dateStr => {
         const opt = document.createElement('option');
         opt.value = dateStr;
-        opt.textContent = dateStr; // 가로로 길어지지 않도록 순수 "2026년 11월8일(2주)"만 표시
+        opt.textContent = dateStr;
         if (dateStr === todayWeekStr) {
           opt.style.backgroundColor = '#FCE7F3';
           opt.style.color = '#9D174D';
@@ -1078,7 +1090,6 @@
 
       sel.value = targetVal;
 
-      // 해당 주(이번 주)일 때 드롭다운 박스 색상을 연한 핑크색으로 적용
       if (targetVal === todayWeekStr) {
         sel.className = "bg-pink-50 text-pink-900 text-xs font-bold px-2 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap w-auto";
       } else {
@@ -1112,6 +1123,7 @@
       await syncCurrentStateToDb();
     }
 
+    // [지시사항 1] "팀장 000 : 로그아웃" -> "팀장 000 🚪" 변경
     function applyRoleUI() {
       const badge = document.getElementById('roleBadgeText');
       const adminCenterBtn = document.getElementById('adminCenterBtn');
@@ -1128,13 +1140,13 @@
       }
 
       if (isLeader) {
-        badge.innerText = `팀장 ${currentUser} : 로그아웃`;
+        badge.innerText = `팀장 ${currentUser} 🚪`;
         adminCenterBtn.classList.remove('hidden');
         settleBtn.classList.remove('hidden');
         adminActions.classList.remove('hidden');
         memberBar.classList.add('hidden');
       } else {
-        badge.innerText = `팀원 ${currentUser} : 로그아웃`;
+        badge.innerText = `팀원 ${currentUser} 🚪`;
         adminCenterBtn.classList.add('hidden');
         settleBtn.classList.add('hidden');
         adminActions.classList.add('hidden');
@@ -1254,9 +1266,14 @@
       saveLocalAuthBackup(inAppAuthConfig);
 
       if (db) {
+        setCloudStatusLamp('saving');
         try {
           await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true });
-        } catch (e) { console.warn(e); }
+          setCloudStatusLamp('connected');
+        } catch (e) {
+          console.warn(e);
+          setCloudStatusLamp('disconnected');
+        }
       }
       alert('✅ 관리자 전용 코드번호와 팀원 공용 코드번호가 저장되었습니다!');
     }
@@ -1278,9 +1295,14 @@
       renderInAppAdminModalUI();
 
       if (db) {
+        setCloudStatusLamp('saving');
         try {
           await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true });
-        } catch (e) { console.warn(e); }
+          setCloudStatusLamp('connected');
+        } catch (e) {
+          console.warn(e);
+          setCloudStatusLamp('disconnected');
+        }
       }
     }
 
@@ -1295,9 +1317,14 @@
       renderInAppAdminModalUI();
 
       if (db) {
+        setCloudStatusLamp('saving');
         try {
           await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true });
-        } catch (e) { console.warn(e); }
+          setCloudStatusLamp('connected');
+        } catch (e) {
+          console.warn(e);
+          setCloudStatusLamp('disconnected');
+        }
       }
     }
 
@@ -1317,11 +1344,20 @@
     }
 
     async function initFirebaseRealtime() {
-      if (!db) return;
+      if (!db) {
+        setCloudStatusLamp('disconnected');
+        return;
+      }
       try {
+        setCloudStatusLamp('saving');
+
         db.collection('photos').onSnapshot(snap => {
           snap.forEach(doc => { dbPhotoStore[doc.id] = doc.data().dataUrl; });
           renderArchiveGrid();
+          setCloudStatusLamp('connected');
+        }, err => {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
         });
 
         db.collection('basket').onSnapshot(async snap => {
@@ -1334,6 +1370,10 @@
             renderTray();
             renderArchiveGrid();
           }
+          setCloudStatusLamp('connected');
+        }, err => {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
         });
 
         db.collection('settings').doc('currentState').onSnapshot(async doc => {
@@ -1356,6 +1396,10 @@
             currentSavedPhotoId = data.photoId || 'default_4';
             renderTray();
           }
+          setCloudStatusLamp('connected');
+        }, err => {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
         });
 
         db.collection('archives').orderBy('createdAt', 'desc').onSnapshot(async snap => {
@@ -1367,11 +1411,14 @@
             archiveList = snap.docs.map(doc => doc.data());
             renderArchiveGrid();
           }
+          setCloudStatusLamp('connected');
+        }, err => {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
         });
 
-        document.getElementById('dbStatusText').innerText = "🟢 클라우드 실시간 동기화 완료";
       } catch (err) {
-        document.getElementById('dbStatusText').innerText = "🟡 로컬 작동중";
+        setCloudStatusLamp('disconnected');
       }
     }
 
@@ -1379,7 +1426,6 @@
       const selEl = document.getElementById('currentDate');
       const selectedDate = selEl ? selEl.value : getCurrentWeekSundayString();
 
-      // 선택된 일자(주차)별로 식단 구성을 미리 저장(weeklyPlanMap)
       weeklyPlanMap[selectedDate] = {
         trayIds: [...currentTrayIds],
         confirmedActualCost: confirmedActualCost,
@@ -1390,6 +1436,7 @@
       populateDateDropdownOptions(selectedDate);
 
       if (!db) return;
+      setCloudStatusLamp('saving');
       try {
         await db.collection('settings').doc('currentState').set({
           date: selectedDate,
@@ -1399,7 +1446,11 @@
           weeklyPlans: weeklyPlanMap,
           updatedAt: Date.now()
         }, { merge: true });
-      } catch (e) { console.error(e); }
+        setCloudStatusLamp('connected');
+      } catch (e) {
+        console.error(e);
+        setCloudStatusLamp('disconnected');
+      }
     }
 
     function getExpectedTotalCost() {
@@ -1466,11 +1517,12 @@
           const receiptPhotoId = 'receipt_' + Date.now();
           dbPhotoStore[receiptPhotoId] = compressedUrl;
           if (db) {
+            setCloudStatusLamp('saving');
             db.collection('photos').doc(receiptPhotoId).set({
               dataUrl: compressedUrl,
               type: 'receipt',
               createdAt: Date.now()
-            }).catch(console.error);
+            }).then(() => setCloudStatusLamp('connected')).catch(() => setCloudStatusLamp('disconnected'));
           }
 
           try {
@@ -1656,13 +1708,18 @@
       currentSavedPhotoId = newPhotoId;
 
       if (db) {
+        setCloudStatusLamp('saving');
         try {
           await db.collection('photos').doc(newPhotoId).set({
             dataUrl: tempCompressedDataUrl,
             createdAt: Date.now()
           });
           await syncCurrentStateToDb();
-        } catch (e) { console.error(e); }
+          setCloudStatusLamp('connected');
+        } catch (e) {
+          console.error(e);
+          setCloudStatusLamp('disconnected');
+        }
       }
 
       const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
@@ -1727,7 +1784,6 @@
       renderBasket();
     }
 
-    // ✕ 클릭 시 "식판에서 제외 할까요.?" Y/N 확인 모달 오픈
     function requestRemoveFromTray(id) {
       pendingRemoveDishId = id;
       const item = masterBasket.find(d => d.id === id);
@@ -1779,7 +1835,6 @@
     }
     function closeDishDetailModal() { document.getElementById('dishDetailModal').classList.add('hidden'); }
 
-    // 세부사항에서 이름·정보 변경 시 식판과 반찬 바구니(masterBasket & DB) 모두 동시 수정
     async function saveDishDetail() {
       const item = masterBasket.find(d => d.id === editingDishId);
       if (item) {
@@ -1789,7 +1844,10 @@
         item.price = Number(document.getElementById('detailPrice').value || 0);
         item.recipe = document.getElementById('detailRecipe').value.trim();
         if (db) {
-          await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(console.error);
+          setCloudStatusLamp('saving');
+          await db.collection('basket').doc(item.id).set(item, { merge: true })
+            .then(() => setCloudStatusLamp('connected'))
+            .catch(() => setCloudStatusLamp('disconnected'));
         }
       }
       confirmedActualCost = null;
@@ -1819,7 +1877,7 @@
       listEl.innerHTML = '';
 
       const filtered = keyword
-        ? masterBasket.filter(d => d.name.includes(keyword) || d.recipe.includes(keyword))
+        ? masterBasket.filter(d => (d.name && d.name.includes(keyword)) || (d.recipe && d.recipe.includes(keyword)))
         : masterBasket.filter(d => d.cat === currentCat);
 
       filtered.forEach(dish => {
@@ -1858,43 +1916,124 @@
       URL.revokeObjectURL(url);
     }
 
+    // [모바일 완벽 대응] 한글 인코딩(UTF-8 / EUC-KR) 자동 감지 및 CSV 파서
+    function parseCsvLine(line) {
+      const result = [];
+      let insideQuote = false;
+      let currentVal = '';
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"' || char === "'") {
+          insideQuote = !insideQuote;
+        } else if (char === ',' && !insideQuote) {
+          result.push(currentVal.trim());
+          currentVal = '';
+        } else {
+          currentVal += char;
+        }
+      }
+      result.push(currentVal.trim());
+      return result;
+    }
+
     function importCsvFile() {
-      const file = document.getElementById('csvFileInput').files[0];
+      const fileInput = document.getElementById('csvFileInput');
+      const file = fileInput.files[0];
       if (!file) return alert('불러올 CSV 파일을 선택해주세요!');
+
+      const importBtn = document.getElementById('importCsvBtn');
+      if (importBtn) importBtn.innerText = "⏳ 모바일 데이터 분석 및 저장중...";
+
       const reader = new FileReader();
       reader.onload = async function(e) {
-        const lines = e.target.result.split(/\r?\n/);
+        let buffer = e.target.result;
+        let text = "";
+
+        // 1차: UTF-8 디코딩 시도
+        try {
+          const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
+          text = utf8Decoder.decode(buffer);
+        } catch (err) {
+          // 2차: 모바일 엑셀 기본인 EUC-KR / CP949 자동 폴백 디코딩
+          try {
+            const euckrDecoder = new TextDecoder('euc-kr');
+            text = euckrDecoder.decode(buffer);
+          } catch (e2) {
+            text = new TextDecoder().decode(buffer);
+          }
+        }
+
+        const lines = text.split(/\r\n|\n|\r/);
         let added = 0;
+        let firstAddedCat = null;
         const batch = db ? db.batch() : null;
 
         for (let i = 1; i < lines.length; i++) {
-          const line = lines[i].trim();
-          if (!line) continue;
-          const cols = line.split(',');
+          const rawLine = lines[i].trim();
+          if (!rawLine) continue;
+          const cols = parseCsvLine(rawLine);
           if (cols.length >= 2) {
-            const cat = cols[0].trim() || '일반/김치';
-            let name = cols[1].trim();
+            let cat = cols[0].replace(/['"]/g, '').trim();
+            if (!catStyles[cat]) {
+              if (cat.includes('밥') || cat.includes('국')) cat = '밥/국';
+              else if (cat.includes('메인')) cat = '메인반찬';
+              else if (cat.includes('어린이')) cat = '어린이반찬';
+              else if (cat.includes('사이드')) cat = '사이드메뉴';
+              else cat = '일반/김치';
+            }
+
+            let name = cols[1].replace(/['"]/g, '').trim();
+            if (!name) continue;
             if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+
+            const kg = (cols[2] || '적당량').replace(/['"]/g, '').trim();
+            const price = Number((cols[3] || '0').replace(/[^0-9]/g, ''));
+            const recipe = (cols[4] || '기본 조리').replace(/['"]/g, '').trim();
+
             const newId = 'csv_' + Date.now() + '_' + i;
             const newItem = {
               id: newId,
-              cat: catStyles[cat] ? cat : '일반/김치',
+              cat: cat,
               name: name,
-              kg: (cols[2] || '적당량').trim(),
-              price: Number((cols[3] || '0').replace(/[^0-9]/g, '')),
-              recipe: (cols[4] || '기본 조리').trim()
+              kg: kg || '적당량',
+              price: isNaN(price) ? 50000 : price,
+              recipe: recipe || '기본 조리'
             };
+
             masterBasket.unshift(newItem);
+            if (!firstAddedCat) firstAddedCat = cat;
             if (batch) batch.set(db.collection('basket').doc(newId), newItem);
             added++;
           }
         }
-        if (batch) await batch.commit().catch(console.error);
+
+        if (batch) {
+          setCloudStatusLamp('saving');
+          try {
+            await batch.commit();
+            setCloudStatusLamp('connected');
+          } catch (err) {
+            console.error(err);
+            setCloudStatusLamp('disconnected');
+          }
+        }
+
+        if (firstAddedCat) {
+          currentCat = firstAddedCat; // 추가된 카테고리 탭으로 즉시 화면 전환
+        }
+
         closeCsvModal();
+        if (importBtn) importBtn.innerText = "✅ 불러와서 반찬 바구니(DB)에 즉시 저장";
+        fileInput.value = '';
+
+        // [중요] 모바일에서 즉시 보이도록 반찬 바구니 및 식판 동시 리렌더링
+        renderBasket();
         renderTray();
-        alert(`🎉 총 ${added}개의 반찬이 반찬 바구니에 즉시 저장되었습니다!`);
+
+        alert(`🎉 총 ${added}개의 반찬이 반찬 바구니에 즉시 등록되었습니다!`);
       };
-      reader.readAsText(file, 'UTF-8');
+
+      reader.readAsArrayBuffer(file);
     }
 
     function openAddDishModal() {
@@ -1923,7 +2062,12 @@
       masterBasket.unshift(newDish);
       currentCat = cat;
       currentTrayIds.push(newDish.id);
-      if (db) await db.collection('basket').doc(newDish.id).set(newDish).catch(console.error);
+      if (db) {
+        setCloudStatusLamp('saving');
+        await db.collection('basket').doc(newDish.id).set(newDish)
+          .then(() => setCloudStatusLamp('connected'))
+          .catch(() => setCloudStatusLamp('disconnected'));
+      }
       await syncCurrentStateToDb();
       closeAddDishModal();
       renderTray();
@@ -1950,7 +2094,12 @@
 
       archiveList.unshift(newArchive);
       renderArchiveGrid();
-      if (db) await db.collection('archives').doc(newArchId).set(newArchive).catch(console.error);
+      if (db) {
+        setCloudStatusLamp('saving');
+        await db.collection('archives').doc(newArchId).set(newArchive)
+          .then(() => setCloudStatusLamp('connected'))
+          .catch(() => setCloudStatusLamp('disconnected'));
+      }
       alert('✅ 이번 주 식단이 확정되어 지난 식단 기록에 저장되었습니다!');
     }
 
@@ -2031,7 +2180,12 @@
       currentSavedPhotoId = item.photoId;
       confirmedActualCost = null;
 
-      if (db) await db.collection('archives').doc(String(item.id)).set(item, { merge: true }).catch(console.error);
+      if (db) {
+        setCloudStatusLamp('saving');
+        await db.collection('archives').doc(String(item.id)).set(item, { merge: true })
+          .then(() => setCloudStatusLamp('connected'))
+          .catch(() => setCloudStatusLamp('disconnected'));
+      }
       await syncCurrentStateToDb();
 
       renderTray();
@@ -2046,7 +2200,12 @@
       if (item.likes < 10) item.likes++;
       document.getElementById('archModalLikes').innerText = item.likes;
       renderArchiveGrid();
-      if (db) await db.collection('archives').doc(String(item.id)).update({ likes: item.likes }).catch(console.error);
+      if (db) {
+        setCloudStatusLamp('saving');
+        await db.collection('archives').doc(String(item.id)).update({ likes: item.likes })
+          .then(() => setCloudStatusLamp('connected'))
+          .catch(() => setCloudStatusLamp('disconnected'));
+      }
     }
 
     function openPrintModal() {
