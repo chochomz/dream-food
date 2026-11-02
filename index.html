@@ -43,8 +43,8 @@
       <!-- 상부: tlogo.png + ttitle.png 중앙 배치 및 "주간 식단관리 시스템" -->
       <div class="flex flex-col items-center justify-center pt-1">
         <div class="flex items-center justify-center gap-2.5">
-          <div class="p-1 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center"><img src="tlogo.png" alt="로고" class="h-9 w-auto object-contain"></div>
-          <img src="ttitle.png" alt="타이틀" class="h-10 w-auto object-contain shrink-0">
+          <div class="h-11 px-1.5 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center"><img src="tlogo.png" alt="로고" class="h-8 w-auto object-contain"></div>
+          <img src="ttitle.png" alt="타이틀" class="h-11 w-auto object-contain shrink-0">
         </div>
         <p class="mt-4 text-xs font-bold text-slate-600 tracking-wide">
           주간 식단관리 시스템
@@ -85,14 +85,14 @@
   <!-- ================= 로그인 통과 후 열리는 앱 본문 (#protectedAppContent) ================= -->
   <div id="protectedAppContent" class="hidden pb-16 bg-white">
 
-    <!-- 1. 최상단 타이틀 헤더: 테두리 포함 로고 + 타이틀 중앙 배치 & 최소 여백 -->
+    <!-- 1. 최상단 타이틀 헤더: 로고 테두리 박스와 세종꿈의교회 타이틀 이미지 높이(h-9) 1:1 완전 일치 -->
     <header class="bg-white sticky top-0 z-30 border-b border-slate-200">
       <div class="px-2 py-1.5 flex items-center justify-center">
         <div class="flex items-center justify-center gap-2 whitespace-nowrap">
-          <div class="p-1 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
+          <div class="h-9 px-1.5 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
             <img src="tlogo.png" alt="로고" class="h-7 w-auto object-contain shrink-0">
           </div>
-          <img src="ttitle.png" alt="타이틀" class="h-7 w-auto object-contain shrink-0">
+          <img src="ttitle.png" alt="타이틀" class="h-9 w-auto object-contain shrink-0">
         </div>
         <p id="dbStatusText" class="hidden">클라우드 연동중</p>
       </div>
@@ -126,12 +126,12 @@
       </span>
     </div>
 
-    <!-- 3. 상단: 식판에 모으기 (최소 여백, 4계절 자동 연한 두꺼운 테두리, 설명문구 삭제, 우측하부 총계 배치) -->
+    <!-- 3. 상단: 식판에 모으기 (중앙 타이틀 1pt 확대, 하단 좌측 무테두리 금액 / 우측 사진올리기·식단확정 1pt 확대) -->
     <section class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
       <div id="trayCardBox" class="bg-white p-2 rounded-xl border-[5px] border-emerald-200/90 shadow-2xs transition-colors duration-300">
-        <div class="flex justify-between items-center mb-1 pb-1 border-b border-slate-100 whitespace-nowrap">
-          <span class="text-xs font-bold text-slate-800">식판에 모으기</span>
-          <span id="seasonBorderBadge" class="text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50/70">봄 식판</span>
+        <div class="relative flex justify-center items-center mb-1 pb-1 border-b border-slate-100 whitespace-nowrap">
+          <span class="text-[13px] font-extrabold text-slate-800 text-center">식판에 모으기</span>
+          <span id="seasonBorderBadge" class="absolute right-0 text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50/70">봄 식판</span>
         </div>
 
         <div id="currentTray" class="flex flex-wrap gap-1 min-h-[34px] items-center py-0.5"></div>
@@ -144,58 +144,61 @@
           <img id="previewImgTag" src="" class="w-12 h-8 object-cover rounded border border-slate-300 shrink-0">
         </div>
 
-        <!-- 식판 하단 바: 좌측에 컴팩트 액션 버튼, 우측 하부에 "총 7종 : 금액" 배치 -->
+        <!-- 식판 하단 바: 좌측에 테두리 없는 "총 7종 : 금액", 우측에 "사진올리기, 식단확정(1pt 확대)" 배치 -->
         <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1 whitespace-nowrap">
-          <div id="adminActionBtns" class="flex items-center gap-1 shrink-0">
+          <span id="totalSummaryAdmin" class="text-[11.5px] font-extrabold text-slate-800 px-1 py-0.5 whitespace-nowrap shrink-0">
+            총 0종 : 0원
+          </span>
+
+          <div id="adminActionBtns" class="ml-auto flex items-center gap-1 shrink-0">
             <button onclick="openPhotoUploadModal()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition active:scale-95 whitespace-nowrap">
               사진올리기
             </button>
-            <button onclick="confirmMenuToGrid()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] transition active:scale-95 whitespace-nowrap">
+            <button onclick="confirmMenuToGrid()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1 rounded-lg text-[12px] transition active:scale-95 whitespace-nowrap">
               식단확정
             </button>
           </div>
 
-          <div id="memberSummaryBar" class="hidden flex items-center gap-1 text-[11px] shrink-0">
+          <div id="memberSummaryBar" class="hidden ml-auto flex items-center gap-1 text-[11px] shrink-0">
             <span class="font-bold text-slate-600">식단조립</span>
             <span id="totalSummaryMember" class="font-bold text-slate-800 hidden"></span>
           </div>
-
-          <!-- 우측 하부: 총 N종 : 금액 -->
-          <span id="totalSummaryAdmin" class="ml-auto text-[11px] font-extrabold text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded whitespace-nowrap shrink-0">
-            총 0종 : 0원
-          </span>
         </div>
       </div>
     </section>
 
-    <!-- 4 & 5. 중간: 반찬 바구니 (최소 여백 & 카테고리별 아주 연한 파스텔 색상 통일) -->
-    <section id="basketSection" class="px-2 py-2 bg-white border-b border-slate-200">
-      <div class="flex justify-between items-center mb-1.5 whitespace-nowrap">
-        <h2 class="text-xs font-bold text-slate-800">반찬 바구니</h2>
-        <div class="flex items-center gap-1">
-          <button onclick="openAddDishModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap transition">
+    <!-- 4 & 5. 중간: 반찬 바구니 (연한 갈색 두꺼운 테두리 박스 통합, 중앙 13px 타이틀, 검색·반찬등록·CSV불러오기 같은 1열 배치) -->
+    <section id="basketSection" class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
+      <div class="bg-white p-2 rounded-xl border-[5px] border-[#E6D5C3] shadow-2xs">
+        <div class="flex justify-center items-center mb-1.5 pb-1 border-b border-slate-100 whitespace-nowrap">
+          <h2 class="text-[13px] font-extrabold text-slate-800 text-center">반찬 바구니</h2>
+        </div>
+
+        <!-- 검색 · ＋반찬등록 · CSV불러오기 순서대로 같은 1열 배치 -->
+        <div class="flex items-center gap-1 mb-1.5 w-full whitespace-nowrap">
+          <div class="relative flex-1 min-w-0">
+            <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 이름·재료 검색" class="w-full pl-2.5 pr-6 py-1 text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:bg-white focus:border-slate-600">
+            <button onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-1.5 top-1 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
+          </div>
+          <button onclick="openAddDishModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap transition shrink-0">
             ＋반찬등록
           </button>
-          <button onclick="openCsvModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap transition">
+          <button onclick="openCsvModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap transition shrink-0">
             CSV불러오기
           </button>
         </div>
-      </div>
 
-      <div class="relative w-full mb-1.5">
-        <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 이름이나 재료 검색" class="w-full pl-2.5 pr-7 py-1 text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:bg-white focus:border-slate-600">
-        <button onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-2 top-1 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
-      </div>
+        <!-- 5개 카테고리 탭 및 메뉴 리스트 -->
+        <div class="grid grid-cols-5 gap-1 mb-1.5 text-[11px] font-bold text-center whitespace-nowrap">
+          <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1 rounded-lg border transition whitespace-nowrap">밥/국</button>
+          <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1 rounded-lg border transition whitespace-nowrap">메인</button>
+          <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1 rounded-lg border transition whitespace-nowrap">어린이</button>
+          <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1 rounded-lg border transition whitespace-nowrap">일반/김치</button>
+          <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1 rounded-lg border transition whitespace-nowrap">사이드</button>
+        </div>
 
-      <div class="grid grid-cols-5 gap-1 mb-1.5 text-[11px] font-bold text-center whitespace-nowrap">
-        <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1 rounded-lg border transition whitespace-nowrap">밥/국</button>
-        <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1 rounded-lg border transition whitespace-nowrap">메인</button>
-        <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1 rounded-lg border transition whitespace-nowrap">어린이</button>
-        <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1 rounded-lg border transition whitespace-nowrap">일반/김치</button>
-        <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1 rounded-lg border transition whitespace-nowrap">사이드</button>
+        <div id="basketList" class="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto p-1 bg-slate-50/40 rounded-lg border border-slate-200"></div>
       </div>
-
-      <div id="basketList" class="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto p-1 bg-slate-50/40 rounded-lg border border-slate-200"></div>
     </section>
 
     <!-- 6. 하단: 지난 식단 바둑판 (최소 여백) -->
