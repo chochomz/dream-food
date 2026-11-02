@@ -116,11 +116,8 @@
     <div class="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center justify-start gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
       <div class="flex items-center gap-1.5 shrink-0">
         <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자 선택</span>
-        <input type="hidden" id="currentDate" value="">
-            <button type="button" id="customDateTriggerBtn" onclick="openCustomCalendarModal()" class="bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition">
-              <span id="customDateTriggerText"></span>
-              <span class="text-[10px] opacity-80">▼</span>
-            </button>
+        <input type="hidden" id="currentDate" value=""><button type="button" id="customDateTriggerBtn" onclick="openCustomCalendarModal()" class="bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition"><span id="customDateTriggerText"></span><span class="text-[10px] opacity-80">▼</span></button>
+            
         
         </div>
       <span id="kidsBadge" class="text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0">
@@ -234,11 +231,8 @@
     <section class="px-2 py-2 bg-white">
       <div class="flex justify-between items-center mb-2 whitespace-nowrap">
         <h2 class="text-xs font-bold text-slate-800">지난 식단 기록</h2>
-        <input type="hidden" id="archiveFilter" value="전체">
-            <button type="button" id="archiveFilterTriggerBtn" onclick="openCustomFilterModal()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1 font-bold text-slate-700 bg-white hover:bg-slate-50 focus:outline-none flex items-center gap-1.5 active:scale-95 transition">
-              <span id="archiveFilterTriggerText">전체보기</span>
-              <span class="text-[9px] text-slate-400">▼</span>
-            </button>
+        <input type="hidden" id="archiveFilter" value="전체"><button type="button" id="archiveFilterTriggerBtn" onclick="openCustomFilterModal()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1 font-bold text-slate-700 bg-white hover:bg-slate-50 focus:outline-none flex items-center gap-1.5 active:scale-95 transition"><span id="archiveFilterTriggerText">전체보기</span><span class="text-[9px] text-slate-400">▼</span></button>
+            
       </div>
       <div id="archiveGrid" class="grid grid-cols-2 gap-2"></div>
     </section>
@@ -325,8 +319,8 @@
             <input id="detailKg" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold text-teal-800 bg-teal-50/30">
           </div>
           <div>
-            <label class="font-bold text-slate-600 block mb-1">💰 가격 (원)</label>
-            <input id="detailPrice" type="number" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold text-rose-800 bg-rose-50/30">
+            <label class="font-bold text-slate-600 block mb-1">🏷️ 구매처 / 비고</label>
+            <input id="detailPrice" type="text" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold text-rose-800 bg-rose-50/30" placeholder="예: 싱싱정육점 / 남해초 벌크">
           </div>
         </div>
         <div>
@@ -376,14 +370,8 @@
       <div class="space-y-3 my-3 text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">📂 카테고리</label>
-          <input type="hidden" id="newDishCat" value="밥/국">
-            <div id="newDishCatCustomGroup" class="grid grid-cols-5 gap-1 text-[11px] font-bold text-center">
-              <button type="button" onclick="selectCustomNewDishCat('밥/국')" data-cat="밥/국" class="new-dish-cat-btn py-1.5 rounded-lg border-2 border-slate-800 bg-slate-800 text-white font-extrabold">밥/국</button>
-              <button type="button" onclick="selectCustomNewDishCat('메인반찬')" data-cat="메인반찬" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">메인</button>
-              <button type="button" onclick="selectCustomNewDishCat('어린이반찬')" data-cat="어린이반찬" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">어린이</button>
-              <button type="button" onclick="selectCustomNewDishCat('일반/김치')" data-cat="일반/김치" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">일반/김치</button>
-              <button type="button" onclick="selectCustomNewDishCat('사이드메뉴')" data-cat="사이드메뉴" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">사이드</button>
-            </div>
+          <input type="hidden" id="newDishCat" value="밥/국"><div id="newDishCatCustomGroup" class="grid grid-cols-5 gap-1 text-[11px] font-bold text-center"><button type="button" onclick="selectCustomNewDishCat('밥/국')" data-cat="밥/국" class="new-dish-cat-btn py-1.5 rounded-lg border-2 border-slate-800 bg-slate-800 text-white font-extrabold">밥/국</button><button type="button" onclick="selectCustomNewDishCat('메인반찬')" data-cat="메인반찬" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">메인</button><button type="button" onclick="selectCustomNewDishCat('어린이반찬')" data-cat="어린이반찬" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">어린이</button><button type="button" onclick="selectCustomNewDishCat('일반/김치')" data-cat="일반/김치" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">일반/김치</button><button type="button" onclick="selectCustomNewDishCat('사이드메뉴')" data-cat="사이드메뉴" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">사이드</button></div>
+            
         </div>
         <div>
           <label class="font-bold text-slate-600 block mb-1">🍽️ 반찬 이름</label>
@@ -395,8 +383,8 @@
             <input id="newDishKg" type="text" placeholder="예: 30kg" class="w-full border border-slate-200 rounded-lg px-3 py-2">
           </div>
           <div>
-            <label class="font-bold text-slate-600 block mb-1">💰 가격(원)</label>
-            <input id="newDishPrice" type="number" placeholder="예: 150000" class="w-full border border-slate-200 rounded-lg px-3 py-2">
+            <label class="font-bold text-slate-600 block mb-1">🏷️ 구매처 / 비고</label>
+            <input id="newDishPrice" type="text" placeholder="예: 싱싱정육점" class="w-full border border-slate-200 rounded-lg px-3 py-2">
           </div>
         </div>
         <div>
@@ -425,20 +413,27 @@
           <span id="archModalCost" class="hidden"></span>
         </div>
         <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b pb-1 focus:outline-none">
-        <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200"><input type="hidden" id="archEditSeason" value="가을">
-            <div class="grid grid-cols-4 gap-1 text-[11px] font-bold">
-              <button type="button" onclick="selectCustomArchSeason('봄')" data-season="봄" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🌸 봄</button>
-              <button type="button" onclick="selectCustomArchSeason('여름')" data-season="여름" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">☀️ 여름</button>
-              <button type="button" onclick="selectCustomArchSeason('가을')" data-season="가을" class="arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🍁 가을</button>
-              <button type="button" onclick="selectCustomArchSeason('겨울')" data-season="겨울" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">❄️ 겨울</button>
+        <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200"><input type="hidden" id="archEditSeason" value="가을"><div class="grid grid-cols-4 gap-1 text-[11px] font-bold"><button type="button" onclick="selectCustomArchSeason('봄')" data-season="봄" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🌸 봄</button><button type="button" onclick="selectCustomArchSeason('여름')" data-season="여름" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">☀️ 여름</button><button type="button" onclick="selectCustomArchSeason('가을')" data-season="가을" class="arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🍁 가을</button><button type="button" onclick="selectCustomArchSeason('겨울')" data-season="겨울" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">❄️ 겨울</button></div><input type="hidden" id="archEditType" value="육류"><div class="grid grid-cols-3 gap-1 text-[11px] font-bold"><button type="button" onclick="selectCustomArchType('육류')" data-type="육류" class="arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🥩 육류</button><button type="button" onclick="selectCustomArchType('해물/두부')" data-type="해물/두부" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🐟 해물/두부</button><button type="button" onclick="selectCustomArchType('일품/간편')" data-type="일품/간편" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🍛 일품/간편</button></div></div>
+        <div id="archModalDishes" class="flex flex-wrap gap-1 pt-1"></div><div id="archExtraFieldsBox" class="space-y-1.5 pt-2 border-t border-slate-100 text-[11px]">
+            <div class="grid grid-cols-2 gap-1.5">
+              <div>
+                <label class="font-bold text-slate-600 block mb-0.5">👥 식수인원</label>
+                <input id="archEditHeadcount" type="text" placeholder="예: 325명" class="w-full border border-slate-200 rounded px-2 py-1 font-bold text-slate-800 bg-amber-50/40">
+              </div>
+              <div>
+                <label class="font-bold text-slate-600 block mb-0.5">📝 남은반찬/부족 피드백</label>
+                <input id="archEditLeftover" type="text" placeholder="예: 계란말이 6말이 남음" class="w-full border border-slate-200 rounded px-2 py-1 font-bold text-rose-800 bg-rose-50/40">
+              </div>
             </div>
-            <input type="hidden" id="archEditType" value="육류">
-            <div class="grid grid-cols-3 gap-1 text-[11px] font-bold">
-              <button type="button" onclick="selectCustomArchType('육류')" data-type="육류" class="arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🥩 육류</button>
-              <button type="button" onclick="selectCustomArchType('해물/두부')" data-type="해물/두부" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🐟 해물/두부</button>
-              <button type="button" onclick="selectCustomArchType('일품/간편')" data-type="일품/간편" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🍛 일품/간편</button>
-            </div></div>
-        <div id="archModalDishes" class="flex flex-wrap gap-1 pt-1"></div>
+            <div>
+              <label class="font-bold text-slate-600 block mb-0.5">🛒 주간 장보기 재료 목록</label>
+              <textarea id="archEditRawIng" rows="2" class="w-full border border-slate-200 rounded p-1.5 text-slate-700 bg-slate-50/60 leading-snug"></textarea>
+            </div>
+            <div>
+              <label class="font-bold text-slate-600 block mb-0.5">🧂 양념 및 소모품/비품</label>
+              <input id="archEditSupplies" type="text" placeholder="예: 참치액젓, 미림, 라텍스장갑, 냅킨" class="w-full border border-slate-200 rounded px-2 py-1 text-slate-700 bg-slate-50/60">
+            </div>
+          </div>
         <div class="pt-3 flex justify-end gap-1.5">
           <button onclick="recommendArchive()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs">
             추천 (<span id="archModalLikes"></span>/10)
@@ -538,11 +533,8 @@
 
         <div class="flex gap-1.5">
           <input id="inAppNewMemberName" type="text" placeholder="이름 입력 (예: 김은혜)" onkeydown="if(event.key==='Enter') addInAppAuthorizedMember()" class="flex-1 min-w-0 border border-rose-200 rounded-xl px-2.5 py-2 text-xs font-bold bg-white focus:outline-none">
-          <input type="hidden" id="inAppNewMemberRole" value="member">
-            <div id="inAppRoleCustomToggle" class="flex rounded-xl border border-rose-200 bg-white p-0.5 shrink-0 text-[11px] font-extrabold">
-              <button type="button" id="roleBtnMember" onclick="selectCustomMemberRole('member')" class="px-2 py-1.5 rounded-lg bg-rose-200 text-rose-950 transition">일반팀원</button>
-              <button type="button" id="roleBtnAdmin" onclick="selectCustomMemberRole('admin')" class="px-2 py-1.5 rounded-lg text-slate-500 transition">관리자</button>
-            </div>
+          <input type="hidden" id="inAppNewMemberRole" value="member"><div id="inAppRoleCustomToggle" class="flex rounded-xl border border-rose-200 bg-white p-0.5 shrink-0 text-[11px] font-extrabold"><button type="button" id="roleBtnMember" onclick="selectCustomMemberRole('member')" class="px-2 py-1.5 rounded-lg bg-rose-200 text-rose-950 transition">일반팀원</button><button type="button" id="roleBtnAdmin" onclick="selectCustomMemberRole('admin')" class="px-2 py-1.5 rounded-lg text-slate-500 transition">관리자</button></div>
+            
           <button type="button" onclick="addInAppAuthorizedMember()" class="bg-rose-200 hover:bg-rose-300 text-rose-950 font-extrabold px-3 py-2 rounded-xl text-xs shadow-sm whitespace-nowrap shrink-0 active:scale-95">
             ＋ 등록
           </button>
@@ -577,79 +569,13 @@
 
 
   <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 (폰 기본 달력 대체) -->
-  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-2 shadow-2xl border border-slate-200 flex flex-col">
-      <div class="flex justify-between items-center pb-1 border-b border-slate-100 shrink-0 px-0.5">
-        <div class="flex items-center gap-1">
-          <h3 class="text-xs font-extrabold text-slate-800">📅 일자 선택</h3>
-          <span class="text-[10px] text-slate-400 font-semibold">(최초확정월~1년앞)</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <button type="button" onclick="selectTodayWeekInCalendar()" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 text-[10px] font-extrabold px-2 py-0.5 rounded">이번주</button>
-          <button type="button" onclick="closeCustomCalendarModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs font-bold leading-none">✕</button>
-        </div>
-      </div>
-
-      <!-- 요일 고정 헤더 -->
-      <div class="grid grid-cols-7 text-center text-[11px] font-extrabold py-0.5 border-b border-slate-100 bg-slate-50/90 rounded-t mt-1 shrink-0">
-        <span class="text-rose-600">일</span>
-        <span class="text-slate-600">월</span>
-        <span class="text-slate-600">화</span>
-        <span class="text-slate-600">수</span>
-        <span class="text-slate-600">목</span>
-        <span class="text-slate-600">금</span>
-        <span class="text-sky-600">토</span>
-      </div>
-
-      <!-- 상하 터치 스크롤 영역 (창 안에 전월·현재월·다음월 3개월이 한눈에 표시됨) -->
-      <div id="calendarScrollContainer" class="overflow-y-auto space-y-1 py-1 px-0.5" style="height: 448px; max-height: 75vh; -webkit-overflow-scrolling: touch;">
-      </div>
-    </div>
-  </div>
+  
 
   <!-- [팝업 11] 🗂️ 커스텀 지난 식단 필터 선택 모달 (폰 기본 피커 대체) -->
-  <div id="customFilterModal" onclick="if(event.target===this) closeCustomFilterModal()" class="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-xs w-full p-3.5 shadow-2xl border border-slate-200 space-y-2.5 text-xs">
-      <div class="flex justify-between items-center pb-1.5 border-b border-slate-100">
-        <h3 class="font-extrabold text-slate-800">🗂️ 지난 식단 보기 필터</h3>
-        <button type="button" onclick="closeCustomFilterModal()" class="text-slate-400 font-bold px-1">✕</button>
-      </div>
-      <button type="button" onclick="applyCustomArchiveFilter('전체', '전체보기')" class="w-full py-2 rounded-xl font-extrabold border border-slate-300 bg-slate-800 text-white">전체보기</button>
-      <div>
-        <p class="text-[10px] font-extrabold text-slate-400 mb-1">계절별 식단</p>
-        <div class="grid grid-cols-2 gap-1.5 font-bold">
-          <button type="button" onclick="applyCustomArchiveFilter('봄', '🌸 봄 식단')" class="py-2 rounded-xl border border-pink-200 bg-pink-50/60 text-pink-950 hover:bg-pink-100">🌸 봄 식단</button>
-          <button type="button" onclick="applyCustomArchiveFilter('여름', '☀️ 여름 식단')" class="py-2 rounded-xl border border-sky-200 bg-sky-50/60 text-sky-950 hover:bg-sky-100">☀️ 여름 식단</button>
-          <button type="button" onclick="applyCustomArchiveFilter('가을', '🍁 가을 식단')" class="py-2 rounded-xl border border-amber-200 bg-amber-50/60 text-amber-950 hover:bg-amber-100">🍁 가을 식단</button>
-          <button type="button" onclick="applyCustomArchiveFilter('겨울', '❄️ 겨울 식단')" class="py-2 rounded-xl border border-indigo-200 bg-indigo-50/60 text-indigo-950 hover:bg-indigo-100">❄️ 겨울 식단</button>
-        </div>
-      </div>
-      <div>
-        <p class="text-[10px] font-extrabold text-slate-400 mb-1">메뉴별 식단</p>
-        <div class="grid grid-cols-1 gap-1.5 font-bold">
-          <button type="button" onclick="applyCustomArchiveFilter('육류', '🥩 육류(돼지/소/닭)')" class="py-2 rounded-xl border border-rose-200 bg-rose-50/50 text-rose-950 hover:bg-rose-100">🥩 육류(돼지/소/닭)</button>
-          <button type="button" onclick="applyCustomArchiveFilter('해물/두부', '🐟 해물/두부/계란')" class="py-2 rounded-xl border border-teal-200 bg-teal-50/50 text-teal-950 hover:bg-teal-100">🐟 해물/두부/계란</button>
-          <button type="button" onclick="applyCustomArchiveFilter('일품/간편', '🍛 일품/국수/간편식')" class="py-2 rounded-xl border border-purple-200 bg-purple-50/50 text-purple-950 hover:bg-purple-100">🍛 일품/국수/간편식</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- [팝업 12] 💬 앱 전용 커스텀 알림/확인 모달 (폰 기본 alert / confirm 완전 대체) -->
-  <div id="customSystemDialogModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-[99] hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl border border-slate-200 text-center space-y-3.5">
-      <div id="customDialogIcon" class="text-2xl leading-none pt-0.5">💬</div>
-      <p id="customDialogMessage" class="text-xs font-extrabold text-slate-800 leading-relaxed whitespace-pre-line break-keep"></p>
-      <div id="customDialogBtnRow" class="flex justify-center gap-2 pt-1">
-        <button type="button" id="customDialogCancelBtn" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold py-2 rounded-xl text-xs transition active:scale-95">
-          취소
-        </button>
-        <button type="button" id="customDialogOkBtn" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 rounded-xl text-xs transition active:scale-95">
-          확인
-        </button>
-      </div>
-    </div>
-  </div>
+  
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
@@ -784,35 +710,1196 @@
     };
 
     const defaultBasketSeed = [
-      { id: 'd1', cat: '밥/국', name: '흑미잡곡밥', kg: '35kg', price: 95000, recipe: '흑미 3kg 혼합 취사' },
-      { id: 'd2', cat: '밥/국', name: '백미밥', kg: '35kg', price: 85000, recipe: '기본 취사' },
-      { id: 'd3', cat: '밥/국', name: '소고기미역국(👶)', kg: '15kg', price: 180000, recipe: '참기름에 고기 볶다 국간장 2바가지' },
-      { id: 'd4', cat: '밥/국', name: '시래기된장국', kg: '15kg', price: 70000, recipe: '멸치육수에 된장 풀고 푹 끓임' },
-      { id: 'd5', cat: '밥/국', name: '맑은콩나물국(👶)', kg: '2박스', price: 40000, recipe: '뚜껑 열고 끓여 비린내 제거' },
-      { id: 'm1', cat: '메인반찬', name: '매콤제육볶음', kg: '45kg', price: 320000, recipe: '고추장 양념 하루 전 숙성' },
-      { id: 'm2', cat: '메인반찬', name: '한방보쌈수육', kg: '50kg', price: 420000, recipe: '된장, 커피, 월계수잎 넣고 50분 삶기' },
-      { id: 'm3', cat: '메인반찬', name: '춘천식닭갈비', kg: '45kg', price: 290000, recipe: '닭다리살과 고구마, 양배추 듬뿍' },
-      { id: 'k1', cat: '어린이반찬', name: '수제동그랑땡(👶)', kg: '15봉', price: 110000, recipe: '계란물 입혀 노릇하게 구움' },
-      { id: 'k2', cat: '어린이반찬', name: '감자채볶음(👶)', kg: '1박스', price: 45000, recipe: '전분 뺀 후 소금간으로 볶음' },
-      { id: 'k3', cat: '어린이반찬', name: '달콤소불고기(👶)', kg: '40kg', price: 380000, recipe: '배즙과 간장으로 달콤하게 조리' },
-      { id: 'k4', cat: '어린이반찬', name: '메추리알장조림(👶)', kg: '12kg', price: 85000, recipe: '깐메추리알 간장물에 조림' },
-      { id: 'n1', cat: '일반/김치', name: '배추김치', kg: '2통', price: 60000, recipe: '기본 제공 김치' },
-      { id: 'n2', cat: '일반/김치', name: '도토리묵무침', kg: '5모', price: 55000, recipe: '배식 직전 상추와 양념 버무림' },
-      { id: 'n3', cat: '일반/김치', name: '매콤두부조림', kg: '6판', price: 48000, recipe: '부침두부 구운 후 양념장 조림' },
-      { id: 's1', cat: '사이드메뉴', name: '치킨텐더(👶)', kg: '15봉', price: 135000, recipe: '배식 직전 바삭하게 튀김' },
-      { id: 's2', cat: '사이드메뉴', name: '교자만두찜(👶)', kg: '12봉', price: 90000, recipe: '찜기에 15분 스팀' },
-      { id: 's3', cat: '사이드메뉴', name: '제철과일(오렌지)', kg: '3박스', price: 120000, recipe: '먹기 좋게 4등분 커팅' }
-    ];
+  {
+    "id": "b01",
+    "cat": "밥/국",
+    "name": "쌀밥(백미/검정쌀)",
+    "kg": "쌀 기본취사",
+    "recipe": "쌀, 검정쌀 혼합 또는 백미 취사",
+    "note": "주간 기본 주식"
+  },
+  {
+    "id": "b02",
+    "cat": "밥/국",
+    "name": "돼지고기김치찌개",
+    "kg": "돼지고기 6kg, 두부 2~3판",
+    "recipe": "돼지고기(찌개용/앞다리살) 6kg, 두부 2~3판, 대파 1단, 양파 1망, 간마늘 1봉지",
+    "note": "싱싱정육점 구매"
+  },
+  {
+    "id": "b03",
+    "cat": "밥/국",
+    "name": "콩나물국(👶)",
+    "kg": "콩나물 2~3박스",
+    "recipe": "콩나물 2~3박스, 대파 1단, 양파(대) 1망, 간마늘 1봉지",
+    "note": "맑은국/기본국"
+  },
+  {
+    "id": "b04",
+    "cat": "밥/국",
+    "name": "황태김치콩나물국",
+    "kg": "황태 1kg, 콩나물 1박스",
+    "recipe": "황태 1kg 1봉지, 콩나물 1박스, 대파 1봉지, 간마늘 1봉지",
+    "note": "시원한 해장국풍"
+  },
+  {
+    "id": "b05",
+    "cat": "밥/국",
+    "name": "카레라이스(👶)",
+    "kg": "카레용돈육 7~8kg, 카레 5~6봉",
+    "recipe": "오뚜기카레(1kg) 순한맛4~5+약간매운맛1, 감자 10~15kg, 단호박 1박스, 당근 10~13개, 양파 1망, 우유 2L, 버터 1개",
+    "note": "싱싱정육점 카레용 고기"
+  },
+  {
+    "id": "b06",
+    "cat": "밥/국",
+    "name": "미소된장국(👶)",
+    "kg": "미소된장 3kg, 두부/유부",
+    "recipe": "미소된장 3kg(3개), 유부 1봉지, 두부 2판, 흙쪽파 1단, 국물멸치, 국간장",
+    "note": "카레/비빔밥/볶음밥 짝꿍국"
+  },
+  {
+    "id": "b07",
+    "cat": "밥/국",
+    "name": "근대된장국",
+    "kg": "근대 2박스, 된장 1개",
+    "recipe": "근대 2박스, 된장 1개, 대파 1봉지",
+    "note": "봄철 된장국"
+  },
+  {
+    "id": "b08",
+    "cat": "밥/국",
+    "name": "소고기미역국(👶)",
+    "kg": "소고기 7~8kg, 미역 1~2봉",
+    "recipe": "소고기(국거리) 7~8kg, 미역 1~2봉지, 간마늘 1봉지",
+    "note": "싱싱정육점 국거리"
+  },
+  {
+    "id": "b09",
+    "cat": "밥/국",
+    "name": "비빔밥",
+    "kg": "돈육/우육민스 8~10kg, 나물류",
+    "recipe": "당근 40~50개, 애호박(상) 3박스, 콩나물 5박스, 상추 1박스, 민스 8~10kg, 계란 7~10판, 김가루 1kg, 고추장 1통",
+    "note": "인기 일품식단"
+  },
+  {
+    "id": "b10",
+    "cat": "밥/국",
+    "name": "육개장",
+    "kg": "소고기 8kg, 고사리 5kg",
+    "recipe": "소고기국거리 8kg, 고사리(1kg) 5봉, 숙주 1박스, 느타리 2박스, 대파 2관, 무 1개",
+    "note": "부활절 특식 국"
+  },
+  {
+    "id": "b11",
+    "cat": "밥/국",
+    "name": "짜장밥(👶)",
+    "kg": "짜장돈육 7~9kg, 짜장 4~6봉",
+    "recipe": "짜장가루(1kg) 4~6봉, 춘장 2개, 짜장용고기 7~9kg, 감자 10~20kg, 양배추 2망, 애호박 2박스, 양파 1망",
+    "note": "싱싱정육점 뒷다리살"
+  },
+  {
+    "id": "b12",
+    "cat": "밥/국",
+    "name": "계란국(👶)",
+    "kg": "계란 4~18판, 팽이버섯 15개",
+    "recipe": "계란, 팽이버섯 15개, 대파 작은묶음 1봉지, 간마늘",
+    "note": "짜장밥/덮밥 짝꿍국"
+  },
+  {
+    "id": "b13",
+    "cat": "밥/국",
+    "name": "순두부찌개",
+    "kg": "순두부 60~100개, 돈민스 5~6kg",
+    "recipe": "순두부 60~100개, 돼지고기민스 5~6kg, 대파 1단, 양파 1망, 고춧가루, 국물멸치, 새우젓",
+    "note": "얼큰 찌개"
+  },
+  {
+    "id": "b14",
+    "cat": "밥/국",
+    "name": "볶음밥(👶)",
+    "kg": "햄 2개, 당근 15개, 양파 1망",
+    "recipe": "햄 2개, 당근 15개, 양파 1망, 흙쪽파 2단, 쌀",
+    "note": "어린이 선호 메뉴"
+  },
+  {
+    "id": "b15",
+    "cat": "밥/국",
+    "name": "소고기무국(👶)",
+    "kg": "소고기 8kg, 무 10kg",
+    "recipe": "소고기국거리 8kg(어린이용 별도시 2kg), 무 10kg(또는 2개), 대파 1단, 간마늘",
+    "note": "어린이 겸용 맑은국"
+  },
+  {
+    "id": "b16",
+    "cat": "밥/국",
+    "name": "김치콩나물국",
+    "kg": "콩나물 1박스, 김치",
+    "recipe": "콩나물 1박스, 대파 1단, 신김치",
+    "note": "깔끔한 국"
+  },
+  {
+    "id": "b17",
+    "cat": "밥/국",
+    "name": "오이미역냉국",
+    "kg": "미역 1봉, 오이 1박스, 육수 12개",
+    "recipe": "미역 1봉지, 백오이(상) 1박스, 동치미육수 12개, 얼음 3봉지, 물(2L) 18~24개, 2배식초",
+    "note": "여름철 시원한 냉국"
+  },
+  {
+    "id": "b18",
+    "cat": "밥/국",
+    "name": "마늘쫑돼지고기덮밥",
+    "kg": "돼지다짐육 35kg, 마늘쫑 10kg",
+    "recipe": "돼지고기다짐육 35kg, 마늘쫑 10kg, 대파 1단, 간장 1병, 매실 1병, 간마늘 1봉지",
+    "note": "싱싱정육점+하나로마트"
+  },
+  {
+    "id": "b19",
+    "cat": "밥/국",
+    "name": "꽃게된장찌개",
+    "kg": "꽃게, 애호박 1박스, 무 2개",
+    "recipe": "꽃게(싱싱정육점 제공), 애호박(상) 1박스, 무 큰거 2개, 표고버섯 1봉, 두부, 대파 1단",
+    "note": "가을 별미 찌개"
+  },
+  {
+    "id": "b20",
+    "cat": "밥/국",
+    "name": "두부미소장국(👶)",
+    "kg": "미소된장 3개, 두부 3판",
+    "recipe": "미소된장 3개, 두부 3판, 흙쪽파 작은묶음 1단",
+    "note": "부드러운 장국"
+  },
+  {
+    "id": "b21",
+    "cat": "밥/국",
+    "name": "아욱된장국",
+    "kg": "아욱 2박스, 두부 2판, 된장 1통",
+    "recipe": "아욱 2박스, 두부 2판, 된장 1통, 대파 1단",
+    "note": "가을 구수한 된장국"
+  },
+  {
+    "id": "m01",
+    "cat": "메인반찬",
+    "name": "참치김치전",
+    "kg": "참치캔 2통, 부침5+튀김5봉",
+    "recipe": "참치캔 2통, 부침가루 5봉, 튀김가루 5봉, 김치, 양파(대) 1망, 물 2L 6개",
+    "note": "바삭한 김치전"
+  },
+  {
+    "id": "m02",
+    "cat": "메인반찬",
+    "name": "어묵볶음(👶)",
+    "kg": "어묵 4~6봉지(2.8kg규격)",
+    "recipe": "어묵 4~6봉지, 양파 1망, 대파 1단, 간마늘 1봉지, 식용유, 물엿, 굴소스",
+    "note": "인기 반찬"
+  },
+  {
+    "id": "m03",
+    "cat": "메인반찬",
+    "name": "돈까스샐러드(👶)",
+    "kg": "한입돈까스 15봉, 양배추/치커리",
+    "recipe": "한입돈까스 15봉지, 양배추 1망, 적양배추 2통, 치커리 1kg, 방울토마토 5kg 1박스, 올리브유, 사과식초, 매실청",
+    "note": "부활절 특식 메인"
+  },
+  {
+    "id": "m04",
+    "cat": "메인반찬",
+    "name": "토마토스파게티(👶)",
+    "kg": "스파게티면 25개, 소스 5통",
+    "recipe": "소고기민스 3kg, 토마토소스 5통, 스파게티면 25개, 양파, 마늘",
+    "note": "어린이주일 특식"
+  },
+  {
+    "id": "m05",
+    "cat": "메인반찬",
+    "name": "너비아니구이샐러드(👶)",
+    "kg": "너비아니 10봉, 양배추/치커리",
+    "recipe": "너비아니 10봉지, 양배추 1망, 치커리 반박스, 매실액 1병",
+    "note": "어린이주일 특식"
+  },
+  {
+    "id": "m06",
+    "cat": "메인반찬",
+    "name": "잡채",
+    "kg": "당면(1kg) 6봉, 잡채돈육 3kg",
+    "recipe": "당면(1kg) 6봉지, 잡채용돼지고기 3kg, 시금치(4kg) 1박스, 목이버섯 500g 1봉, 당근 10개, 양파 1망",
+    "note": "잔치 메인요리"
+  },
+  {
+    "id": "m07",
+    "cat": "메인반찬",
+    "name": "탕평채",
+    "kg": "청포묵(3kg) 10판, 계란 2판",
+    "recipe": "청포묵(3kg) 10판, 계란 2판, 당근 5개, 국내산 표고버섯 1봉, 부추 1단, 김",
+    "note": "정갈한 전통 메뉴"
+  },
+  {
+    "id": "m08",
+    "cat": "메인반찬",
+    "name": "제육볶음",
+    "kg": "돼지고기 40kg, 불고기양념",
+    "recipe": "돼지고기 40kg, 돼지불고기양념 1병, 갈아먹는배(1.5L) 2병, 양파 1망, 대파 1단, 간마늘 2봉",
+    "note": "성도님 정육점 제공"
+  },
+  {
+    "id": "m09",
+    "cat": "메인반찬",
+    "name": "두부김치",
+    "kg": "두부(3kg) 10판, 볶음김치",
+    "recipe": "두부(3kg) 10판, 대파 1단, 햇양파(대) 1망, 간마늘 1봉지",
+    "note": "담백한 메인"
+  },
+  {
+    "id": "m10",
+    "cat": "메인반찬",
+    "name": "돼지등뼈김치찜",
+    "kg": "돼지등뼈 80kg, 묵은지",
+    "recipe": "돼지등뼈 80kg, 대파 1단, 양파 1망, 간마늘 2봉, 미림, 올리고당, 설탕, 참치액젓",
+    "note": "싱싱정육점 제공"
+  },
+  {
+    "id": "m11",
+    "cat": "메인반찬",
+    "name": "두부구이(고추장아찌간장)",
+    "kg": "두부(3kg) 12판",
+    "recipe": "두부(3kg) 12판 노릇하게 부침, 고추장아찌간장 양념장 곁들임",
+    "note": "고소한 두부요리"
+  },
+  {
+    "id": "k01",
+    "cat": "어린이반찬",
+    "name": "계란말이(👶)",
+    "kg": "계란 14~16판(7~8묶음)",
+    "recipe": "계란 2판짜리 7~8묶음(14~16판), 쪽파 1묶음, 당근 5개, 대파",
+    "note": "어린이·어른 모두 인기"
+  },
+  {
+    "id": "k02",
+    "cat": "어린이반찬",
+    "name": "수제동그랑땡(👶)",
+    "kg": "동그랑땡 28봉지",
+    "recipe": "동그랑땡 28봉지 노릇하게 구움, 케챂 곁들임",
+    "note": "어린이 필수 반찬"
+  },
+  {
+    "id": "k03",
+    "cat": "어린이반찬",
+    "name": "비엔나야채볶음(👶)",
+    "kg": "칼집비엔나 12~15봉, 피망 15개",
+    "recipe": "칼집비엔나 12~15봉, 피망 15개(또는 브로콜리), 양파 1망, 케챂 2통, 돈까스소스(470g) 1~2개",
+    "note": "케첩+돈까스소스 황금비율"
+  },
+  {
+    "id": "k04",
+    "cat": "어린이반찬",
+    "name": "메추리알장조림(👶)",
+    "kg": "메추리알 15봉, 새송이/감자",
+    "recipe": "메추리알 15개(봉), 콩알새송이버섯 3봉(또는 감자), 꽈리고추 2봉, 흑설탕 500g 1봉, 간장",
+    "note": "단짠 장조림"
+  },
+  {
+    "id": "k05",
+    "cat": "어린이반찬",
+    "name": "햄감자채볶음(👶)",
+    "kg": "감자 20kg, 햄(1kg) 2개",
+    "recipe": "감자 20kg, 햄(1kg) 2개, 당근 2개, 양파(대) 1망, 맛소금",
+    "note": "고소한 감자볶음"
+  },
+  {
+    "id": "k06",
+    "cat": "어린이반찬",
+    "name": "조미김(어린이용)(👶)",
+    "kg": "김 여유분 상비",
+    "recipe": "어린이 및 전교인 배식용 김",
+    "note": "매주 기본 상비"
+  },
+  {
+    "id": "n01",
+    "cat": "일반/김치",
+    "name": "배추김치",
+    "kg": "기본 배식량",
+    "recipe": "주간 기본 배추김치",
+    "note": "매주 필수 제공"
+  },
+  {
+    "id": "n02",
+    "cat": "일반/김치",
+    "name": "시금치나물",
+    "kg": "남해초(벌크) 11~12kg",
+    "recipe": "남해시금치(벌크) 1박스(8kg)+3~4kg 추가(총 11~12kg), 간마늘, 참기름, 통깨",
+    "note": "남해초 벌크 구매"
+  },
+  {
+    "id": "n03",
+    "cat": "일반/김치",
+    "name": "취나물무침",
+    "kg": "취나물 3박스",
+    "recipe": "취나물 3박스 삶아 양념 무침 (참치액젓, 간마늘)",
+    "note": "향긋한 봄나물"
+  },
+  {
+    "id": "n04",
+    "cat": "일반/김치",
+    "name": "세발나물무침",
+    "kg": "세발나물(4kg) 2박스",
+    "recipe": "세발나물 4kg짜리 2박스 상큼하게 무침",
+    "note": "제철 나물"
+  },
+  {
+    "id": "n05",
+    "cat": "일반/김치",
+    "name": "사과봄동샐러드",
+    "kg": "봄동(10kg) 1박스, 사과 1봉",
+    "recipe": "봄동 1박스(10kg), 사과 1봉지, 매실청 1병",
+    "note": "350명 식수시 봄동 추가필요"
+  },
+  {
+    "id": "n06",
+    "cat": "일반/김치",
+    "name": "부추오이무침",
+    "kg": "백오이(상) 2.5~3박스, 부추 2단",
+    "recipe": "백오이(상) 2.5~3박스, 부추 2단, 양파, 고춧가루, 2배식초, 간마늘",
+    "note": "아삭한 무침"
+  },
+  {
+    "id": "n07",
+    "cat": "일반/김치",
+    "name": "깻잎장아찌/깻잎순나물",
+    "kg": "깻잎순(4kg) 3~4박스",
+    "recipe": "깻잎순(4kg) 3~4박스, 들깨가루 1봉지, 대파, 간마늘 (또는 예비반찬 깻잎장아찌)",
+    "note": "고소한 들깨 나물"
+  },
+  {
+    "id": "n08",
+    "cat": "일반/김치",
+    "name": "콩나물무침",
+    "kg": "콩나물 4~5박스",
+    "recipe": "콩나물 4~5박스, 당근 2~10개, 대파 1단, 간마늘, 고춧가루, 맛소금",
+    "note": "단골 기본 나물"
+  },
+  {
+    "id": "n09",
+    "cat": "일반/김치",
+    "name": "단무지",
+    "kg": "단무지 4개(봉)",
+    "recipe": "짜장밥 배식용 단무지 4개",
+    "note": "짜장밥 필수 반찬"
+  },
+  {
+    "id": "n10",
+    "cat": "일반/김치",
+    "name": "미역줄기볶음",
+    "kg": "미역줄기 3박스",
+    "recipe": "미역줄기 3박스, 양파 1망, 당근 3개, 간마늘",
+    "note": "깔끔한 해초 반찬"
+  },
+  {
+    "id": "n11",
+    "cat": "일반/김치",
+    "name": "양배추샐러드",
+    "kg": "양배추 1망, 적양배추 1개, 치커리",
+    "recipe": "양배추 1망, 적양배추 1개, 치커리 1박스, 마요네즈(식당용) 1개, 매실 1병",
+    "note": "상큼한 샐러드"
+  },
+  {
+    "id": "n12",
+    "cat": "일반/김치",
+    "name": "열무된장무침",
+    "kg": "열무(4kg) 5박스, 된장 1통",
+    "recipe": "열무(4kg) 5박스, 된장(900g) 1통, 간마늘 1봉지",
+    "note": "여름 별미 나물"
+  },
+  {
+    "id": "n13",
+    "cat": "일반/김치",
+    "name": "무우생채",
+    "kg": "무우 1박스",
+    "recipe": "무우 1박스 채썰어 고춧가루 1봉지, 대파, 간마늘 무침",
+    "note": "가을 무생채"
+  },
+  {
+    "id": "n14",
+    "cat": "일반/김치",
+    "name": "들기름김치볶음",
+    "kg": "배추김치, 들기름",
+    "recipe": "잘 익은 김치에 들기름과 설탕 약간 넣어 볶음",
+    "note": "감칠맛 반찬"
+  },
+  {
+    "id": "s01",
+    "cat": "사이드메뉴",
+    "name": "상추쌈",
+    "kg": "상추(4kg) 1박스",
+    "recipe": "상추(4kg) 1박스 깨끗이 세척 (제육볶음 쌈채소)",
+    "note": "제육볶음과 세트"
+  },
+  {
+    "id": "s02",
+    "cat": "사이드메뉴",
+    "name": "샤인머스켓(디저트)(👶)",
+    "kg": "샤인머스켓 적당량",
+    "recipe": "알알이 세척하여 후식 배식",
+    "note": "9월 계절 과일 디저트"
+  }
+];
 
     const defaultArchiveSeed = [
-      { id: '201', date: "2026년 10월 1일(1주차)", title: "한방보쌈수육 & 시래기국", season: "가을", menuType: "육류", dishIds: ['d1', 'd4', 'm2', 'k4', 'n2', 'n1'], likes: 8, photoId: 'default_1', createdAt: 1001 },
-      { id: '202', date: "2026년 9월 24일(4주차)", title: "달콤소불고기 & 콩나물국", season: "가을", menuType: "육류", dishIds: ['d2', 'd5', 'k3', 'n3', 's2', 'n1'], likes: 9, photoId: 'default_2', createdAt: 1002 },
-      { id: '203', date: "2026년 7월 16일(3주차)", title: "춘천닭갈비 & 치킨텐더", season: "여름", menuType: "일품/간편", dishIds: ['d2', 'd5', 'm3', 's1', 'n1', 's3'], likes: 7, photoId: 'default_3', createdAt: 1003 },
-      { id: '204', date: "2026년 4월 12일(2주차)", title: "제육볶음 & 두부조림 정식", season: "봄", menuType: "해물/두부", dishIds: ['d1', 'd3', 'm1', 'n3', 'k1', 'n1'], likes: 6, photoId: 'default_4', createdAt: 1004 }
-    ];
+  {
+    "id": "261108",
+    "date": "2026년 11월8일(2주)",
+    "title": "짜장밥 & 계란국",
+    "season": "가을",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b11",
+      "b12",
+      "n09",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "짜장가루(1kg) 5봉지 / 춘장 2개 / 짜장용고기 7키로(싱싱정육점구매) / 감자 15키로 / 양파 1망 / 애호박(상) 2박스 / 양배추 2망 / 대파작은묶음 1봉지 / 계란 16판 / 팽이버섯 15개 / 단무지 4개 / 간마늘 1봉지 / 쌀",
+    "supplies": "춘장, 간마늘",
+    "likes": 9,
+    "photoId": "default_4",
+    "createdAt": 20261108
+  },
+  {
+    "id": "261101",
+    "date": "2026년 11월1일(1주)",
+    "title": "콩나물국 & 비엔나야채볶음",
+    "season": "가을",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b03",
+      "k03",
+      "n14",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "콩나물 3박스 / 대파 1단 / 양파(대) 1망 / 칼집낸비엔나 13봉지 / 피망 15개 / 김 / 쌀",
+    "supplies": "케챂(1kg) 2통 / 돈가스소스(470g) 2병",
+    "likes": 8,
+    "photoId": "default_1",
+    "createdAt": 20261101
+  },
+  {
+    "id": "261025",
+    "date": "2026년 10월25일(4주)",
+    "title": "아욱된장국 & 동그랑땡",
+    "season": "가을",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b21",
+      "k02",
+      "n13",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "아욱 2박스 / 두부 2판 / 된장 1통 / 동그랑땡 28봉지 / 대파 1단 / 무우 1박스 / 김 / 쌀",
+    "supplies": "고춧가루 1봉지 / 식용유 / 니트릴장갑(M)",
+    "likes": 8,
+    "photoId": "default_2",
+    "createdAt": 20261025
+  },
+  {
+    "id": "261018",
+    "date": "2026년 10월18일(3주)",
+    "title": "비빔밥 & 두부미소장국",
+    "season": "가을",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b09",
+      "b20",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "미소된장 3개 / 두부 3판 / 흙쪽파 작은묶음 1단 / 당근 40개 / 애호박(상) 3박스 / 콩나물 5박스 / 상추 1박스 / 소고기민스 10kg(싱싱정육점 제공) / 계란 10판 / 쌀",
+    "supplies": "고추장(6.5kg) 1통 / 양조간장 1병 / 물엿 1병",
+    "likes": 10,
+    "photoId": "default_3",
+    "createdAt": 20261018
+  },
+  {
+    "id": "261011",
+    "date": "2026년 10월11일(2주)",
+    "title": "카레라이스 & 양배추샐러드",
+    "season": "가을",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b05",
+      "b06",
+      "n11",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "돼지고기 카레용 7kg(싱싱정육점구매) / 오뚜기카레가루(1kg) 순한맛 5봉지 / 감자 15키로 / 단호박 1박스 / 당근 10개 / 양파 1망 / 유부 1봉지 / 우유 2리터 / 버터 1개 / 양배추 1망 / 미소된장 3kg / 흙쪽파(작은묶음) 1단 / 쌀",
+    "supplies": "고무장갑(L)",
+    "likes": 9,
+    "photoId": "default_4",
+    "createdAt": 20261011
+  },
+  {
+    "id": "261004",
+    "date": "2026년 10월4일(1주)",
+    "title": "돼지고기김치찌개 & 계란말이",
+    "season": "가을",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b02",
+      "k01",
+      "n08",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "돼지고기 6키로(싱싱정육점구매) / 두부 3판 / 계란 16판 / 대파 1단 / 양파(대) 1망 / 쪽파 1묶음 / 당근 5개 / 콩나물 5박스 / 김 / 쌀 / 검정쌀",
+    "supplies": "기본 양념",
+    "likes": 9,
+    "photoId": "default_1",
+    "createdAt": 20261004
+  },
+  {
+    "id": "260920",
+    "date": "2026년 9월20일(3주)",
+    "title": "소고기미역국 & 두부구이",
+    "season": "가을",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b08",
+      "m11",
+      "n11",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "미역 큰거 한봉지 / 소고기(싱싱정육점 제공) / 두부(3kg) 12판 / 양배추 1망 / 적양배추 1개 / 치커리 1박스 / 마요네즈 1개 / 김 / 쌀",
+    "supplies": "고무장갑 / 냅킨",
+    "likes": 9,
+    "photoId": "default_2",
+    "createdAt": 20260920
+  },
+  {
+    "id": "260913",
+    "date": "2026년 9월13일(2주)",
+    "title": "순두부찌개 & 브로콜리비엔나볶음",
+    "season": "가을",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b13",
+      "k03",
+      "n11",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "순두부 100개 / 돼지고기민스 5키로(싱싱정육점구매) / 양파(대) 1망 / 대파작은묶음 1봉지 / 비엔나 12봉지 / 브로콜리(따로구매) / 양배추 1망 / 적양배추 1개 / 치커리 1박스 / 김 / 쌀",
+    "supplies": "마요네즈(식당용) 1개 / 간마늘 1봉지 / 고춧가루 1봉지 / 국물멸치 / 새우젓 / 미림",
+    "likes": 8,
+    "photoId": "default_3",
+    "createdAt": 20260913
+  },
+  {
+    "id": "260906",
+    "date": "2026년 9월6일(1주)",
+    "title": "짜장밥 & 샤인머스켓 디저트",
+    "season": "가을",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b11",
+      "b12",
+      "n09",
+      "n01",
+      "s02"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "디저트 샤인머스켓 제공",
+    "rawIngredients": "짜장가루 4봉지 / 춘장 2개 / 짜장용고기 8키로(싱싱정육점구매) / 감자 20키로 / 양파 1망 / 애호박(상) 2박스 / 양배추 2망 / 대파작은묶음 1봉지 / 계란 16판 / 팽이버섯 15개 / 단무지 4개 / 쌀 / 샤인머스켓",
+    "supplies": "춘장",
+    "likes": 10,
+    "photoId": "default_4",
+    "createdAt": 20260906
+  },
+  {
+    "id": "260830",
+    "date": "2026년 8월30일(5주)",
+    "title": "꽃게된장찌개 & 메추리알감자조림",
+    "season": "여름",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b19",
+      "k04",
+      "n08",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "꽃게(싱싱정육점제공) / 애호박(상) 1박스 / 무우 큰거 2개 / 국산 표고버섯 1봉지 / 콩나물 4박스 / 대파 1단 / 양파(대) 1망 / 당근 1개 / 메추리알 15봉지 / 꽈리고추 2봉지 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "헤어캡",
+    "likes": 9,
+    "photoId": "default_1",
+    "createdAt": 20260830
+  },
+  {
+    "id": "260823",
+    "date": "2026년 8월23일(4주)",
+    "title": "돼지고기김치찌개 & 어묵볶음",
+    "season": "여름",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b02",
+      "m02",
+      "n07",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "돼지고기앞다리살 6kg(싱싱정육점구매) / 두부 3판 / 어묵(2.8kg) 4봉지 / 깻잎순(4kg) 4박스 / 대파 1단 / 양파 1망 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "기본 양념",
+    "likes": 8,
+    "photoId": "default_2",
+    "createdAt": 20260823
+  },
+  {
+    "id": "260719",
+    "date": "2026년 7월19일(3주)",
+    "title": "카레라이스 & 미소장국",
+    "season": "여름",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b05",
+      "b06",
+      "n11",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "오뚜기카레가루(1kg) 순한맛 5봉지 / 감자 15키로 / 단호박 1박스 / 양파 1망 / 돼지고기 카레용 7kg(싱싱정육점구매) / 유부 1봉지 / 양배추 1망 / 적양배추 1개 / 우유 2리터 / 버터 1개 / 미소된장 3kg / 쌀",
+    "supplies": "우유 / 버터",
+    "likes": 9,
+    "photoId": "default_3",
+    "createdAt": 20260719
+  },
+  {
+    "id": "260712",
+    "date": "2026년 7월12일(2주)",
+    "title": "미역오이냉국 & 비엔나볶음",
+    "season": "여름",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b01",
+      "b17",
+      "k03",
+      "n07",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "미역 1봉지 / 오이(상) 1박스 / 동치미육수 12개 / 물(2L) 24개 / 얼음 3봉지 / 칼집비엔나소시지 13봉지 / 깻잎순(4kg) 3박스 / 들깨가루 1봉지 / 대파 1봉지 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "식당용케챂 1개 / 돈가스소스 1개 / 마스크(대형) / 동원 참치액 / 물엿 / 2배식초",
+    "likes": 8,
+    "photoId": "default_4",
+    "createdAt": 20260712
+  },
+  {
+    "id": "260705",
+    "date": "2026년 7월5일(1주)",
+    "title": "미역국 & 햄감자채볶음",
+    "season": "여름",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b08",
+      "k05",
+      "n06",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "소고기국거리 7키로(싱싱정육점구매) / 미역 1봉지 / 햄(1kg) 2개 / 감자 20키로 / 당근 2개 / 양파(대) 1망 / 대파 작은묶음 1봉지 / 부추 2단 / 오이(상) 2박스 / 김 / 쌀",
+    "supplies": "고춧가루 / 물엿",
+    "likes": 8,
+    "photoId": "default_1",
+    "createdAt": 20260705
+  },
+  {
+    "id": "260628",
+    "date": "2026년 6월28일(4주)",
+    "title": "짜장밥 & 계란국",
+    "season": "여름",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b11",
+      "b12",
+      "n09",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "짜장가루 6봉지 / 춘장 2개 / 돼지고기짜장용 8키로(싱싱정육점구입) / 감자 20키로 / 양배추 2망 / 양파 1망 / 애호박(상) 2박스 / 계란 18판 / 대파작은묶음 1봉지 / 팽이버섯 15개 / 간마늘 1봉지 / 단무지 4개 / 쌀",
+    "supplies": "식기세척기세제(가루)",
+    "likes": 9,
+    "photoId": "default_2",
+    "createdAt": 20260628
+  },
+  {
+    "id": "260621",
+    "date": "2026년 6월21일(3주)",
+    "title": "돼지등뼈김치찜 & 소고기무국",
+    "season": "여름",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "m10",
+      "b15",
+      "n08",
+      "n11",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "어린이용 소고기무국 별도 준비",
+    "rawIngredients": "돼지등뼈(80kg 싱싱정육점 제공) / 소고기국거리 2kg / 무우 2개 / 양배추 1망 / 적양배추 1개 / 대파 1단 / 양파 1망 / 콩나물 5박스 / 간마늘 2봉지",
+    "supplies": "미림 / 올리고당 / 설탕 / 참치액젓 / 마요네즈 / 식기세척기세제 / Vix / Pb 바닥세척제",
+    "likes": 10,
+    "photoId": "default_3",
+    "createdAt": 20260621
+  },
+  {
+    "id": "260614",
+    "date": "2026년 6월14일(2주)",
+    "title": "콩나물국 & 두부김치 & 열무된장무침",
+    "season": "여름",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b03",
+      "m09",
+      "n12",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "콩나물 2박스 / 두부(3kg) 10판 / 열무(4kg) 5박스 / 대파 1단 / 햇양파(대) 1망 / 간마늘 1봉지 / 된장(900g) 1통 / 김 / 쌀",
+    "supplies": "된장(900g) 1통",
+    "likes": 8,
+    "photoId": "default_4",
+    "createdAt": 20260614
+  },
+  {
+    "id": "260607",
+    "date": "2026년 6월7일(1주)",
+    "title": "마늘쫑돼지고기덮밥 & 계란국",
+    "season": "여름",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b18",
+      "b12",
+      "n11",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "돼지고기다짐육 35kg(싱싱정육점구매) / 마늘쫑 10kg(하나로마트구매) / 대파 1단 / 계란 4판 / 팽이버섯 15개 / 양배추 1망 / 적양배추 1개 / 김 / 쌀",
+    "supplies": "마요네즈 1개 / 매실 1병 / 간장 1병 / 간마늘 1봉지",
+    "likes": 9,
+    "photoId": "default_1",
+    "createdAt": 20260607
+  },
+  {
+    "id": "260531",
+    "date": "2026년 5월31일(5주)",
+    "title": "제육볶음 & 오이미역냉국 & 상추쌈",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b17",
+      "m08",
+      "s01",
+      "n08",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "돼지고기 40kg 성도님 제공",
+    "rawIngredients": "돼지고기 40kg(정육점 성도님 제공) / 상추(4kg) 1박스 / 미역 1봉지 / 백오이(상) 1박스 / 동치미육수 12개 / 얼음 3봉지 / 물(2L) 18개 / 양파 1망 / 대파 1단 / 콩나물 5박스 / 당근 10개 / 간마늘 2봉지 / 김 / 쌀",
+    "supplies": "돼지불고기양념 1병 / 갈아먹는배(1.5L) 2병 / 맛소금",
+    "likes": 10,
+    "photoId": "default_2",
+    "createdAt": 20260531
+  },
+  {
+    "id": "260524",
+    "date": "2026년 5월24일(4주)",
+    "title": "김치콩나물국 & 탕평채 & 동그랑땡",
+    "season": "봄",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b16",
+      "m07",
+      "k02",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "콩나물 1박스 / 청포묵(3kg) 10판 / 계란 2판 / 당근 5개 / 표고버섯(국내산) 1봉지 / 부추 1단 / 동그랑땡 28봉지 / 양배추 1망 / 적양배추 1개 / 대파 1단 / 김(여유분있음) / 쌀",
+    "supplies": "올리고당 / 매실 / 냅킨 / 고무장갑(L) 오른쪽만 10개",
+    "likes": 8,
+    "photoId": "default_3",
+    "createdAt": 20260524
+  },
+  {
+    "id": "260517",
+    "date": "2026년 5월17일(3주)",
+    "title": "카레라이스 & 미소장국",
+    "season": "봄",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b05",
+      "b06",
+      "n11",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "오뚜기카레가루(1kg) 약간매운맛1+순한맛5 / 감자 10키로 1박스 / 단호박 1박스 / 양파 1망 / 돼지고기 카레용 8키로 / 유부 1봉지 / 흙쪽파 1단 / 양배추 1망 / 우유 2리터 / 버터 1개 / 미소된장 3키로 / 쌀",
+    "supplies": "우유 2L / 버터 1개",
+    "likes": 9,
+    "photoId": "default_4",
+    "createdAt": 20260517
+  },
+  {
+    "id": "260510",
+    "date": "2026년 5월10일(2주)",
+    "title": "소고기무국 & 잡채 & 오이부추무침",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b15",
+      "m06",
+      "n06",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "김 여유분 있음",
+    "rawIngredients": "소고기국거리 8키로 / 무우 10키로 / 대파 1단 / 당면(1kg) 6봉지 / 당근 10개 / 양파 1망 / 시금치(4kg) 1박스 / 잡채용돼지고기 3키로 / 목이버섯(500g) 1봉지 / 부추 2단 / 백오이(상) 2.5박스 / 간마늘 1봉지 / 쌀 / 김",
+    "supplies": "고춧가루 / 2배식초 1병",
+    "likes": 10,
+    "photoId": "default_1",
+    "createdAt": 20260510
+  },
+  {
+    "id": "260503",
+    "date": "2026년 5월3일(1주)",
+    "title": "볶음밥 & 토마토스파게티 & 너비아니",
+    "season": "봄",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b14",
+      "b06",
+      "m04",
+      "m05",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "어린이주일 특식 구성",
+    "rawIngredients": "미소된장 3개 / 유부 1봉지 / 햄 2개 / 당근 15개 / 양파 1망 / 흙쪽파 2단 / 양배추 1망 / 치커리 반박스 / 소고기민스 3키로 / 토마토소스 5통 / 스파게티면 25개 / 너비아니 10봉지 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "매실액 1병 / 토마토소스 5통",
+    "likes": 10,
+    "photoId": "default_2",
+    "createdAt": 20260503
+  },
+  {
+    "id": "260426",
+    "date": "2026년 4월26일(4주)",
+    "title": "순두부찌개 & 메추리알장조림",
+    "season": "봄",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b13",
+      "k04",
+      "n10",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "순두부 60개 / 돼지고기민스 6키로 / 대파 1단 / 메추리알 15개 / 콩알새송이버섯 3봉지 / 꽈리고추 2봉지 / 미역줄기 3박스 / 양파 1망 / 당근 3개 / 양배추 1망 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "흑설탕(500g) 1봉지",
+    "likes": 8,
+    "photoId": "default_3",
+    "createdAt": 20260426
+  },
+  {
+    "id": "260419",
+    "date": "2026년 4월19일(3주)",
+    "title": "짜장밥 & 계란국 & 단무지",
+    "season": "봄",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b11",
+      "b12",
+      "n09",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "짜장가루(1kg) 6봉지 / 춘장 2개 / 양배추 2망 / 양파 1망 / 애호박(상) 2박스 / 감자(10kg) 1박스 / 돼지고기뒷다리살(짜장용) 9kg / 단무지 4개 / 계란 2묶음짜리 9묶음 / 팽이버섯 15개 / 대파 작은거 1봉지 / 김 / 쌀 / 간마늘 1봉지",
+    "supplies": "매실액 1병",
+    "likes": 9,
+    "photoId": "default_4",
+    "createdAt": 20260419
+  },
+  {
+    "id": "260412",
+    "date": "2026년 4월12일(2주)",
+    "title": "돼지고기김치찌개 & 비엔나볶음",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b02",
+      "k03",
+      "n08",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "돼지고기(찌개용) 6키로 / 두부 3판 / 비엔나 15봉지 / 양파 1망 / 피망 15개 / 콩나물 5박스 / 당근 2개 / 대파 1단 / 쌀",
+    "supplies": "케챂 2통 / 돈까스소스(470g) 1개 / 고춧가루 / 맛소금 / 냅킨 / 철수세미",
+    "likes": 8,
+    "photoId": "default_1",
+    "createdAt": 20260412
+  },
+  {
+    "id": "260405",
+    "date": "2026년 4월5일(1주)",
+    "title": "[부활절] 육개장 & 돈까스샐러드",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b10",
+      "m03",
+      "n07",
+      "k06",
+      "n01"
+    ],
+    "headcount": "350명(부활절)",
+    "leftoverNote": "부활절 특식",
+    "rawIngredients": "소고기국거리 8키로 / 고사리(1kg) 5봉지 / 숙주 1박스 / 느타리버섯 2박스 / 대파 2관 / 무우 1개 / 한입돈까스 15봉지 / 양배추 1망 / 적양배추 2통 / 치커리 1키로 / 방울토마토(5kg) 1박스 / 깻잎장아찌 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "올리브유(엑스트라버진) 1병 / 사과식초 1병 / 매실청 1병 / 미림 / 라텍스장갑(S) / 마스크",
+    "likes": 10,
+    "photoId": "default_2",
+    "createdAt": 20260405
+  },
+  {
+    "id": "260329",
+    "date": "2026년 3월29일(5주)",
+    "title": "비빔밥 & 미소장국",
+    "season": "봄",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b09",
+      "b06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "특이사항 없음",
+    "rawIngredients": "미소된장 3개 / 유부 1봉지 / 흙쪽파 1단 / 당근 50개 / 애호박(상) 3박스 / 콩나물 5박스 / 상추 1박스 / 돼지고기 민스 8키로 / 김가루(1kg) 1봉지 / 계란 2묶음짜리 7묶음 / 간마늘 1봉지 / 쌀",
+    "supplies": "고추장 1통",
+    "likes": 9,
+    "photoId": "default_3",
+    "createdAt": 20260329
+  },
+  {
+    "id": "260322",
+    "date": "2026년 3월22일(4주)",
+    "title": "미역국 & 어묵볶음 & 부추오이무침",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b08",
+      "m02",
+      "n06",
+      "n07",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "예비반찬 깻잎장아찌 준비",
+    "rawIngredients": "소고기(국거리) 8키로 / 미역 2봉지 / 어묵 6봉지 / 백오이(상) 3박스 / 부추 2단 / 양파 1망 / 간마늘 1봉지 / 김 / 쌀 / 예비반찬 깻잎장아찌",
+    "supplies": "식용유 1통 / 물엿 / 굴소스",
+    "likes": 8,
+    "photoId": "default_4",
+    "createdAt": 20260322
+  },
+  {
+    "id": "260315",
+    "date": "2026년 3월15일(3주)",
+    "title": "돼지고기김치찌개 & 계란말이 & 시금치",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b02",
+      "k01",
+      "n02",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명(기준)",
+    "leftoverNote": "시금치 1kg 증량(총12kg)",
+    "rawIngredients": "돼지고기찌개용(앞다리살) 6키로 / 두부 2판 / 계란 2묶음짜리 8묶음 / 남해초(벌크) 1박스+4키로 추가(총 12키로) / 대파 1관 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "냅킨 / 라텍스장갑(소)",
+    "likes": 9,
+    "photoId": "default_1",
+    "createdAt": 20260315
+  },
+  {
+    "id": "260308",
+    "date": "2026년 3월8일(2주)",
+    "title": "근대된장국 & 사과봄동샐러드 & 비엔나",
+    "season": "봄",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b07",
+      "n05",
+      "k03",
+      "k06",
+      "n01"
+    ],
+    "headcount": "350명",
+    "leftoverNote": "봄동 부족 (다음엔 10kg 이상 준비 요망)",
+    "rawIngredients": "근대 2박스 / 사과 1봉지 / 봄동 1박스(10키로) / 칼집낸비엔나 13봉지 / 양파 1망 / 피망 15개 / 대파 1봉지 / 된장 1개 / 김 / 쌀 / 검정쌀",
+    "supplies": "케챂 2봉지 / 돈까스소스(470g) 1개 / 매실청 1병",
+    "likes": 8,
+    "photoId": "default_2",
+    "createdAt": 20260308
+  },
+  {
+    "id": "260301",
+    "date": "2026년 3월1일(1주)",
+    "title": "카레라이스 & 미소된장국",
+    "season": "봄",
+    "menuType": "일품/간편",
+    "dishIds": [
+      "b05",
+      "b06",
+      "k06",
+      "n01"
+    ],
+    "headcount": "300명",
+    "leftoverNote": "카레 10인분정도 남음",
+    "rawIngredients": "오뚜기카레가루 1키로짜리(약간매운맛1 순한맛4) / 감자(10키로) 1박스 / 단호박 1박스 / 당근 13개 / 양파 1망 / 대파 1봉지 / 돼지고기 카레용 8키로 / 우유 2리터 / 버터 1개 / 미소된장 3키로 / 두부 2판 / 쌀",
+    "supplies": "국물멸치 / 국간장 / 라텍스장갑(M)",
+    "likes": 9,
+    "photoId": "default_3",
+    "createdAt": 20260301
+  },
+  {
+    "id": "260222",
+    "date": "2026년 2월22일(4주)",
+    "title": "황태김치콩나물국 & 동그랑땡 & 세발나물",
+    "season": "겨울",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b04",
+      "k02",
+      "n04",
+      "k06",
+      "n01"
+    ],
+    "headcount": "290명",
+    "leftoverNote": "동그랑땡 2봉지 남음, 세발나물 남음",
+    "rawIngredients": "황태 1키로 한봉지 / 콩나물 1박스 / 동그랑땡 28봉지 / 세발나물 4키로짜리 2박스 / 대파 1봉지 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "기본 양념",
+    "likes": 8,
+    "photoId": "default_4",
+    "createdAt": 20260222
+  },
+  {
+    "id": "260208",
+    "date": "2026년 2월8일(2주)",
+    "title": "콩나물국 & 참치김치전 & 취나물",
+    "season": "겨울",
+    "menuType": "해물/두부",
+    "dishIds": [
+      "b01",
+      "b03",
+      "m01",
+      "n03",
+      "k06",
+      "n01"
+    ],
+    "headcount": "280명",
+    "leftoverNote": "취나물 30인분 남음, 김치전 30인분 남음",
+    "rawIngredients": "콩나물 2박스 / 참치캔 2통 / 부침가루 5봉지 / 튀김가루 5봉지 / 양파(대) 1망 / 대파 1관 / 간마늘 1봉지 / 취나물 3박스 / 김 / 쌀 / 물 2리터짜리 6개",
+    "supplies": "양념(참치액젓 미림) / 티슈 / 마스크 / 종이컵(커피용) / 고무장갑(L) / 니트릴장갑(S) / 부탄가스",
+    "likes": 8,
+    "photoId": "default_1",
+    "createdAt": 20260208
+  },
+  {
+    "id": "260201",
+    "date": "2026년 2월1일(1주)",
+    "title": "돼지고기김치찌개 & 계란말이 & 시금치",
+    "season": "겨울",
+    "menuType": "육류",
+    "dishIds": [
+      "b01",
+      "b02",
+      "k01",
+      "n02",
+      "k06",
+      "n01"
+    ],
+    "headcount": "325명",
+    "leftoverNote": "계란말이 6말이, 시금치 10명분, 김치찌개 10명분 남음",
+    "rawIngredients": "돼지고기찌개용 6키로 / 두부 2판 / 계란 2판짜리 7묶음 / 남해시금치(벌크) 1박스(8키로)+3키로 추가(총 11키로) / 대파 1관 / 양파(중) 1망 / 간마늘 1봉지 / 김 / 쌀",
+    "supplies": "기본 양념",
+    "likes": 9,
+    "photoId": "default_2",
+    "createdAt": 20260201
+  }
+];
 
     let masterBasket = [...defaultBasketSeed];
-    let currentTrayIds = ['d1', 'd3', 'm1', 'k1', 'k2', 's1', 'n1'];
+    let currentTrayIds = ['b11', 'b12', 'n09', 'n01'];
     let archiveList = [...defaultArchiveSeed];
 
     let cachedGateAuth = {
@@ -2436,4 +3523,580 @@
     renderTray();
     renderArchiveGrid();
     verifyExistingSessionOnLoad();
-  </script></body></html>
+  
+
+
+    // ================= 1. 폰 기본 alert/confirm 완전 대체 엔진 =================
+    window.alert = function(msg) { showCustomAlert(msg, '💬'); };
+
+    function showCustomAlert(msg, iconStr = '💬') {
+      return new Promise(resolve => {
+        const modal = document.getElementById('customSystemDialogModal');
+        const iconEl = document.getElementById('customDialogIcon');
+        const msgEl = document.getElementById('customDialogMessage');
+        const cancelBtn = document.getElementById('customDialogCancelBtn');
+        const okBtn = document.getElementById('customDialogOkBtn');
+        if (!modal) { resolve(true); return; }
+        if (iconEl) iconEl.innerText = iconStr;
+        if (msgEl) msgEl.innerText = String(msg || '');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        if (okBtn) {
+          okBtn.innerText = '확인';
+          okBtn.onclick = () => { modal.classList.add('hidden'); resolve(true); };
+        }
+        modal.classList.remove('hidden');
+      });
+    }
+
+    function showCustomConfirm(msg, iconStr = '❓') {
+      return new Promise(resolve => {
+        const modal = document.getElementById('customSystemDialogModal');
+        const iconEl = document.getElementById('customDialogIcon');
+        const msgEl = document.getElementById('customDialogMessage');
+        const cancelBtn = document.getElementById('customDialogCancelBtn');
+        const okBtn = document.getElementById('customDialogOkBtn');
+        if (!modal) { resolve(false); return; }
+        if (iconEl) iconEl.innerText = iconStr;
+        if (msgEl) msgEl.innerText = String(msg || '');
+        if (cancelBtn) {
+          cancelBtn.classList.remove('hidden');
+          cancelBtn.innerText = '취소 (N)';
+          cancelBtn.onclick = () => { modal.classList.add('hidden'); resolve(false); };
+        }
+        if (okBtn) {
+          okBtn.innerText = '확인 (Y)';
+          okBtn.onclick = () => { modal.classList.add('hidden'); resolve(true); };
+        }
+        modal.classList.remove('hidden');
+      });
+    }
+
+    // confirm 사용 함수들 커스텀 모달 버전으로 오버라이드
+    logoutUser = async function() {
+      if (await showCustomConfirm('로그아웃 하시겠습니까?', '🚪')) {
+        sessionStorage.clear();
+        location.reload();
+      }
+    };
+
+    removeInAppMember = async function(index) {
+      const members = inAppAuthConfig.members || [];
+      if (members.length <= 1) return await showCustomAlert('최소 1명의 관리자는 남아있어야 합니다.', '⚠️');
+      if (!(await showCustomConfirm('[' + members[index].name + '] 님을 명단에서 삭제하시겠습니까?', '🗑️'))) return;
+      members.splice(index, 1);
+      inAppAuthConfig.members = members;
+      saveLocalAuthBackup(inAppAuthConfig);
+      renderInAppAdminModalUI();
+      if (db) await db.collection('settings').doc('authConfig').set(inAppAuthConfig, { merge: true }).catch(() => {});
+    };
+
+    executeSelectedBasketDelete = async function() {
+      if (selectedBasketDeleteIds.length === 0) return await showCustomAlert('삭제할 반찬을 아래 목록에서 터치하여 선택해주세요.', '👆');
+      if (!(await showCustomConfirm('선택하신 ' + selectedBasketDeleteIds.length + '개의 반찬을 삭제할까요?', '🗑️'))) return;
+      const toDelete = [...selectedBasketDeleteIds];
+      masterBasket = masterBasket.filter(d => !toDelete.includes(d.id));
+      currentTrayIds = currentTrayIds.filter(id => !toDelete.includes(id));
+      if (db) {
+        try { const batch = db.batch(); toDelete.forEach(id => batch.delete(db.collection('basket').doc(id))); await batch.commit(); } catch (e) {}
+      }
+      exitBasketDeleteMode(); renderTray(); await syncCurrentStateToDb();
+    };
+
+    executeAllBasketDelete = async function() {
+      if (masterBasket.length === 0) return await showCustomAlert('삭제할 반찬이 없습니다.', 'ℹ️');
+      if (!(await showCustomConfirm('현재 등록된 반찬(' + masterBasket.length + '개)을 모두 전체 삭제할까요?', '⚠️'))) return;
+      const allIds = masterBasket.map(d => d.id);
+      masterBasket = []; currentTrayIds = [];
+      if (db) {
+        try {
+          for (let i = 0; i < allIds.length; i += 350) {
+            const batch = db.batch(); allIds.slice(i, i + 350).forEach(id => batch.delete(db.collection('basket').doc(id))); await batch.commit();
+          }
+        } catch (e) {}
+      }
+      exitBasketDeleteMode(); renderTray(); await syncCurrentStateToDb();
+    };
+
+    applyRoleUI = function() {
+      const badge = document.getElementById('roleBadgeText');
+      const adminCenterBtn = document.getElementById('adminCenterBtn');
+      const adminActions = document.getElementById('adminActionBtns');
+      const memberBar = document.getElementById('memberSummaryBar');
+      if (!hasInitializedTodayWeek) { hasInitializedTodayWeek = true; populateDateDropdownOptions(getCurrentWeekSundayString()); }
+      else populateDateDropdownOptions();
+
+      if (isLeader) {
+        badge.innerHTML = '팀장 ' + currentUser + ' <span class="half-door-gray">🚪</span>';
+        if (adminCenterBtn) adminCenterBtn.classList.remove('hidden');
+        if (adminActions) adminActions.classList.remove('hidden');
+        if (memberBar) memberBar.classList.add('hidden');
+      } else {
+        badge.innerHTML = '팀원 ' + currentUser + ' <span class="half-door-gray">🚪</span>';
+        if (adminCenterBtn) adminCenterBtn.classList.add('hidden');
+        if (adminActions) adminActions.classList.add('hidden');
+        if (memberBar) memberBar.classList.remove('hidden');
+      }
+      renderTray();
+    };
+
+    // ================= 2. 3개월 초밀착 커스텀 달력 및 각주(완료/확정/예정확정) =================
+    populateDateDropdownOptions = function(selectedVal) {
+      const hiddenInput = document.getElementById('currentDate');
+      const todayWeekStr = getCurrentWeekSundayString();
+      const currentVal = hiddenInput ? hiddenInput.value : '';
+      const targetVal = normalizeCompactDateStr(selectedVal || currentVal || todayWeekStr) || todayWeekStr;
+      if (hiddenInput) hiddenInput.value = targetVal;
+
+      const triggerBtn = document.getElementById('customDateTriggerBtn');
+      const triggerText = document.getElementById('customDateTriggerText');
+      if (triggerText) triggerText.innerText = targetVal;
+      if (triggerBtn) {
+        triggerBtn.className = (targetVal === todayWeekStr)
+          ? "bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition"
+          : "bg-slate-50 text-slate-800 text-xs font-bold px-2.5 py-1 rounded-lg border border-slate-300 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition";
+      }
+      applySeasonalTrayBorder(targetVal);
+    };
+
+    function getConfirmedSundaySet() {
+      const set = new Set();
+      if (Array.isArray(archiveList)) archiveList.forEach(a => { if (a && a.date) set.add(normalizeCompactDateStr(a.date)); });
+      return set;
+    }
+
+    function parseYearMonthFromDateStr(str) {
+      if (!str) return null;
+      const m = String(str).match(/(\d{4})년\s*(\d{1,2})월/);
+      return m ? { year: parseInt(m[1], 10), month: parseInt(m[2], 10) - 1 } : null;
+    }
+
+    function getCalendarMonthOffsetBounds(baseYear, baseMonth) {
+      const baseYM = baseYear * 12 + baseMonth;
+      let earliestYM = baseYM - 1;
+      if (Array.isArray(archiveList) && archiveList.length > 0) {
+        let minConfirmedYM = null;
+        archiveList.forEach(a => {
+          const parsed = parseYearMonthFromDateStr(a && a.date);
+          if (parsed) {
+            const ym = parsed.year * 12 + parsed.month;
+            if (minConfirmedYM === null || ym < minConfirmedYM) minConfirmedYM = ym;
+          }
+        });
+        if (minConfirmedYM !== null) earliestYM = Math.min(baseYM - 1, minConfirmedYM);
+      }
+      return { startOffset: earliestYM - baseYM, endOffset: 12 };
+    }
+
+    function getSundayStatusFootnote(sundayDateObj, isConfirmed) {
+      if (!isConfirmed) return null;
+      const now = new Date(), dayOfWeek = now.getDay();
+      const currentWeekSunday = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (dayOfWeek === 0 ? 0 : (7 - dayOfWeek)));
+      currentWeekSunday.setHours(0, 0, 0, 0);
+      const targetSun = new Date(sundayDateObj.getFullYear(), sundayDateObj.getMonth(), sundayDateObj.getDate());
+      targetSun.setHours(0, 0, 0, 0);
+      const nowYearMonth = now.getFullYear() * 12 + now.getMonth();
+      const sunYearMonth = targetSun.getFullYear() * 12 + targetSun.getMonth();
+      if (targetSun.getTime() < currentWeekSunday.getTime()) return { label: '완료', cls: 'bg-slate-600 text-white border-slate-700' };
+      if (sunYearMonth > nowYearMonth || targetSun.getTime() > currentWeekSunday.getTime()) return { label: '예정확정', cls: 'bg-indigo-600 text-white border-indigo-700' };
+      return { label: '확정', cls: 'bg-rose-600 text-white border-rose-700' };
+    }
+
+    function openCustomCalendarModal() {
+      const modal = document.getElementById('customCalendarModal');
+      if (!modal) return;
+      renderCustomScrollCalendar();
+      modal.classList.remove('hidden');
+      requestAnimationFrame(() => {
+        const container = document.getElementById('calendarScrollContainer');
+        const prevMonthEl = document.getElementById('cal-month-offset--1');
+        const currentMonthEl = document.getElementById('cal-month-offset-0');
+        if (container && prevMonthEl) container.scrollTop = Math.max(0, prevMonthEl.offsetTop - container.offsetTop - 2);
+        else if (container && currentMonthEl) container.scrollTop = Math.max(0, currentMonthEl.offsetTop - container.offsetTop - (container.clientHeight - currentMonthEl.clientHeight) / 2);
+      });
+    }
+
+    function closeCustomCalendarModal() { const modal = document.getElementById('customCalendarModal'); if (modal) modal.classList.add('hidden'); }
+    function selectTodayWeekInCalendar() { handleDateDropdownChange(getCurrentWeekSundayString()); closeCustomCalendarModal(); }
+    function selectCalendarWeekDate(sundayStr) { handleDateDropdownChange(sundayStr); closeCustomCalendarModal(); }
+
+    function renderCustomScrollCalendar() {
+      const container = document.getElementById('calendarScrollContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      const now = new Date(), baseYear = now.getFullYear(), baseMonth = now.getMonth();
+      const selectedDateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
+      const todayWeekStr = getCurrentWeekSundayString();
+      const confirmedSet = getConfirmedSundaySet();
+      const bounds = getCalendarMonthOffsetBounds(baseYear, baseMonth);
+
+      for (let offset = bounds.startOffset; offset <= bounds.endOffset; offset++) {
+        const monthDate = new Date(baseYear, baseMonth + offset, 1);
+        const y = monthDate.getFullYear(), m = monthDate.getMonth();
+        const firstDayOfWeek = new Date(y, m, 1).getDay(), lastDate = new Date(y, m + 1, 0).getDate();
+        const monthCard = document.createElement('div');
+        monthCard.id = 'cal-month-offset-' + offset;
+        monthCard.className = (offset === 0) ? "px-2 py-1 rounded-xl border-2 border-pink-300 bg-pink-50/30 shadow-2xs" : "px-2 py-1 rounded-xl border border-slate-200 bg-white";
+
+        let tagLabel = '';
+        if (offset === bounds.startOffset && offset < -1) tagLabel = '<span class="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-extrabold">최초확정월</span>';
+        else if (offset === -1) tagLabel = '<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold">전월</span>';
+        else if (offset === 0) tagLabel = '<span class="text-[9px] bg-pink-100 text-pink-800 px-1.5 py-0.2 rounded font-extrabold">현재월</span>';
+        else if (offset === 1) tagLabel = '<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold">다음월</span>';
+
+        let cellsHtml = '';
+        for (let b = 0; b < firstDayOfWeek; b++) cellsHtml += '<div class="h-[22px]"></div>';
+        for (let d = 1; d <= lastDate; d++) {
+          const curObj = new Date(y, m, d), dow = curObj.getDay();
+          const targetSundayObj = new Date(y, m, d + (dow === 0 ? 0 : (7 - dow)));
+          const sundayStr = formatWeekOptionString(targetSundayObj);
+          if (dow === 0) {
+            const thisSundayStr = formatWeekOptionString(curObj);
+            const isSelected = (thisSundayStr === selectedDateStr), isTodaySunday = (thisSundayStr === todayWeekStr);
+            const footnote = getSundayStatusFootnote(curObj, confirmedSet.has(thisSundayStr));
+            const boxStyle = isSelected ? "border-2 border-rose-600 bg-rose-100 text-rose-950 font-black shadow-2xs" : isTodaySunday ? "border-2 border-pink-400 bg-pink-50 text-rose-700 font-black" : "border-[1.5px] border-rose-300 bg-rose-50/40 text-rose-700 font-extrabold hover:bg-rose-100/60";
+            const footnoteHtml = footnote ? '<span class="absolute -top-1.5 -right-1 ' + footnote.cls + ' text-[7.5px] leading-none font-extrabold px-1 py-[1px] rounded shadow-2xs border whitespace-nowrap z-10">' + footnote.label + '</span>' : '';
+            cellsHtml += '<button type="button" onclick="selectCalendarWeekDate(\'' + thisSundayStr + '\')" class="relative h-[22px] rounded-md flex items-center justify-center transition active:scale-95 ' + boxStyle + '">' + footnoteHtml + '<span class="text-[13px] leading-none tracking-tight">' + d + '</span></button>';
+          } else {
+            const textColor = (dow === 6) ? 'text-sky-600' : 'text-slate-700';
+            cellsHtml += '<button type="button" onclick="selectCalendarWeekDate(\'' + sundayStr + '\')" class="h-[22px] rounded-md flex items-center justify-center text-[13px] font-bold leading-none ' + textColor + ' hover:bg-slate-100 transition">' + d + '</button>';
+          }
+        }
+        monthCard.innerHTML = '<div class="flex items-center justify-between mb-0.5 px-0.5"><span class="text-[13.5px] font-black text-slate-900 tracking-tight leading-none">' + y + '년 ' + (m + 1) + '월</span>' + tagLabel + '</div><div class="grid grid-cols-7 gap-y-[2px] gap-x-1 text-center">' + cellsHtml + '</div>';
+        container.appendChild(monthCard);
+      }
+    }
+
+    // ================= 3. 커스텀 선택기 및 26식단.txt 확장 항목 처리 =================
+    function selectCustomMemberRole(roleVal) {
+      const hiddenEl = document.getElementById('inAppNewMemberRole');
+      if (hiddenEl) hiddenEl.value = roleVal;
+      const btnMem = document.getElementById('roleBtnMember'), btnAdm = document.getElementById('roleBtnAdmin');
+      if (btnMem && btnAdm) {
+        btnAdm.className = (roleVal === 'admin') ? "px-2 py-1.5 rounded-lg bg-purple-200 text-purple-950 transition" : "px-2 py-1.5 rounded-lg text-slate-500 transition";
+        btnMem.className = (roleVal !== 'admin') ? "px-2 py-1.5 rounded-lg bg-rose-200 text-rose-950 transition" : "px-2 py-1.5 rounded-lg text-slate-500 transition";
+      }
+    }
+
+    function selectCustomNewDishCat(catVal) {
+      const hiddenEl = document.getElementById('newDishCat');
+      if (hiddenEl) hiddenEl.value = catVal;
+      document.querySelectorAll('.new-dish-cat-btn').forEach(btn => {
+        btn.className = (btn.getAttribute('data-cat') === catVal)
+          ? "new-dish-cat-btn py-1.5 rounded-lg border-2 border-slate-800 bg-slate-800 text-white font-extrabold"
+          : "new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600";
+      });
+    }
+
+    openAddDishModal = function() {
+      selectCustomNewDishCat(currentCat);
+      document.getElementById('newDishName').value = '';
+      document.getElementById('newDishKg').value = '';
+      const priceEl = document.getElementById('newDishPrice'); if (priceEl) priceEl.value = '';
+      document.getElementById('newDishRecipe').value = '';
+      document.getElementById('addDishModal').classList.remove('hidden');
+    };
+
+    createNewDishInBasket = async function() {
+      const cat = document.getElementById('newDishCat').value || '밥/국';
+      let name = document.getElementById('newDishName').value.trim();
+      if (!name) return await showCustomAlert('반찬 이름을 입력해주세요.', '✏️');
+      if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+      const noteVal = document.getElementById('newDishPrice') ? String(document.getElementById('newDishPrice').value || '').trim() : '';
+      const newDish = {
+        id: 'custom_' + Date.now(), cat, name,
+        kg: document.getElementById('newDishKg').value.trim() || '적당량',
+        note: noteVal,
+        recipe: document.getElementById('newDishRecipe').value.trim() || '기본 조리'
+      };
+      masterBasket.unshift(newDish); currentCat = cat; currentTrayIds.push(newDish.id);
+      if (db) await db.collection('basket').doc(newDish.id).set(newDish).catch(() => {});
+      await syncCurrentStateToDb(); closeAddDishModal(); renderTray();
+    };
+
+    openDishDetailModal = function(id) {
+      editingDishId = id;
+      const item = masterBasket.find(d => d.id === id); if (!item) return;
+      document.getElementById('detailName').value = item.name || '';
+      document.getElementById('detailKg').value = item.kg || '';
+      const priceEl = document.getElementById('detailPrice'); if (priceEl) priceEl.value = item.note || '';
+      document.getElementById('detailRecipe').value = item.recipe || '';
+      document.getElementById('dishDetailModal').classList.remove('hidden');
+    };
+
+    saveDishDetail = async function() {
+      const item = masterBasket.find(d => d.id === editingDishId);
+      if (item) {
+        const newName = document.getElementById('detailName').value.trim();
+        if (newName) item.name = newName;
+        item.kg = document.getElementById('detailKg').value.trim();
+        const priceEl = document.getElementById('detailPrice'); if (priceEl) item.note = String(priceEl.value || '').trim();
+        item.recipe = document.getElementById('detailRecipe').value.trim();
+        if (db) await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(() => {});
+      }
+      closeDishDetailModal(); renderTray(); renderArchiveGrid(); await syncCurrentStateToDb();
+    };
+
+    function openCustomFilterModal() { const modal = document.getElementById('customFilterModal'); if (modal) modal.classList.remove('hidden'); }
+    function closeCustomFilterModal() { const modal = document.getElementById('customFilterModal'); if (modal) modal.classList.add('hidden'); }
+    function applyCustomArchiveFilter(val, labelText) {
+      const hiddenEl = document.getElementById('archiveFilter'), txtEl = document.getElementById('archiveFilterTriggerText');
+      if (hiddenEl) hiddenEl.value = val;
+      if (txtEl) txtEl.innerText = labelText;
+      closeCustomFilterModal(); renderArchiveGrid();
+    }
+
+    function selectCustomArchSeason(seasonVal) {
+      const hiddenEl = document.getElementById('archEditSeason');
+      if (hiddenEl) hiddenEl.value = seasonVal;
+      document.querySelectorAll('.arch-season-btn').forEach(btn => {
+        btn.className = (btn.getAttribute('data-season') === seasonVal)
+          ? "arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold"
+          : "arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600";
+      });
+    }
+
+    function selectCustomArchType(typeVal) {
+      const hiddenEl = document.getElementById('archEditType');
+      if (hiddenEl) hiddenEl.value = typeVal;
+      document.querySelectorAll('.arch-type-btn').forEach(btn => {
+        btn.className = (btn.getAttribute('data-type') === typeVal)
+          ? "arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold"
+          : "arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600";
+      });
+    }
+
+    renderArchiveGrid = function() {
+      const filter = document.getElementById('archiveFilter') ? document.getElementById('archiveFilter').value : '전체';
+      const grid = document.getElementById('archiveGrid'); if (!grid) return;
+      grid.innerHTML = '';
+      const filtered = archiveList.filter(a => filter === '전체' || a.season === filter || a.menuType === filter);
+      filtered.forEach(item => {
+        const names = (item.dishIds || []).map(id => {
+          const found = masterBasket.find(d => d.id === id);
+          return found ? found.name : id;
+        }).filter(Boolean).join(', ');
+        const imgSrc = dbPhotoStore[item.photoId] || dbPhotoStore['default_4'];
+        const hcBadge = item.headcount ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">👥 ' + item.headcount + '</span>' : '';
+        const card = document.createElement('div');
+        card.className = "bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden cursor-pointer hover:ring-2 hover:ring-teal-300 transition";
+        card.onclick = () => openArchiveModal(item.id);
+        card.innerHTML = '<div class="relative h-28"><img src="' + imgSrc + '" class="w-full h-full object-cover"><span class="absolute top-1.5 left-1.5 bg-white/85 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">' + item.season + '·' + item.menuType + '</span><span class="absolute bottom-1.5 right-1.5 bg-rose-100 text-rose-900 border border-rose-200 text-[10px] font-extrabold px-2 py-0.5 rounded-full shadow-sm">👍 ' + (item.likes || 8) + '/10</span></div><div class="p-2.5"><div class="flex items-center justify-between gap-1"><p class="text-[10px] text-teal-700 font-bold truncate">' + item.date + '</p>' + hcBadge + '</div><h4 class="font-extrabold text-xs text-slate-800 truncate mt-0.5">' + item.title + '</h4><p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">' + names + '</p></div>';
+        grid.appendChild(card);
+      });
+    };
+
+    openArchiveModal = function(id) {
+      selectedArchiveId = String(id);
+      const item = archiveList.find(a => String(a.id) === selectedArchiveId); if (!item) return;
+      document.getElementById('archModalImg').src = dbPhotoStore[item.photoId] || dbPhotoStore['default_4'];
+      document.getElementById('archModalSeason').innerText = item.season + ' · ' + item.menuType;
+      document.getElementById('archModalDate').value = item.date || '';
+      document.getElementById('archModalTitle').value = item.title || '';
+      selectCustomArchSeason(item.season || '가을');
+      selectCustomArchType(item.menuType || '육류');
+      document.getElementById('archModalLikes').innerText = item.likes || 8;
+
+      const hcEl = document.getElementById('archEditHeadcount'); if (hcEl) hcEl.value = item.headcount || '';
+      const loEl = document.getElementById('archEditLeftover'); if (loEl) loEl.value = item.leftoverNote || '';
+      const ingEl = document.getElementById('archEditRawIng'); if (ingEl) ingEl.value = item.rawIngredients || '';
+      const supEl = document.getElementById('archEditSupplies'); if (supEl) supEl.value = item.supplies || '';
+
+      const dishBox = document.getElementById('archModalDishes'); dishBox.innerHTML = '';
+      (item.dishIds || []).forEach(dId => {
+        const d = masterBasket.find(x => x.id === dId);
+        if (d) dishBox.innerHTML += '<span class="bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold text-slate-700">' + d.name + ' (' + d.kg + ')</span>';
+      });
+      document.getElementById('archiveModal').classList.remove('hidden');
+    };
+
+    loadArchiveToCurrentTray = async function() {
+      const item = archiveList.find(a => String(a.id) === selectedArchiveId); if (!item) return;
+      item.date = document.getElementById('archModalDate').value;
+      item.title = document.getElementById('archModalTitle').value;
+      item.season = document.getElementById('archEditSeason').value;
+      item.menuType = document.getElementById('archEditType').value;
+      const hcEl = document.getElementById('archEditHeadcount'); if (hcEl) item.headcount = hcEl.value.trim();
+      const loEl = document.getElementById('archEditLeftover'); if (loEl) item.leftoverNote = loEl.value.trim();
+      const ingEl = document.getElementById('archEditRawIng'); if (ingEl) item.rawIngredients = ingEl.value.trim();
+      const supEl = document.getElementById('archEditSupplies'); if (supEl) item.supplies = supEl.value.trim();
+
+      currentTrayIds = [...item.dishIds];
+      currentSavedPhotoId = item.photoId || 'default_4';
+      if (db) await db.collection('archives').doc(String(item.id)).set(item, { merge: true }).catch(() => {});
+      await syncCurrentStateToDb();
+      renderTray(); renderArchiveGrid(); closeArchiveModal();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    // ================= 4. 스마트 CSV 통합 불러오기 (반찬바구니 CSV & 주간식단 기록 CSV 모두 자동 인식) =================
+    function parseCsvLineRespectQuotes(line) {
+      const res = []; let cur = '', inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+          else inQ = !inQ;
+        } else if (ch === ',' && !inQ) { res.push(cur.trim()); cur = ''; }
+        else cur += ch;
+      }
+      res.push(cur.trim());
+      return res;
+    }
+
+    importCsvFile = async function() {
+      const file = document.getElementById('csvFileInput').files[0];
+      if (!file) return await showCustomAlert('불러올 CSV 파일을 선택해주세요!', '📂');
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const buffer = e.target.result;
+        let text = new TextDecoder('utf-8').decode(buffer);
+        if (text.includes('\uFFFD')) text = new TextDecoder('euc-kr').decode(buffer);
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+        if (lines.length === 0) return;
+
+        const firstCols = parseCsvLineRespectQuotes(lines[0]);
+        const isWeeklyArchiveCsv = (firstCols[0] === '구분' || firstCols[1] === '일자' || lines[0].includes('식수인원'));
+
+        if (isWeeklyArchiveCsv) {
+          let addedArch = 0;
+          const newArchs = [];
+          for (let i = 1; i < lines.length; i++) {
+            const cols = parseCsvLineRespectQuotes(lines[i]);
+            if (cols.length < 5) continue;
+            const dateStr = normalizeCompactDateStr(cols[1]);
+            const title = cols[2] || '공동체 식단';
+            const season = cols[3] || '봄';
+            const menuType = cols[4] || '육류';
+            const dishNames = (cols[5] || '').split('|').map(s => s.trim()).filter(Boolean);
+            const matchedDishIds = [];
+            dishNames.forEach(dName => {
+              let found = masterBasket.find(b => b.name === dName || b.name.replace('(👶)', '') === dName.replace('(👶)', ''));
+              if (!found) {
+                found = { id: 'csv_auto_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), cat: normalizeCategoryName(dName), name: dName, kg: '적당량', recipe: '기본 조리', note: '' };
+                masterBasket.push(found);
+              }
+              matchedDishIds.push(found.id);
+            });
+            const archObj = {
+              id: 'arch_' + Date.now() + '_' + i,
+              date: dateStr, title, season, menuType, dishIds: matchedDishIds,
+              headcount: cols[6] || '', leftoverNote: cols[7] || '', rawIngredients: cols[8] || '', supplies: cols[9] || '',
+              likes: 9, photoId: 'default_' + ((i % 4) + 1), createdAt: Date.now() + i
+            };
+            const existIdx = archiveList.findIndex(a => normalizeCompactDateStr(a.date) === dateStr);
+            if (existIdx >= 0) archiveList[existIdx] = archObj;
+            else archiveList.unshift(archObj);
+            newArchs.push(archObj);
+            addedArch++;
+          }
+          if (db && newArchs.length > 0) {
+            try {
+              const batch = db.batch();
+              newArchs.forEach(a => batch.set(db.collection('archives').doc(String(a.id)), a));
+              await batch.commit();
+            } catch (err) {}
+          }
+          closeCsvModal(); renderArchiveGrid(); populateDateDropdownOptions();
+          await showCustomAlert('총 ' + addedArch + '주간의 식단 기록(재료/식수인원/잔반피드백 포함)이 등록되었습니다!', '📅');
+        } else {
+          let added = 0;
+          const newItems = [];
+          for (let i = 0; i < lines.length; i++) {
+            const cols = parseCsvLineRespectQuotes(lines[i]);
+            if (i === 0 && (cols[0].includes('카테고리') || cols[1]?.includes('이름'))) continue;
+            if (cols.length >= 2) {
+              const cat = normalizeCategoryName(cols[0]);
+              let name = cols[1].trim(); if (!name) continue;
+              if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+              const newItem = {
+                id: 'csv_' + Date.now() + '_' + i, cat, name,
+                kg: (cols[2] || '적당량').trim(),
+                recipe: (cols[3] || '기본 조리').trim(),
+                note: (cols[4] || '').trim(),
+                createdAt: Date.now() + i
+              };
+              const existIdx = masterBasket.findIndex(b => b.name === name);
+              if (existIdx >= 0) masterBasket[existIdx] = newItem;
+              else masterBasket.unshift(newItem);
+              newItems.push(newItem);
+              added++;
+            }
+          }
+          if (db && newItems.length > 0) {
+            try {
+              const batch = db.batch();
+              newItems.forEach(item => batch.set(db.collection('basket').doc(item.id), item));
+              await batch.commit();
+            } catch (err) {}
+          }
+          await syncCurrentStateToDb(); closeCsvModal(); renderTray();
+          await showCustomAlert('총 ' + added + '개의 반찬이 바구니에 등록되었습니다!', '🥗');
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    };
+
+    populateDateDropdownOptions(getCurrentWeekSundayString());
+    renderTray();
+    renderArchiveGrid();
+  </script>
+  <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 -->
+  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-2 shadow-2xl border border-slate-200 flex flex-col">
+      <div class="flex justify-between items-center pb-1 border-b border-slate-100 shrink-0 px-0.5">
+        <div class="flex items-center gap-1">
+          <h3 class="text-xs font-extrabold text-slate-800">📅 일자 선택</h3>
+          <span class="text-[10px] text-slate-400 font-semibold">(최초확정월~1년앞)</span>
+        </div>
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="selectTodayWeekInCalendar()" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 text-[10px] font-extrabold px-2 py-0.5 rounded">이번주</button>
+          <button type="button" onclick="closeCustomCalendarModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs font-bold leading-none">✕</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-7 text-center text-[11px] font-extrabold py-0.5 border-b border-slate-100 bg-slate-50/90 rounded-t mt-1 shrink-0">
+        <span class="text-rose-600">일</span><span class="text-slate-600">월</span><span class="text-slate-600">화</span><span class="text-slate-600">수</span><span class="text-slate-600">목</span><span class="text-slate-600">금</span><span class="text-sky-600">토</span>
+      </div>
+      <div id="calendarScrollContainer" class="overflow-y-auto space-y-1 py-1 px-0.5" style="height: 448px; max-height: 75vh; -webkit-overflow-scrolling: touch;"></div>
+    </div>
+  </div>
+
+  <!-- [팝업 11] 🗂️ 커스텀 지난 식단 필터 선택 모달 -->
+  <div id="customFilterModal" onclick="if(event.target===this) closeCustomFilterModal()" class="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-3.5 shadow-2xl border border-slate-200 space-y-2.5 text-xs">
+      <div class="flex justify-between items-center pb-1.5 border-b border-slate-100">
+        <h3 class="font-extrabold text-slate-800">🗂️ 지난 식단 보기 필터</h3>
+        <button type="button" onclick="closeCustomFilterModal()" class="text-slate-400 font-bold px-1">✕</button>
+      </div>
+      <button type="button" onclick="applyCustomArchiveFilter('전체', '전체보기')" class="w-full py-2 rounded-xl font-extrabold border border-slate-300 bg-slate-800 text-white">전체보기</button>
+      <div>
+        <p class="text-[10px] font-extrabold text-slate-400 mb-1">계절별 식단</p>
+        <div class="grid grid-cols-2 gap-1.5 font-bold">
+          <button type="button" onclick="applyCustomArchiveFilter('봄', '🌸 봄 식단')" class="py-2 rounded-xl border border-pink-200 bg-pink-50/60 text-pink-950">🌸 봄 식단</button>
+          <button type="button" onclick="applyCustomArchiveFilter('여름', '☀️ 여름 식단')" class="py-2 rounded-xl border border-sky-200 bg-sky-50/60 text-sky-950">☀️ 여름 식단</button>
+          <button type="button" onclick="applyCustomArchiveFilter('가을', '🍁 가을 식단')" class="py-2 rounded-xl border border-amber-200 bg-amber-50/60 text-amber-950">🍁 가을 식단</button>
+          <button type="button" onclick="applyCustomArchiveFilter('겨울', '❄️ 겨울 식단')" class="py-2 rounded-xl border border-indigo-200 bg-indigo-50/60 text-indigo-950">❄️ 겨울 식단</button>
+        </div>
+      </div>
+      <div>
+        <p class="text-[10px] font-extrabold text-slate-400 mb-1">메뉴별 식단</p>
+        <div class="grid grid-cols-1 gap-1.5 font-bold">
+          <button type="button" onclick="applyCustomArchiveFilter('육류', '🥩 육류(돼지/소/닭)')" class="py-2 rounded-xl border border-rose-200 bg-rose-50/50 text-rose-950">🥩 육류(돼지/소/닭)</button>
+          <button type="button" onclick="applyCustomArchiveFilter('해물/두부', '🐟 해물/두부/계란')" class="py-2 rounded-xl border border-teal-200 bg-teal-50/50 text-teal-950">🐟 해물/두부/계란</button>
+          <button type="button" onclick="applyCustomArchiveFilter('일품/간편', '🍛 일품/국수/간편식')" class="py-2 rounded-xl border border-purple-200 bg-purple-50/50 text-purple-950">🍛 일품/국수/간편식</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 12] 💬 앱 전용 커스텀 알림/확인 모달 -->
+  <div id="customSystemDialogModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-[99] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl border border-slate-200 text-center space-y-3.5">
+      <div id="customDialogIcon" class="text-2xl leading-none pt-0.5">💬</div>
+      <p id="customDialogMessage" class="text-xs font-extrabold text-slate-800 leading-relaxed whitespace-pre-line break-keep"></p>
+      <div id="customDialogBtnRow" class="flex justify-center gap-2 pt-1">
+        <button type="button" id="customDialogCancelBtn" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold py-2 rounded-xl text-xs">취소</button>
+        <button type="button" id="customDialogOkBtn" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 rounded-xl text-xs">확인</button>
+      </div>
+    </div>
+  </div>
+  </body></html>
