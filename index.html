@@ -38,51 +38,35 @@
 <body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative border-x border-slate-100">
 
   <!-- [보안 게이트] 초기값 안내 포함 & 100% 즉시 작동 로그인 창 -->
-  <div id="loginGateModal" class="fixed inset-0 bg-teal-50/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border-4 border-teal-200 text-center space-y-4">
-      <!-- 세종꿈의교회 심볼 + 로고 타이틀 중앙 배치 -->
+  <div id="loginGateModal" class="fixed inset-0 bg-slate-100/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-7 shadow-xl border border-slate-200 text-center space-y-6">
+      <!-- 1) 상부: tlogo.png + ttitle.png 중앙 배치 및 조금 떨어진 밑에 "주간 식단관리 시스템" 배치 -->
       <div class="flex flex-col items-center justify-center pt-1">
         <div class="flex items-center justify-center gap-2.5">
-          <svg class="w-12 h-12 shrink-0" viewBox="0 0 120 125" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 45 H55 V62 C42 66 33 74 28 82 L2 45 Z" fill="#4389C8"/>
-            <path d="M54 8 L63 2 V22 H77 V30 H63 V66 L54 69 V30 H40 V22 H54 V8 Z" fill="#234078"/>
-            <path d="M118 42 L60 122 L39 94 C34 84 38 69 58 60 C75 52 93 50 118 42 Z" fill="#234078"/>
-            <path d="M28 82 C40 65 62 56 92 53 C66 59 46 68 33 84 Z" fill="#234078"/>
-          </svg>
-          <div class="text-left leading-none">
-            <p class="text-[10px] font-medium text-slate-500 tracking-tight">기독교한국침례회</p>
-            <p class="text-2xl font-black text-slate-800 tracking-tighter mt-0.5">세종꿈의교회</p>
-            <p class="text-[7.5px] font-bold text-slate-500 tracking-widest mt-0.5 text-right">SEJONG DREAM CHURCH</p>
-          </div>
+          <img src="tlogo.png" alt="로고" class="h-11 w-auto object-contain shrink-0">
+          <img src="ttitle.png" alt="타이틀" class="h-10 w-auto object-contain shrink-0">
         </div>
-        <span class="mt-2.5 text-xs font-extrabold text-teal-900 bg-teal-100/80 px-3 py-0.5 rounded-full">
-          🍱 공동체 주간 식단관리 시스템
-        </span>
+        <p class="mt-4 text-xs font-bold text-slate-600 tracking-wide">
+          주간 식단관리 시스템
+        </p>
       </div>
 
-      <div class="space-y-3 text-left text-xs">
+      <!-- 2) 로그인 박스: ID 이름, 코드 (내부 문구 없음, 이름 일치 시 코드로 자동 이동, 코드 일치 시 자동 진행) -->
+      <div class="space-y-3.5 text-left text-xs">
         <div>
-          <label class="font-extrabold text-slate-700 block mb-1">👤 등록된 성함 입력</label>
-          <input id="gateUserName" type="text" placeholder="초기값: 관리자 또는 팀원" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border-2 border-teal-200 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 focus:outline-none focus:border-teal-400">
+          <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">ID 이름</label>
+          <input id="gateUserName" type="text" autocomplete="off" oninput="handleGateNameAutoAdvance(this)" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
         <div>
-          <label class="font-extrabold text-slate-700 block mb-1">🔢 접속 코드번호 입력</label>
-          <input id="gateAccessCode" type="password" placeholder="초기값: 9999(관리자) / 1004(팀원)" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border-2 border-amber-200 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-amber-50/30 focus:outline-none focus:border-amber-400">
+          <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">코드</label>
+          <input id="gateAccessCode" type="password" autocomplete="off" oninput="handleGateCodeAutoSubmit(this)" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
       </div>
 
-      <button type="button" onclick="handleStrictLogin()" class="w-full bg-teal-200 hover:bg-teal-300 border border-teal-300 text-teal-950 font-extrabold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
-        🔒 인증 및 로그인
+      <!-- 3) 버튼 문구 "로그인" 수정 (4. 하단 보안 위험 설명 문구 완전 삭제됨) -->
+      <button type="button" onclick="handleStrictLogin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
+        로그인
       </button>
-
-      <!-- 원클릭 자동 입력 테스트 버튼 (안 쳐도 누르면 바로 입력됨) -->
-      <div class="pt-2 border-t border-slate-100 flex justify-between items-center text-[11px] text-slate-500">
-        <span>빠른 초기 접속:</span>
-        <div class="space-x-1">
-          <button type="button" onclick="quickFillLogin('관리자','9999')" class="bg-amber-100 text-amber-900 font-extrabold px-2 py-1 rounded border border-amber-200">관리자(9999) 바로입장</button>
-          <button type="button" onclick="quickFillLogin('팀원','1004')" class="bg-sky-100 text-sky-900 font-extrabold px-2 py-1 rounded border border-sky-200">팀원(1004) 바로입장</button>
-        </div>
-      </div>
     </div>
   </div>
 
@@ -724,108 +708,149 @@
     let archiveList = [...defaultArchiveSeed];
 
     // 원클릭 자동 입력 및 즉시 로그인 헬퍼
-    function quickFillLogin(name, code) {
-      document.getElementById('gateUserName').value = name;
-      document.getElementById('gateAccessCode').value = code;
-      handleStrictLogin();
+    let cachedGateAuth = {
+      adminCode: '9999',
+      memberCode: '1004',
+      members: [
+        { name: '관리자', role: 'admin' },
+        { name: '팀장', role: 'admin' },
+        { name: '팀원', role: 'member' }
+      ]
+    };
+
+    function syncGateAuthCache() {
+      try {
+        const raw = localStorage.getItem('sejong_auth_config_backup');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            cachedGateAuth.adminCode = String(parsed.adminCode || parsed.adminPassword || '9999');
+            cachedGateAuth.memberCode = String(parsed.memberCode || '1004');
+            if (Array.isArray(parsed.members) && parsed.members.length > 0) {
+              cachedGateAuth.members = parsed.members;
+            }
+          }
+        }
+      } catch (e) {}
+
+      if (db) {
+        db.collection('settings').doc('authConfig').get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            cachedGateAuth.adminCode = String(data.adminCode || data.adminPassword || '9999');
+            cachedGateAuth.memberCode = String(data.memberCode || '1004');
+            if (Array.isArray(data.members) && data.members.length > 0) {
+              cachedGateAuth.members = data.members;
+            }
+            try { localStorage.setItem('sejong_auth_config_backup', JSON.stringify(cachedGateAuth)); } catch (e) {}
+          }
+        }).catch(() => {});
+      }
+    }
+    syncGateAuthCache();
+
+    function findMatchedGateMember(nameStr) {
+      if (!nameStr) return null;
+      if (nameStr === '관리자' || nameStr === '팀장') return { name: nameStr, role: 'admin' };
+      if (nameStr === '팀원') return { name: '팀원', role: 'member' };
+      const list = cachedGateAuth.members || [];
+      return list.find(m => m && m.name === nameStr) || null;
     }
 
-    // [100% 작동 보장] 마스터키 우선 통과 + Firebase 설정 연동 로그인
-    async function handleStrictLogin() {
-      const nameInput = document.getElementById('gateUserName').value.trim();
-      const codeInput = document.getElementById('gateAccessCode').value.trim();
+    // ID 이름 입력이 맞으면 자동으로 코드 입력창으로 포커스 이동
+    function handleGateNameAutoAdvance(inputEl) {
+      const val = (inputEl.value || '').trim();
+      if (!val) return;
+      const matched = findMatchedGateMember(val);
+      if (matched) {
+        const codeEl = document.getElementById('gateAccessCode');
+        if (codeEl) codeEl.focus();
+      }
+    }
 
-      if (!nameInput || !codeInput) {
-        return alert('등록된 성함과 접속 코드번호를 모두 입력해주세요.');
+    // 코드까지 맞으면 자동으로 로그인 진행
+    function handleGateCodeAutoSubmit(inputEl) {
+      const codeVal = (inputEl.value || '').trim();
+      if (!codeVal) return;
+      handleStrictLogin(true);
+    }
+
+    // 무음 보안 로그인 (ID나 코드가 틀려도 어떠한 알림 메시지도 띄우지 않음)
+    async function handleStrictLogin(isAutoTrigger = false) {
+      const nameEl = document.getElementById('gateUserName');
+      const codeEl = document.getElementById('gateAccessCode');
+      const nameInput = nameEl ? nameEl.value.trim() : '';
+      const codeInput = codeEl ? codeEl.value.trim() : '';
+
+      if (!nameInput || !codeInput) return;
+
+      const admCode = String(cachedGateAuth.adminCode || '9999');
+      const memCode = String(cachedGateAuth.memberCode || '1004');
+
+      // 1단계: 기본 및 캐시된 인가자 대조
+      const matched = findMatchedGateMember(nameInput);
+      if (matched) {
+        if (matched.role === 'admin' && (codeInput === admCode || codeInput === '9999')) {
+          currentUser = matched.name;
+          isLeader = true;
+          sessionStorage.setItem('sejong_user', currentUser);
+          sessionStorage.setItem('sejong_leader', '1');
+          sessionStorage.setItem('sejong_admin_verified', '1');
+          if (nameEl) nameEl.blur();
+          if (codeEl) codeEl.blur();
+          unlockAppAndStart();
+          ensureDefaultAuthInDb();
+          return;
+        }
+        if (codeInput === memCode || (matched.role === 'member' && codeInput === admCode) || (nameInput === '팀원' && codeInput === '1004')) {
+          currentUser = matched.name;
+          isLeader = false;
+          sessionStorage.setItem('sejong_user', currentUser);
+          sessionStorage.setItem('sejong_leader', '0');
+          sessionStorage.removeItem('sejong_admin_verified');
+          if (nameEl) nameEl.blur();
+          if (codeEl) codeEl.blur();
+          unlockAppAndStart();
+          ensureDefaultAuthInDb();
+          return;
+        }
       }
 
-      // 1단계: 기본 마스터키(관리자/9999, 팀장/9999, 팀원/1004) 입력 시 네트워크 대기 없이 0.1초 만에 즉시 통과!
-      if ((nameInput === '관리자' || nameInput === '팀장') && codeInput === '9999') {
-        currentUser = nameInput;
-        isLeader = true;
-        sessionStorage.setItem('sejong_user', currentUser);
-        sessionStorage.setItem('sejong_leader', '1');
-        sessionStorage.setItem('sejong_admin_verified', '1');
-        unlockAppAndStart();
-        ensureDefaultAuthInDb();
-        return;
-      }
-      if (nameInput === '팀원' && codeInput === '1004') {
-        currentUser = nameInput;
-        isLeader = false;
-        sessionStorage.setItem('sejong_user', currentUser);
-        sessionStorage.setItem('sejong_leader', '0');
-        sessionStorage.removeItem('sejong_admin_verified');
-        unlockAppAndStart();
-        ensureDefaultAuthInDb();
-        return;
-      }
+      if (isAutoTrigger) return;
 
-      // 2단계: indexm.html에서 추가로 등록한 사용자 명단 및 코드번호 DB 조회
+      // 2단계: 버튼 클릭/엔터 시 DB 최신 명단 한 번 더 조용히 조회 (틀려도 무음 처리)
+      if (!db) return;
       try {
-        const docRef = db.collection('settings').doc('authConfig');
-        const doc = await docRef.get();
-
+        const doc = await db.collection('settings').doc('authConfig').get();
         if (doc.exists) {
           const config = doc.data();
-          const adminCode = String(config.adminCode || config.adminPassword || '9999');
-          const memberCode = String(config.memberCode || '1004');
+          const dbAdminCode = String(config.adminCode || config.adminPassword || '9999');
+          const dbMemberCode = String(config.memberCode || '1004');
           const members = config.members || [];
+          cachedGateAuth = { adminCode: dbAdminCode, memberCode: dbMemberCode, members: members };
 
           const foundMember = members.find(m => m.name === nameInput);
-          if (!foundMember) {
-            return alert('⛔ 사전 등록되지 않은 성함입니다.\n(초기 접속은 성함: 관리자 / 코드: 9999 를 입력하세요)');
-          }
+          if (!foundMember) return;
 
-          if (codeInput === adminCode && foundMember.role === 'admin') {
+          if (codeInput === dbAdminCode && foundMember.role === 'admin') {
             currentUser = foundMember.name;
             isLeader = true;
             sessionStorage.setItem('sejong_admin_verified', '1');
-          } else if (codeInput === memberCode || (codeInput === adminCode && foundMember.role === 'member')) {
+          } else if (codeInput === dbMemberCode || (codeInput === dbAdminCode && foundMember.role === 'member')) {
             currentUser = foundMember.name;
             isLeader = false;
             sessionStorage.removeItem('sejong_admin_verified');
           } else {
-            return alert('❌ 접속 코드번호가 일치하지 않습니다.');
+            return;
           }
 
           sessionStorage.setItem('sejong_user', currentUser);
           sessionStorage.setItem('sejong_leader', isLeader ? '1' : '0');
+          if (nameEl) nameEl.blur();
+          if (codeEl) codeEl.blur();
           unlockAppAndStart();
-          return;
         }
-      } catch (err) {
-        console.warn("DB 조회 실패, 로컬 백업 확인:", err);
-      }
-
-      // 로컬 백업(sejong_auth_config_backup)에서 추가 확인
-      loadLocalAuthBackup();
-      if (inAppAuthConfig && Array.isArray(inAppAuthConfig.members)) {
-        const foundLocal = inAppAuthConfig.members.find(m => m.name === nameInput);
-        if (foundLocal) {
-          const admC = String(inAppAuthConfig.adminCode || '9999');
-          const memC = String(inAppAuthConfig.memberCode || '1004');
-          if (codeInput === admC && foundLocal.role === 'admin') {
-            currentUser = foundLocal.name;
-            isLeader = true;
-            sessionStorage.setItem('sejong_user', currentUser);
-            sessionStorage.setItem('sejong_leader', '1');
-            sessionStorage.setItem('sejong_admin_verified', '1');
-            unlockAppAndStart();
-            return;
-          } else if (codeInput === memC || (codeInput === admC && foundLocal.role === 'member')) {
-            currentUser = foundLocal.name;
-            isLeader = false;
-            sessionStorage.setItem('sejong_user', currentUser);
-            sessionStorage.setItem('sejong_leader', '0');
-            sessionStorage.removeItem('sejong_admin_verified');
-            unlockAppAndStart();
-            return;
-          }
-        }
-      }
-
-      alert('⛔ 일치하는 로그인 정보가 없습니다.\n초기 접속 시 [성함: 관리자 / 코드번호: 9999] 또는 하단의 [바로입장] 버튼을 눌러주세요!');
+      } catch (err) {}
     }
 
     async function ensureDefaultAuthInDb() {
