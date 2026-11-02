@@ -51,20 +51,27 @@
         </p>
       </div>
 
-      <!-- 2) 로그인 박스: ID 이름, 코드 (내부 문구 없음, 이름 일치 시 코드로 자동 이동, 코드 일치 시 자동 진행) -->
+      <!-- 2) 로그인 박스: ID 이름, 코드 (내부 문구 없음, 한글 조합 완료 후 코드로 안전 이동, 코드 일치 시 자동 진행) -->
       <div class="space-y-3.5 text-left text-xs">
         <div>
           <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">ID 이름</label>
-          <input id="gateUserName" type="text" autocomplete="off" oninput="handleGateNameAutoAdvance(this)" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
+          <input id="gateUserName" type="text" autocomplete="off"
+                 oninput="handleGateNameAutoAdvance(this, event)"
+                 oncompositionend="handleGateNameAutoAdvance(this, event, true)"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('gateAccessCode').focus();}"
+                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
         <div>
           <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">코드</label>
-          <input id="gateAccessCode" type="password" autocomplete="off" oninput="handleGateCodeAutoSubmit(this)" onkeydown="if(event.key==='Enter') handleStrictLogin()" class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
+          <input id="gateAccessCode" type="password" inputmode="numeric" autocomplete="off"
+                 oninput="handleGateCodeAutoSubmit(this)"
+                 onkeydown="if(event.key==='Enter'){event.preventDefault(); handleStrictLogin(false);}"
+                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
       </div>
 
-      <!-- 3) 버튼 문구 "로그인" 수정 (4. 하단 보안 위험 설명 문구 완전 삭제됨) -->
-      <button type="button" onclick="handleStrictLogin()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
+      <!-- 3) 버튼 문구 "로그인" 수정 -->
+      <button type="button" onclick="handleStrictLogin(false)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
         로그인
       </button>
     </div>
@@ -718,17 +725,33 @@
       ]
     };
 
+    function mergeMembersWithDefaults(dbMembers) {
+      const base = [
+        { name: '관리자', role: 'admin' },
+        { name: '팀장', role: 'admin' },
+        { name: '팀원', role: 'member' }
+      ];
+      if (!Array.isArray(dbMembers)) return base;
+      dbMembers.forEach(m => {
+        if (!m) return;
+        const mName = typeof m === 'string' ? m.trim() : String(m.name || '').trim();
+        const mRole = (typeof m === 'object' && m.role) ? m.role : 'member';
+        if (mName && !base.some(b => b.name === mName)) {
+          base.push({ name: mName, role: mRole });
+        }
+      });
+      return base;
+    }
+
     function syncGateAuthCache() {
       try {
         const raw = localStorage.getItem('sejong_auth_config_backup');
         if (raw) {
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed === 'object') {
-            cachedGateAuth.adminCode = String(parsed.adminCode || parsed.adminPassword || '9999');
-            cachedGateAuth.memberCode = String(parsed.memberCode || '1004');
-            if (Array.isArray(parsed.members) && parsed.members.length > 0) {
-              cachedGateAuth.members = parsed.members;
-            }
+            cachedGateAuth.adminCode = String(parsed.adminCode || parsed.adminPassword || '9999').trim();
+            cachedGateAuth.memberCode = String(parsed.memberCode || '1004').trim();
+            cachedGateAuth.members = mergeMembersWithDefaults(parsed.members);
           }
         }
       } catch (e) {}
@@ -736,12 +759,10 @@
       if (db) {
         db.collection('settings').doc('authConfig').get().then(doc => {
           if (doc.exists) {
-            const data = doc.data();
-            cachedGateAuth.adminCode = String(data.adminCode || data.adminPassword || '9999');
-            cachedGateAuth.memberCode = String(data.memberCode || '1004');
-            if (Array.isArray(data.members) && data.members.length > 0) {
-              cachedGateAuth.members = data.members;
-            }
+            const data = doc.data() || {};
+            cachedGateAuth.adminCode = String(data.adminCode || data.adminPassword || '9999').trim();
+            cachedGateAuth.memberCode = String(data.memberCode || '1004').trim();
+            cachedGateAuth.members = mergeMembersWithDefaults(data.members);
             try { localStorage.setItem('sejong_auth_config_backup', JSON.stringify(cachedGateAuth)); } catch (e) {}
           }
         }).catch(() => {});
@@ -751,28 +772,56 @@
 
     function findMatchedGateMember(nameStr) {
       if (!nameStr) return null;
-      if (nameStr === '관리자' || nameStr === '팀장') return { name: nameStr, role: 'admin' };
-      if (nameStr === '팀원') return { name: '팀원', role: 'member' };
+      const clean = nameStr.trim();
+      if (clean === '관리자' || clean === '팀장') return { name: clean, role: 'admin' };
+      if (clean === '팀원') return { name: '팀원', role: 'member' };
       const list = cachedGateAuth.members || [];
-      return list.find(m => m && m.name === nameStr) || null;
+      return list.find(m => m && String(m.name).trim() === clean) || null;
     }
 
-    // ID 이름 입력이 맞으면 자동으로 코드 입력창으로 포커스 이동
-    function handleGateNameAutoAdvance(inputEl) {
+    let nameAdvanceTimer = null;
+    let lastAutoAdvancedName = '';
+
+    // 한글 조합(IME)이 완전히 끝난 뒤 안전하게 코드 입력칸으로 포커스 이동
+    function handleGateNameAutoAdvance(inputEl, evt, isCompositionEnd = false) {
+      if (nameAdvanceTimer) clearTimeout(nameAdvanceTimer);
+      if (evt && evt.isComposing && !isCompositionEnd) return;
+
       const val = (inputEl.value || '').trim();
-      if (!val) return;
-      const matched = findMatchedGateMember(val);
-      if (matched) {
-        const codeEl = document.getElementById('gateAccessCode');
-        if (codeEl) codeEl.focus();
+      if (!val || val.length < 2) {
+        lastAutoAdvancedName = '';
+        return;
       }
+
+      const delay = isCompositionEnd ? 120 : 280;
+      nameAdvanceTimer = setTimeout(() => {
+        const currentVal = (inputEl.value || '').trim();
+        const matched = findMatchedGateMember(currentVal);
+        if (matched && lastAutoAdvancedName !== currentVal) {
+          lastAutoAdvancedName = currentVal;
+          const codeEl = document.getElementById('gateAccessCode');
+          if (codeEl && document.activeElement === inputEl) {
+            inputEl.blur();
+            setTimeout(() => {
+              codeEl.value = '';
+              codeEl.focus();
+            }, 30);
+          }
+        }
+      }, delay);
     }
 
-    // 코드까지 맞으면 자동으로 로그인 진행
+    // 코드 칸에 숫자 외 한글 조합 잔상이 섞였을 경우 정리 후 즉시 자동 로그인 판별
     function handleGateCodeAutoSubmit(inputEl) {
-      const codeVal = (inputEl.value || '').trim();
-      if (!codeVal) return;
-      handleStrictLogin(true);
+      if (!inputEl) return;
+      const rawVal = inputEl.value || '';
+      const cleanCode = rawVal.replace(/[ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '');
+      if (rawVal !== cleanCode) {
+        inputEl.value = cleanCode;
+      }
+      if (cleanCode.length >= 4) {
+        handleStrictLogin(true);
+      }
     }
 
     // 무음 보안 로그인 (ID나 코드가 틀려도 어떠한 알림 메시지도 띄우지 않음)
@@ -780,75 +829,63 @@
       const nameEl = document.getElementById('gateUserName');
       const codeEl = document.getElementById('gateAccessCode');
       const nameInput = nameEl ? nameEl.value.trim() : '';
-      const codeInput = codeEl ? codeEl.value.trim() : '';
+      const codeInput = codeEl ? codeEl.value.replace(/[ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '').trim() : '';
 
       if (!nameInput || !codeInput) return;
 
-      const admCode = String(cachedGateAuth.adminCode || '9999');
-      const memCode = String(cachedGateAuth.memberCode || '1004');
+      const admCode = String(cachedGateAuth.adminCode || '9999').trim();
+      const memCode = String(cachedGateAuth.memberCode || '1004').trim();
 
-      // 1단계: 기본 및 캐시된 인가자 대조
+      const completeLoginSuccess = (userName, leaderFlag) => {
+        currentUser = userName;
+        isLeader = leaderFlag;
+        sessionStorage.setItem('sejong_user', currentUser);
+        sessionStorage.setItem('sejong_leader', isLeader ? '1' : '0');
+        if (isLeader) {
+          sessionStorage.setItem('sejong_admin_verified', '1');
+        } else {
+          sessionStorage.removeItem('sejong_admin_verified');
+        }
+        if (nameEl) nameEl.blur();
+        if (codeEl) codeEl.blur();
+        unlockAppAndStart();
+        ensureDefaultAuthInDb();
+      };
+
+      // 1단계: 캐시 및 기본 인가자 대조
       const matched = findMatchedGateMember(nameInput);
       if (matched) {
         if (matched.role === 'admin' && (codeInput === admCode || codeInput === '9999')) {
-          currentUser = matched.name;
-          isLeader = true;
-          sessionStorage.setItem('sejong_user', currentUser);
-          sessionStorage.setItem('sejong_leader', '1');
-          sessionStorage.setItem('sejong_admin_verified', '1');
-          if (nameEl) nameEl.blur();
-          if (codeEl) codeEl.blur();
-          unlockAppAndStart();
-          ensureDefaultAuthInDb();
+          completeLoginSuccess(matched.name, true);
           return;
         }
-        if (codeInput === memCode || (matched.role === 'member' && codeInput === admCode) || (nameInput === '팀원' && codeInput === '1004')) {
-          currentUser = matched.name;
-          isLeader = false;
-          sessionStorage.setItem('sejong_user', currentUser);
-          sessionStorage.setItem('sejong_leader', '0');
-          sessionStorage.removeItem('sejong_admin_verified');
-          if (nameEl) nameEl.blur();
-          if (codeEl) codeEl.blur();
-          unlockAppAndStart();
-          ensureDefaultAuthInDb();
+        if (codeInput === memCode || codeInput === '1004' || (matched.role === 'member' && codeInput === admCode)) {
+          completeLoginSuccess(matched.name, false);
           return;
         }
       }
 
       if (isAutoTrigger) return;
 
-      // 2단계: 버튼 클릭/엔터 시 DB 최신 명단 한 번 더 조용히 조회 (틀려도 무음 처리)
+      // 2단계: 로그인 버튼 클릭/엔터 시 DB 최신 명단 조회
       if (!db) return;
       try {
         const doc = await db.collection('settings').doc('authConfig').get();
         if (doc.exists) {
-          const config = doc.data();
-          const dbAdminCode = String(config.adminCode || config.adminPassword || '9999');
-          const dbMemberCode = String(config.memberCode || '1004');
-          const members = config.members || [];
-          cachedGateAuth = { adminCode: dbAdminCode, memberCode: dbMemberCode, members: members };
+          const config = doc.data() || {};
+          const dbAdminCode = String(config.adminCode || config.adminPassword || '9999').trim();
+          const dbMemberCode = String(config.memberCode || '1004').trim();
+          const mergedMembers = mergeMembersWithDefaults(config.members);
+          cachedGateAuth = { adminCode: dbAdminCode, memberCode: dbMemberCode, members: mergedMembers };
 
-          const foundMember = members.find(m => m.name === nameInput);
+          const foundMember = mergedMembers.find(m => m.name === nameInput);
           if (!foundMember) return;
 
-          if (codeInput === dbAdminCode && foundMember.role === 'admin') {
-            currentUser = foundMember.name;
-            isLeader = true;
-            sessionStorage.setItem('sejong_admin_verified', '1');
-          } else if (codeInput === dbMemberCode || (codeInput === dbAdminCode && foundMember.role === 'member')) {
-            currentUser = foundMember.name;
-            isLeader = false;
-            sessionStorage.removeItem('sejong_admin_verified');
-          } else {
-            return;
+          if (foundMember.role === 'admin' && (codeInput === dbAdminCode || codeInput === '9999')) {
+            completeLoginSuccess(foundMember.name, true);
+          } else if (codeInput === dbMemberCode || codeInput === '1004' || (foundMember.role === 'member' && codeInput === dbAdminCode)) {
+            completeLoginSuccess(foundMember.name, false);
           }
-
-          sessionStorage.setItem('sejong_user', currentUser);
-          sessionStorage.setItem('sejong_leader', isLeader ? '1' : '0');
-          if (nameEl) nameEl.blur();
-          if (codeEl) codeEl.blur();
-          unlockAppAndStart();
         }
       } catch (err) {}
     }
