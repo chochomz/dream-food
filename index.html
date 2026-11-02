@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>세종꿈의교회 식단관리</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  
+  
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
@@ -69,24 +68,11 @@
       <div class="space-y-3.5 text-left text-xs">
         <div>
           <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">ID 이름</label>
-          <input id="gateUserName" type="text" autocomplete="off"
-                 style="font-size: 16px !important;"
-                 onfocus="adjustLoginCardForKeyboard(true)"
-                 onblur="adjustLoginCardForKeyboard(false)"
-                 oninput="handleGateNameAutoAdvance(this, event)"
-                 oncompositionend="handleGateNameAutoAdvance(this, event, true)"
-                 onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('gateAccessCode').focus();}"
-                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
+          <input id="gateUserName" type="text" autocomplete="off" style="font-size: 16px !important;" onfocus="adjustLoginCardForKeyboard(true)" onblur="adjustLoginCardForKeyboard(false)" oninput="handleGateNameAutoAdvance(this, event)" oncompositionend="handleGateNameAutoAdvance(this, event, true)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('gateAccessCode').focus();}" class="w-full border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
         <div>
           <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">코드</label>
-          <input id="gateAccessCode" type="password" inputmode="numeric" autocomplete="off"
-                 style="font-size: 16px !important;"
-                 onfocus="adjustLoginCardForKeyboard(true)"
-                 onblur="adjustLoginCardForKeyboard(false)"
-                 oninput="handleGateCodeAutoSubmit(this)"
-                 onkeydown="if(event.key==='Enter'){event.preventDefault(); handleStrictLogin(false);}"
-                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
+          <input id="gateAccessCode" type="password" inputmode="numeric" autocomplete="off" style="font-size: 16px !important;" onfocus="adjustLoginCardForKeyboard(true)" onblur="adjustLoginCardForKeyboard(false)" oninput="handleGateCodeAutoSubmit(this)" onkeydown="if(event.key==='Enter'){event.preventDefault(); handleStrictLogin(false);}" class="w-full border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
       </div>
 
@@ -113,9 +99,7 @@
 
       <!-- 타이틀 바로 밑: 우측 끝으로 하나로 통일 (관리/정산, A4출력, ⚙️, 팀장 000 : 로그아웃) -->
       <div class="bg-slate-50 px-2 py-1 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
-        <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
-          관리/정산
-        </button>
+        
         <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           A4출력
         </button>
@@ -132,11 +116,12 @@
     <div class="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center justify-start gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
       <div class="flex items-center gap-1.5 shrink-0">
         <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자 선택</span>
-        <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="hidden" style="display:none !important;" aria-hidden="true" tabindex="-1"></select>
-        <button type="button" id="customDateTriggerBtn" onclick="openCustomCalendarModal()" class="bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition">
-          <span id="customDateTriggerText"></span>
-          <span class="text-[10px] opacity-80">▼</span>
-        </button>
+        <input type="hidden" id="currentDate" value="">
+            <button type="button" id="customDateTriggerBtn" onclick="openCustomCalendarModal()" class="bg-pink-50 text-pink-900 text-xs font-bold px-2.5 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap flex items-center gap-1.5 active:scale-95 transition">
+              <span id="customDateTriggerText"></span>
+              <span class="text-[10px] opacity-80">▼</span>
+            </button>
+        
         </div>
       <span id="kidsBadge" class="text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0">
         어린이 반찬 0종
@@ -249,20 +234,11 @@
     <section class="px-2 py-2 bg-white">
       <div class="flex justify-between items-center mb-2 whitespace-nowrap">
         <h2 class="text-xs font-bold text-slate-800">지난 식단 기록</h2>
-        <select id="archiveFilter" onchange="renderArchiveGrid()" class="text-xs border border-slate-300 rounded-lg px-2 py-0.5 font-bold text-slate-700 bg-white focus:outline-none">
-          <option value="전체">전체보기</option>
-          <optgroup label="계절별">
-            <option value="봄">봄 식단</option>
-            <option value="여름">여름 식단</option>
-            <option value="가을">가을 식단</option>
-            <option value="겨울">겨울 식단</option>
-          </optgroup>
-          <optgroup label="메뉴별">
-            <option value="육류">육류(돼지/소/닭)</option>
-            <option value="해물/두부">해물/두부/계란</option>
-            <option value="일품/간편">일품/국수/간편식</option>
-          </optgroup>
-        </select>
+        <input type="hidden" id="archiveFilter" value="전체">
+            <button type="button" id="archiveFilterTriggerBtn" onclick="openCustomFilterModal()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1 font-bold text-slate-700 bg-white hover:bg-slate-50 focus:outline-none flex items-center gap-1.5 active:scale-95 transition">
+              <span id="archiveFilterTriggerText">전체보기</span>
+              <span class="text-[9px] text-slate-400">▼</span>
+            </button>
       </div>
       <div id="archiveGrid" class="grid grid-cols-2 gap-2"></div>
     </section>
@@ -272,104 +248,7 @@
   <!-- ================= 팝업 모달창들 ================= -->
 
   <!-- [팝업 1] 📊 관리/정산 시스템 -->
-  <div id="settlementModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2.5">
-    <div class="bg-white rounded-2xl max-w-md w-full p-4 shadow-2xl border border-purple-200 max-h-[92vh] overflow-y-auto">
-      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 no-print">
-        <h3 class="text-sm font-extrabold text-purple-950">📊 주간 식단 관리 / 정산서</h3>
-        <div class="flex gap-1">
-          <button onclick="captureAndShareSettlement()" class="bg-sky-100 hover:bg-sky-200 text-sky-900 border border-sky-200 px-2.5 py-1 rounded-lg text-[11px] font-extrabold shadow-sm">
-            📸 캡처공유
-          </button>
-          <button onclick="printSettlementReport()" class="bg-teal-100 hover:bg-teal-200 text-teal-900 border border-teal-200 px-2.5 py-1 rounded-lg text-[11px] font-extrabold shadow-sm">
-            🖨️ 리스트출력
-          </button>
-          <button onclick="closeSettlementModal()" class="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg text-xs font-bold">✕</button>
-        </div>
-      </div>
-
-      <div id="settlementCaptureArea" class="p-3 bg-white rounded-xl space-y-3 text-xs mt-1">
-        <div class="flex flex-col items-center justify-center text-center border-b border-purple-100 pb-2">
-          <div class="flex items-center justify-center gap-1.5 mb-1">
-            <svg class="w-6 h-6 shrink-0" viewBox="0 0 120 125" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M2 45 H55 V62 C42 66 33 74 28 82 L2 45 Z" fill="#4389C8"/>
-              <path d="M54 8 L63 2 V22 H77 V30 H63 V66 L54 69 V30 H40 V22 H54 V8 Z" fill="#234078"/>
-              <path d="M118 42 L60 122 L39 94 C34 84 38 69 58 60 C75 52 93 50 118 42 Z" fill="#234078"/>
-            </svg>
-            <span class="text-xs font-black text-slate-800">세종꿈의교회 공동체 식단 정산표</span>
-          </div>
-          <h4 id="settleDateTitle" class="text-sm font-extrabold text-purple-900"></h4>
-        </div>
-
-        <div class="border border-slate-200 rounded-xl overflow-hidden">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="bg-purple-50 text-purple-950 border-b border-slate-200 text-[11px]">
-                <th class="py-1.5 px-2.5 font-extrabold">메뉴 이름</th>
-                <th class="py-1.5 px-2 font-extrabold text-center">단위(수량)</th>
-                <th class="py-1.5 px-2.5 font-extrabold text-right">예상 가격(원)</th>
-              </tr>
-            </thead>
-            <tbody id="settleMenuTableBody" class="divide-y divide-slate-100 text-xs"></tbody>
-            <tfoot>
-              <tr class="bg-slate-50 font-extrabold text-slate-900 border-t border-slate-200">
-                <td class="py-2 px-2.5" colspan="2">식판 메뉴 예상 총액</td>
-                <td id="settleExpectedTotal" class="py-2 px-2.5 text-right text-teal-800"></td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-
-        <div class="bg-amber-50/70 p-3 rounded-xl border-2 border-amber-200/80 space-y-2.5">
-          <div class="flex justify-between items-center">
-            <span class="font-extrabold text-amber-950">🧾 영수증 무료 OCR 금액 대조</span>
-            <span id="ocrStatusBadge" class="text-[10px] bg-white border border-amber-300 text-amber-800 px-2 py-0.5 rounded-full font-bold">영수증 대기중</span>
-          </div>
-
-          <div class="flex gap-1.5 no-print">
-            <input type="file" id="receiptOcrInput" accept="image/*" class="hidden" onchange="runReceiptOcr(event)">
-            <button onclick="document.getElementById('receiptOcrInput').click()" class="flex-1 bg-white hover:bg-amber-100 border border-amber-300 text-amber-950 font-extrabold py-2 rounded-lg shadow-sm transition">
-              📷 영수증 사진 올리기 (무료 OCR 자동판독)
-            </button>
-          </div>
-
-          <div class="bg-white p-2.5 rounded-lg border border-amber-200 space-y-2">
-            <div id="receiptThumbBox" class="hidden flex items-center gap-2 pb-2 border-b border-slate-100">
-              <img id="receiptOcrThumb" src="" class="w-12 h-14 object-cover rounded border border-amber-300 shrink-0">
-              <div class="text-[10px] text-slate-500 leading-tight">
-                <p class="font-bold text-slate-700">영수증 (0.7 압축 & DB분리저장)</p>
-                <p id="ocrRawTextPreview" class="truncate max-w-[200px] text-amber-700 mt-0.5"></p>
-              </div>
-            </div>
-
-            <div class="flex justify-between items-center">
-              <span class="font-bold text-slate-600">① 식판 예산 합계:</span>
-              <span id="comparePlannedCost" class="font-extrabold text-slate-800">0원</span>
-            </div>
-
-            <div class="flex justify-between items-center">
-              <span class="font-bold text-amber-900">② 영수증 OCR 인식 금액:</span>
-              <div class="flex items-center gap-1">
-                <input id="ocrExtractedInput" type="number" oninput="updateCostComparison()" placeholder="금액 자동입력" class="w-28 text-right font-extrabold text-rose-700 bg-rose-50/60 border border-rose-200 rounded px-2 py-1 focus:outline-none">
-                <span class="font-bold text-slate-600">원</span>
-              </div>
-            </div>
-
-            <div class="pt-1.5 border-t border-dashed border-slate-200 flex justify-between items-center">
-              <span class="font-extrabold text-slate-700">⚖️ 예산 대비 차액 비교:</span>
-              <span id="compareDiffResult" class="font-extrabold text-xs text-teal-700">영수증을 올리거나 금액을 입력하세요</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-3 pt-2 border-t border-slate-100 flex gap-2 no-print">
-        <div class="w-full flex justify-end gap-1.5">
-          <button onclick="closeSettlementModal()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold px-3.5 py-1.5 rounded-lg text-xs">닫기</button>
-          <button onclick="confirmFinalSettlement()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition">정산 확정</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  
 
   <!-- [팝업 2] 📸 사진올리기 -->
   <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
@@ -497,13 +376,14 @@
       <div class="space-y-3 my-3 text-xs">
         <div>
           <label class="font-bold text-slate-600 block mb-1">📂 카테고리</label>
-          <select id="newDishCat" class="w-full border border-slate-200 rounded-lg px-3 py-2 font-bold bg-slate-50">
-            <option value="밥/국">🍚 밥/국</option>
-            <option value="메인반찬">🥩 메인반찬</option>
-            <option value="어린이반찬">👶 어린이반찬</option>
-            <option value="일반/김치">🥗 일반/김치</option>
-            <option value="사이드메뉴">🥟 사이드메뉴</option>
-          </select>
+          <input type="hidden" id="newDishCat" value="밥/국">
+            <div id="newDishCatCustomGroup" class="grid grid-cols-5 gap-1 text-[11px] font-bold text-center">
+              <button type="button" onclick="selectCustomNewDishCat('밥/국')" data-cat="밥/국" class="new-dish-cat-btn py-1.5 rounded-lg border-2 border-slate-800 bg-slate-800 text-white font-extrabold">밥/국</button>
+              <button type="button" onclick="selectCustomNewDishCat('메인반찬')" data-cat="메인반찬" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">메인</button>
+              <button type="button" onclick="selectCustomNewDishCat('어린이반찬')" data-cat="어린이반찬" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">어린이</button>
+              <button type="button" onclick="selectCustomNewDishCat('일반/김치')" data-cat="일반/김치" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">일반/김치</button>
+              <button type="button" onclick="selectCustomNewDishCat('사이드메뉴')" data-cat="사이드메뉴" class="new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600">사이드</button>
+            </div>
         </div>
         <div>
           <label class="font-bold text-slate-600 block mb-1">🍽️ 반찬 이름</label>
@@ -545,19 +425,19 @@
           <span id="archModalCost" class="hidden"></span>
         </div>
         <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b pb-1 focus:outline-none">
-        <div class="flex gap-2">
-          <select id="archEditSeason" class="flex-1 border border-slate-200 rounded px-2 py-1 font-bold bg-slate-50">
-            <option value="봄">🌸 봄</option>
-            <option value="여름">☀️ 여름</option>
-            <option value="가을">🍁 가을</option>
-            <option value="겨울">❄️ 겨울</option>
-          </select>
-          <select id="archEditType" class="flex-1 border border-slate-200 rounded px-2 py-1 font-bold bg-slate-50">
-            <option value="육류">🥩 육류</option>
-            <option value="해물/두부">🐟 해물/두부</option>
-            <option value="일품/간편">🍛 일품/간편</option>
-          </select>
-        </div>
+        <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200"><input type="hidden" id="archEditSeason" value="가을">
+            <div class="grid grid-cols-4 gap-1 text-[11px] font-bold">
+              <button type="button" onclick="selectCustomArchSeason('봄')" data-season="봄" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🌸 봄</button>
+              <button type="button" onclick="selectCustomArchSeason('여름')" data-season="여름" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">☀️ 여름</button>
+              <button type="button" onclick="selectCustomArchSeason('가을')" data-season="가을" class="arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🍁 가을</button>
+              <button type="button" onclick="selectCustomArchSeason('겨울')" data-season="겨울" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">❄️ 겨울</button>
+            </div>
+            <input type="hidden" id="archEditType" value="육류">
+            <div class="grid grid-cols-3 gap-1 text-[11px] font-bold">
+              <button type="button" onclick="selectCustomArchType('육류')" data-type="육류" class="arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🥩 육류</button>
+              <button type="button" onclick="selectCustomArchType('해물/두부')" data-type="해물/두부" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🐟 해물/두부</button>
+              <button type="button" onclick="selectCustomArchType('일품/간편')" data-type="일품/간편" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🍛 일품/간편</button>
+            </div></div>
         <div id="archModalDishes" class="flex flex-wrap gap-1 pt-1"></div>
         <div class="pt-3 flex justify-end gap-1.5">
           <button onclick="recommendArchive()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 font-bold px-3 py-1.5 rounded-lg text-xs">
@@ -584,10 +464,10 @@
       <div id="print-area" class="p-8 border-4 border-double border-teal-700 mt-3 text-center">
         <div class="flex items-center justify-center gap-3 mb-2">
           <svg class="w-12 h-12 shrink-0" viewBox="0 0 120 125" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M2 45 H55 V62 C42 66 33 74 28 82 L2 45 Z" fill="#4389C8"/>
-            <path d="M54 8 L63 2 V22 H77 V30 H63 V66 L54 69 V30 H40 V22 H54 V8 Z" fill="#234078"/>
-            <path d="M118 42 L60 122 L39 94 C34 84 38 69 58 60 C75 52 93 50 118 42 Z" fill="#234078"/>
-            <path d="M28 82 C40 65 62 56 92 53 C66 59 46 68 33 84 Z" fill="#234078"/>
+            <path d="M2 45 H55 V62 C42 66 33 74 28 82 L2 45 Z" fill="#4389C8"></path>
+            <path d="M54 8 L63 2 V22 H77 V30 H63 V66 L54 69 V30 H40 V22 H54 V8 Z" fill="#234078"></path>
+            <path d="M118 42 L60 122 L39 94 C34 84 38 69 58 60 C75 52 93 50 118 42 Z" fill="#234078"></path>
+            <path d="M28 82 C40 65 62 56 92 53 C66 59 46 68 33 84 Z" fill="#234078"></path>
           </svg>
           <div class="text-left leading-none">
             <p class="text-xs font-semibold text-slate-600">기독교한국침례회</p>
@@ -658,10 +538,11 @@
 
         <div class="flex gap-1.5">
           <input id="inAppNewMemberName" type="text" placeholder="이름 입력 (예: 김은혜)" onkeydown="if(event.key==='Enter') addInAppAuthorizedMember()" class="flex-1 min-w-0 border border-rose-200 rounded-xl px-2.5 py-2 text-xs font-bold bg-white focus:outline-none">
-          <select id="inAppNewMemberRole" class="border border-rose-200 rounded-xl px-2 py-2 text-xs font-bold bg-white shrink-0">
-            <option value="member">일반팀원</option>
-            <option value="admin">관리자(팀장)</option>
-          </select>
+          <input type="hidden" id="inAppNewMemberRole" value="member">
+            <div id="inAppRoleCustomToggle" class="flex rounded-xl border border-rose-200 bg-white p-0.5 shrink-0 text-[11px] font-extrabold">
+              <button type="button" id="roleBtnMember" onclick="selectCustomMemberRole('member')" class="px-2 py-1.5 rounded-lg bg-rose-200 text-rose-950 transition">일반팀원</button>
+              <button type="button" id="roleBtnAdmin" onclick="selectCustomMemberRole('admin')" class="px-2 py-1.5 rounded-lg text-slate-500 transition">관리자</button>
+            </div>
           <button type="button" onclick="addInAppAuthorizedMember()" class="bg-rose-200 hover:bg-rose-300 text-rose-950 font-extrabold px-3 py-2 rounded-xl text-xs shadow-sm whitespace-nowrap shrink-0 active:scale-95">
             ＋ 등록
           </button>
@@ -690,6 +571,12 @@
 
   
   <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 -->
+  
+
+  
+
+
+  <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 (폰 기본 달력 대체) -->
   <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2">
     <div class="bg-white rounded-2xl max-w-sm w-full p-2 shadow-2xl border border-slate-200 flex flex-col">
       <div class="flex justify-between items-center pb-1 border-b border-slate-100 shrink-0 px-0.5">
@@ -720,6 +607,49 @@
     </div>
   </div>
 
+  <!-- [팝업 11] 🗂️ 커스텀 지난 식단 필터 선택 모달 (폰 기본 피커 대체) -->
+  <div id="customFilterModal" onclick="if(event.target===this) closeCustomFilterModal()" class="fixed inset-0 bg-slate-900/45 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-3.5 shadow-2xl border border-slate-200 space-y-2.5 text-xs">
+      <div class="flex justify-between items-center pb-1.5 border-b border-slate-100">
+        <h3 class="font-extrabold text-slate-800">🗂️ 지난 식단 보기 필터</h3>
+        <button type="button" onclick="closeCustomFilterModal()" class="text-slate-400 font-bold px-1">✕</button>
+      </div>
+      <button type="button" onclick="applyCustomArchiveFilter('전체', '전체보기')" class="w-full py-2 rounded-xl font-extrabold border border-slate-300 bg-slate-800 text-white">전체보기</button>
+      <div>
+        <p class="text-[10px] font-extrabold text-slate-400 mb-1">계절별 식단</p>
+        <div class="grid grid-cols-2 gap-1.5 font-bold">
+          <button type="button" onclick="applyCustomArchiveFilter('봄', '🌸 봄 식단')" class="py-2 rounded-xl border border-pink-200 bg-pink-50/60 text-pink-950 hover:bg-pink-100">🌸 봄 식단</button>
+          <button type="button" onclick="applyCustomArchiveFilter('여름', '☀️ 여름 식단')" class="py-2 rounded-xl border border-sky-200 bg-sky-50/60 text-sky-950 hover:bg-sky-100">☀️ 여름 식단</button>
+          <button type="button" onclick="applyCustomArchiveFilter('가을', '🍁 가을 식단')" class="py-2 rounded-xl border border-amber-200 bg-amber-50/60 text-amber-950 hover:bg-amber-100">🍁 가을 식단</button>
+          <button type="button" onclick="applyCustomArchiveFilter('겨울', '❄️ 겨울 식단')" class="py-2 rounded-xl border border-indigo-200 bg-indigo-50/60 text-indigo-950 hover:bg-indigo-100">❄️ 겨울 식단</button>
+        </div>
+      </div>
+      <div>
+        <p class="text-[10px] font-extrabold text-slate-400 mb-1">메뉴별 식단</p>
+        <div class="grid grid-cols-1 gap-1.5 font-bold">
+          <button type="button" onclick="applyCustomArchiveFilter('육류', '🥩 육류(돼지/소/닭)')" class="py-2 rounded-xl border border-rose-200 bg-rose-50/50 text-rose-950 hover:bg-rose-100">🥩 육류(돼지/소/닭)</button>
+          <button type="button" onclick="applyCustomArchiveFilter('해물/두부', '🐟 해물/두부/계란')" class="py-2 rounded-xl border border-teal-200 bg-teal-50/50 text-teal-950 hover:bg-teal-100">🐟 해물/두부/계란</button>
+          <button type="button" onclick="applyCustomArchiveFilter('일품/간편', '🍛 일품/국수/간편식')" class="py-2 rounded-xl border border-purple-200 bg-purple-50/50 text-purple-950 hover:bg-purple-100">🍛 일품/국수/간편식</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- [팝업 12] 💬 앱 전용 커스텀 알림/확인 모달 (폰 기본 alert / confirm 완전 대체) -->
+  <div id="customSystemDialogModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-[99] hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-2xl border border-slate-200 text-center space-y-3.5">
+      <div id="customDialogIcon" class="text-2xl leading-none pt-0.5">💬</div>
+      <p id="customDialogMessage" class="text-xs font-extrabold text-slate-800 leading-relaxed whitespace-pre-line break-keep"></p>
+      <div id="customDialogBtnRow" class="flex justify-center gap-2 pt-1">
+        <button type="button" id="customDialogCancelBtn" class="hidden flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold py-2 rounded-xl text-xs transition active:scale-95">
+          취소
+        </button>
+        <button type="button" id="customDialogOkBtn" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 rounded-xl text-xs transition active:scale-95">
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
@@ -736,6 +666,60 @@
       db = firebase.firestore();
     } catch (e) { console.warn(e); }
 
+    // ================= 폰 자체 기본 alert/confirm 대체용 커스텀 다이얼로그 엔진 =================
+    function showCustomAlert(msg, iconStr = '💬') {
+      return new Promise(resolve => {
+        const modal = document.getElementById('customSystemDialogModal');
+        const iconEl = document.getElementById('customDialogIcon');
+        const msgEl = document.getElementById('customDialogMessage');
+        const cancelBtn = document.getElementById('customDialogCancelBtn');
+        const okBtn = document.getElementById('customDialogOkBtn');
+        if (!modal) { resolve(true); return; }
+
+        if (iconEl) iconEl.innerText = iconStr;
+        if (msgEl) msgEl.innerText = String(msg || '');
+        if (cancelBtn) cancelBtn.classList.add('hidden');
+        if (okBtn) {
+          okBtn.innerText = '확인';
+          okBtn.onclick = () => {
+            modal.classList.add('hidden');
+            resolve(true);
+          };
+        }
+        modal.classList.remove('hidden');
+      });
+    }
+
+    function showCustomConfirm(msg, iconStr = '❓') {
+      return new Promise(resolve => {
+        const modal = document.getElementById('customSystemDialogModal');
+        const iconEl = document.getElementById('customDialogIcon');
+        const msgEl = document.getElementById('customDialogMessage');
+        const cancelBtn = document.getElementById('customDialogCancelBtn');
+        const okBtn = document.getElementById('customDialogOkBtn');
+        if (!modal) { resolve(false); return; }
+
+        if (iconEl) iconEl.innerText = iconStr;
+        if (msgEl) msgEl.innerText = String(msg || '');
+        if (cancelBtn) {
+          cancelBtn.classList.remove('hidden');
+          cancelBtn.innerText = '취소 (N)';
+          cancelBtn.onclick = () => {
+            modal.classList.add('hidden');
+            resolve(false);
+          };
+        }
+        if (okBtn) {
+          okBtn.innerText = '확인 (Y)';
+          okBtn.onclick = () => {
+            modal.classList.add('hidden');
+            resolve(true);
+          };
+        }
+        modal.classList.remove('hidden');
+      });
+    }
+
     let currentUser = null;
     let isLeader = false;
     let isRealtimeStarted = false;
@@ -743,9 +727,7 @@
     let currentCat = '밥/국';
     let editingDishId = null;
     let selectedArchiveId = null;
-    let confirmedActualCost = null;
 
-    // [지시사항 3] 클라우드 연동 램프 UI: 테두리 삭제 & 한층 더 연한 파스텔 배경
     function setCloudStatusLamp(status) {
       const lamp = document.getElementById('cloudStatusLamp');
       if (!lamp) return;
@@ -759,24 +741,6 @@
         lamp.innerText = '🔴';
         lamp.className = "text-[11px] px-1 py-0.5 rounded bg-rose-50/40 shrink-0 flex items-center justify-center leading-none";
       }
-    }
-
-    // [지시사항 2] 관리/정산 터치 시 2차 확인 후 진행
-    function openSettlementModalWithConfirm() {
-      if (!confirm('주간 식단 관리 및 정산서를 확인하시겠습니까?')) return;
-      openSettlementModal();
-    }
-
-    // [지시사항 2] A4출력 터치 시 2차 확인 후 진행
-    function openPrintModalWithConfirm() {
-      if (!confirm('A4 식단표 출력 미리보기 화면으로 이동하시겠습니까?')) return;
-      openPrintModal();
-    }
-
-    // [지시사항 2] 설정(⚙️) 터치 시 2차 확인 후 진행
-    function goToAdminCenterWithConfirm() {
-      if (!confirm('관리자 전용 보안 설정 센터로 이동하시겠습니까?')) return;
-      goToAdminCenter();
     }
 
     const dbPhotoStore = {
@@ -1118,39 +1082,12 @@
     }
 
     function populateDateDropdownOptions(selectedVal) {
-      const sel = document.getElementById('currentDate');
-      if (!sel) return;
-
+      const hiddenInput = document.getElementById('currentDate');
       const todayWeekStr = getCurrentWeekSundayString();
-      const targetVal = normalizeCompactDateStr(selectedVal || sel.value || todayWeekStr) || todayWeekStr;
+      const currentVal = hiddenInput ? hiddenInput.value : '';
+      const targetVal = normalizeCompactDateStr(selectedVal || currentVal || todayWeekStr) || todayWeekStr;
 
-      const dateSet = new Set();
-      const now = new Date();
-      const dayOfWeek = now.getDay();
-      const baseSunday = new Date(now);
-      baseSunday.setDate(now.getDate() + (dayOfWeek === 0 ? 0 : (7 - dayOfWeek)));
-
-      for (let w = -8; w <= 54; w++) {
-        const d = new Date(baseSunday);
-        d.setDate(baseSunday.getDate() + w * 7);
-        dateSet.add(formatWeekOptionString(d));
-      }
-
-      if (Array.isArray(archiveList)) {
-        archiveList.forEach(a => { if (a && a.date) dateSet.add(normalizeCompactDateStr(a.date)); });
-      }
-      Object.keys(weeklyPlanMap || {}).forEach(k => { if (k) dateSet.add(normalizeCompactDateStr(k)); });
-      if (targetVal) dateSet.add(targetVal);
-
-      sel.innerHTML = '';
-      Array.from(dateSet).forEach(dateStr => {
-        const opt = document.createElement('option');
-        opt.value = dateStr;
-        opt.textContent = dateStr;
-        sel.appendChild(opt);
-      });
-
-      sel.value = targetVal;
+      if (hiddenInput) hiddenInput.value = targetVal;
 
       const triggerBtn = document.getElementById('customDateTriggerBtn');
       const triggerText = document.getElementById('customDateTriggerText');
@@ -1183,7 +1120,6 @@
       return { year: parseInt(m[1], 10), month: parseInt(m[2], 10) - 1 };
     }
 
-    // 과거: 확정입력된 최초입력 월까지 (최소 전월 -1 보장) / 미래: 1년 앞(+12개월)의 월까지
     function getCalendarMonthOffsetBounds(baseYear, baseMonth) {
       const baseYM = baseYear * 12 + baseMonth;
       let earliestYM = baseYM - 1;
@@ -1205,7 +1141,7 @@
       }
 
       const startOffset = earliestYM - baseYM;
-      const endOffset = 12; // 1년 앞의 월까지
+      const endOffset = 12;
       return { startOffset, endOffset };
     }
 
@@ -1222,15 +1158,12 @@
       const nowYearMonth = now.getFullYear() * 12 + now.getMonth();
       const sunYearMonth = targetSun.getFullYear() * 12 + targetSun.getMonth();
 
-      // 1) 지난 주 일요일: "완료"
       if (targetSun.getTime() < currentWeekSunday.getTime()) {
         return { label: '완료', cls: 'bg-slate-600 text-white border-slate-700' };
       }
-      // 2) 현재월보다 미래의 일요일 (또는 미래 주간): "예정확정"
       if (sunYearMonth > nowYearMonth || targetSun.getTime() > currentWeekSunday.getTime()) {
         return { label: '예정확정', cls: 'bg-indigo-600 text-white border-indigo-700' };
       }
-      // 3) 현재월 확정 일요일: "확정"
       return { label: '확정', cls: 'bg-rose-600 text-white border-rose-700' };
     }
 
@@ -1240,7 +1173,6 @@
       renderCustomScrollCalendar();
       modal.classList.remove('hidden');
 
-      // 열릴 때 창 안에 [전월(위) - 현재월(가운데) - 다음월(아래)] 3개월이 딱 들어오도록 스크롤 위치 정렬
       requestAnimationFrame(() => {
         const container = document.getElementById('calendarScrollContainer');
         const prevMonthEl = document.getElementById('cal-month-offset--1');
@@ -1368,13 +1300,11 @@
       if (planEntry && Array.isArray(planEntry.trayIds)) {
         currentTrayIds = [...planEntry.trayIds];
         currentSavedPhotoId = planEntry.photoId || 'default_4';
-        confirmedActualCost = planEntry.confirmedActualCost ?? null;
       } else {
         const matchedArch = (archiveList || []).find(a => normalizeCompactDateStr(a.date) === cleanDate);
         if (matchedArch && Array.isArray(matchedArch.dishIds)) {
           currentTrayIds = [...matchedArch.dishIds];
           currentSavedPhotoId = matchedArch.photoId || 'default_4';
-          confirmedActualCost = null;
         }
       }
 
@@ -1386,7 +1316,6 @@
     function applyRoleUI() {
       const badge = document.getElementById('roleBadgeText');
       const adminCenterBtn = document.getElementById('adminCenterBtn');
-      const settleBtn = document.getElementById('adminSettlementBtn');
       const adminActions = document.getElementById('adminActionBtns');
       const memberBar = document.getElementById('memberSummaryBar');
 
@@ -1400,16 +1329,14 @@
 
       if (isLeader) {
         badge.innerHTML = `팀장 ${currentUser} <span class="half-door-gray">🚪</span>`;
-        adminCenterBtn.classList.remove('hidden');
-        settleBtn.classList.remove('hidden');
-        adminActions.classList.remove('hidden');
-        memberBar.classList.add('hidden');
+        if (adminCenterBtn) adminCenterBtn.classList.remove('hidden');
+        if (adminActions) adminActions.classList.remove('hidden');
+        if (memberBar) memberBar.classList.add('hidden');
       } else {
         badge.innerHTML = `팀원 ${currentUser} <span class="half-door-gray">🚪</span>`;
-        adminCenterBtn.classList.add('hidden');
-        settleBtn.classList.add('hidden');
-        adminActions.classList.add('hidden');
-        memberBar.classList.remove('hidden');
+        if (adminCenterBtn) adminCenterBtn.classList.add('hidden');
+        if (adminActions) adminActions.classList.add('hidden');
+        if (memberBar) memberBar.classList.remove('hidden');
       }
       renderTray();
     }
@@ -1447,9 +1374,25 @@
       } catch (e) {}
     }
 
-    function goToAdminCenter() {
+    function selectCustomMemberRole(roleVal) {
+      const hiddenEl = document.getElementById('inAppNewMemberRole');
+      if (hiddenEl) hiddenEl.value = roleVal;
+      const btnMem = document.getElementById('roleBtnMember');
+      const btnAdm = document.getElementById('roleBtnAdmin');
+      if (btnMem && btnAdm) {
+        if (roleVal === 'admin') {
+          btnAdm.className = "px-2 py-1.5 rounded-lg bg-purple-200 text-purple-950 transition";
+          btnMem.className = "px-2 py-1.5 rounded-lg text-slate-500 transition";
+        } else {
+          btnMem.className = "px-2 py-1.5 rounded-lg bg-rose-200 text-rose-950 transition";
+          btnAdm.className = "px-2 py-1.5 rounded-lg text-slate-500 transition";
+        }
+      }
+    }
+
+    async function goToAdminCenter() {
       if (!isLeader) {
-        alert('관리자(팀장) 권한으로 로그인했을 때만 설정할 수 있습니다.');
+        await showCustomAlert('관리자(팀장) 권한으로 로그인했을 때만 설정할 수 있습니다.', '🔒');
         return;
       }
       sessionStorage.setItem('sejong_admin_verified', '1');
@@ -1518,7 +1461,10 @@
     async function saveInAppBothCodes() {
       const newAdminCode = document.getElementById('inAppEditAdminCode').value.trim();
       const newMemberCode = document.getElementById('inAppEditMemberCode').value.trim();
-      if (!newAdminCode || !newMemberCode) return alert('코드번호를 비워둘 수 없습니다.');
+      if (!newAdminCode || !newMemberCode) {
+        await showCustomAlert('코드번호를 비워둘 수 없습니다.', '⚠️');
+        return;
+      }
 
       inAppAuthConfig.adminCode = newAdminCode;
       inAppAuthConfig.memberCode = newMemberCode;
@@ -1534,18 +1480,24 @@
           setCloudStatusLamp('disconnected');
         }
       }
-      alert('✅ 관리자 전용 코드번호와 팀원 공용 코드번호가 저장되었습니다!');
+      await showCustomAlert('관리자 전용 코드번호와 팀원 공용 코드번호가 저장되었습니다!', '✅');
     }
 
     async function addInAppAuthorizedMember() {
       const nameEl = document.getElementById('inAppNewMemberName');
       const roleEl = document.getElementById('inAppNewMemberRole');
       const name = nameEl.value.trim();
-      const role = roleEl.value;
-      if (!name) return alert('등록할 이름을 입력해주세요.');
+      const role = roleEl ? roleEl.value : 'member';
+      if (!name) {
+        await showCustomAlert('등록할 이름을 입력해주세요.', '✏️');
+        return;
+      }
 
       const members = inAppAuthConfig.members || [];
-      if (members.some(m => m.name === name)) return alert('이미 등록된 이름입니다.');
+      if (members.some(m => m.name === name)) {
+        await showCustomAlert('이미 등록된 이름입니다.', '⚠️');
+        return;
+      }
 
       members.push({ name: name, role: role, addedAt: Date.now() });
       inAppAuthConfig.members = members;
@@ -1567,9 +1519,14 @@
 
     async function removeInAppMember(index) {
       const members = inAppAuthConfig.members || [];
-      if (members.length <= 1) return alert('최소 1명의 관리자는 남아있어야 합니다.');
+      if (members.length <= 1) {
+        await showCustomAlert('최소 1명의 관리자는 남아있어야 합니다.', '⚠️');
+        return;
+      }
       const target = members[index];
-      if (!confirm('[' + target.name + '] 님을 명단에서 삭제하시겠습니까?')) return;
+      const ok = await showCustomConfirm('[' + target.name + '] 님을 명단에서 삭제하시겠습니까?', '🗑️');
+      if (!ok) return;
+
       members.splice(index, 1);
       inAppAuthConfig.members = members;
       saveLocalAuthBackup(inAppAuthConfig);
@@ -1587,8 +1544,9 @@
       }
     }
 
-    function logoutUser() {
-      if (!confirm('로그아웃 하시겠습니까?')) return;
+    async function logoutUser() {
+      const ok = await showCustomConfirm('로그아웃 하시겠습니까?', '🚪');
+      if (!ok) return;
       sessionStorage.clear();
       location.reload();
     }
@@ -1655,7 +1613,6 @@
             if (weeklyPlanMap[activeDate] && Array.isArray(weeklyPlanMap[activeDate].trayIds)) {
               currentTrayIds = [...weeklyPlanMap[activeDate].trayIds];
             }
-            confirmedActualCost = data.confirmedActualCost ?? null;
             currentSavedPhotoId = data.photoId || 'default_4';
             renderTray();
           }
@@ -1691,7 +1648,6 @@
 
       weeklyPlanMap[selectedDate] = {
         trayIds: [...currentTrayIds],
-        confirmedActualCost: confirmedActualCost,
         photoId: currentSavedPhotoId,
         updatedAt: Date.now()
       };
@@ -1704,7 +1660,6 @@
         await db.collection('settings').doc('currentState').set({
           date: selectedDate,
           trayIds: currentTrayIds,
-          confirmedActualCost: confirmedActualCost,
           photoId: currentSavedPhotoId,
           weeklyPlans: weeklyPlanMap,
           updatedAt: Date.now()
@@ -1716,179 +1671,11 @@
       }
     }
 
-    function getExpectedTotalCost() {
-      return currentTrayIds.reduce((acc, id) => {
-        const item = masterBasket.find(d => d.id === id);
-        return acc + (item ? Number(item.price || 0) : 0);
-      }, 0);
-    }
-
-    function openSettlementModal() {
-      if (!isLeader) return alert('관리자(팀장)만 접근할 수 있는 기능입니다.');
-      document.getElementById('settleDateTitle').innerText = document.getElementById('currentDate').value + " 정산 내역";
-      const tbody = document.getElementById('settleMenuTableBody');
-      tbody.innerHTML = '';
-
-      let expectedSum = 0;
-      currentTrayIds.forEach(id => {
-        const d = masterBasket.find(x => x.id === id);
-        if (!d) return;
-        expectedSum += Number(d.price || 0);
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td class="py-1.5 px-2.5 font-bold text-slate-800">${d.name}</td>
-          <td class="py-1.5 px-2 text-center text-slate-600">${d.kg}</td>
-          <td class="py-1.5 px-2.5 text-right font-bold text-slate-800">${Number(d.price).toLocaleString()}원</td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      document.getElementById('settleExpectedTotal').innerText = `${expectedSum.toLocaleString()}원`;
-      document.getElementById('comparePlannedCost').innerText = `${expectedSum.toLocaleString()}원`;
-
-      if (confirmedActualCost !== null) {
-        document.getElementById('ocrExtractedInput').value = confirmedActualCost;
-      }
-      updateCostComparison();
-      document.getElementById('settlementModal').classList.remove('hidden');
-    }
-
-    function closeSettlementModal() { document.getElementById('settlementModal').classList.add('hidden'); }
-
-    async function runReceiptOcr(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const badge = document.getElementById('ocrStatusBadge');
-      badge.innerText = "⏳ 무료 OCR 금액 판독중...";
-      badge.className = "text-[10px] bg-amber-200 text-amber-950 px-2 py-0.5 rounded-full font-extrabold animate-pulse";
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const img = new Image();
-        img.onload = async function() {
-          const canvas = document.createElement('canvas');
-          const scale = Math.min(1, 900 / Math.max(img.width, img.height));
-          canvas.width = img.width * scale;
-          canvas.height = img.height * scale;
-          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-          const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
-
-          document.getElementById('receiptOcrThumb').src = compressedUrl;
-          document.getElementById('receiptThumbBox').classList.remove('hidden');
-
-          const receiptPhotoId = 'receipt_' + Date.now();
-          dbPhotoStore[receiptPhotoId] = compressedUrl;
-          if (db) {
-            setCloudStatusLamp('saving');
-            db.collection('photos').doc(receiptPhotoId).set({
-              dataUrl: compressedUrl,
-              type: 'receipt',
-              createdAt: Date.now()
-            }).then(() => setCloudStatusLamp('connected')).catch(() => setCloudStatusLamp('disconnected'));
-          }
-
-          try {
-            const result = await Tesseract.recognize(compressedUrl, 'kor+eng');
-            const text = result.data.text || "";
-            document.getElementById('ocrRawTextPreview').innerText = "인식결과: " + text.replace(/\s+/g, ' ').slice(0, 35) + "...";
-
-            const matches = text.match(/\d{1,3}(?:,\d{3})+|\d{5,8}/g) || [];
-            let maxAmount = 0;
-            matches.forEach(m => {
-              const num = parseInt(m.replace(/,/g, ''), 10);
-              if (num >= 1000 && num <= 5000000 && num > maxAmount) maxAmount = num;
-            });
-
-            if (maxAmount > 0) {
-              document.getElementById('ocrExtractedInput').value = maxAmount;
-              badge.innerText = "✅ OCR 금액 추출완료";
-              badge.className = "text-[10px] bg-teal-200 text-teal-950 px-2 py-0.5 rounded-full font-extrabold";
-            } else {
-              document.getElementById('ocrExtractedInput').value = getExpectedTotalCost();
-              badge.innerText = "✏️ 금액 확인/보정 가능";
-              badge.className = "text-[10px] bg-sky-200 text-sky-950 px-2 py-0.5 rounded-full font-extrabold";
-            }
-            updateCostComparison();
-          } catch (err) {
-            badge.innerText = "✏️ 수동 입력 모드";
-            updateCostComparison();
-          }
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function updateCostComparison() {
-      const planned = getExpectedTotalCost();
-      const actualVal = document.getElementById('ocrExtractedInput').value;
-      const diffEl = document.getElementById('compareDiffResult');
-
-      if (!actualVal) {
-        diffEl.innerText = "영수증을 올리거나 금액을 입력하세요";
-        diffEl.className = "font-bold text-xs text-slate-400";
+    async function openPhotoUploadModal() {
+      if (!isLeader) {
+        await showCustomAlert('사진 올리기는 관리자(팀장)만 가능합니다.', '🔒');
         return;
       }
-
-      const actual = Number(actualVal);
-      const diff = actual - planned;
-
-      if (diff === 0) {
-        diffEl.innerText = "🎯 예산과 영수증 금액 일치!";
-        diffEl.className = "font-extrabold text-xs text-teal-700";
-      } else if (diff < 0) {
-        diffEl.innerText = `📉 예산 대비 ${Math.abs(diff).toLocaleString()}원 절감!`;
-        diffEl.className = "font-extrabold text-xs text-blue-700";
-      } else {
-        diffEl.innerText = `📈 예산 대비 ${diff.toLocaleString()}원 초과`;
-        diffEl.className = "font-extrabold text-xs text-rose-700";
-      }
-    }
-
-    async function confirmFinalSettlement() {
-      const actualVal = document.getElementById('ocrExtractedInput').value;
-      if (!actualVal) return alert('영수증 사진을 올리거나 실결제 금액을 입력해주세요.');
-      confirmedActualCost = Number(actualVal);
-      renderTray();
-      await syncCurrentStateToDb();
-      closeSettlementModal();
-      alert(`✅ 영수증 실결제 금액(${confirmedActualCost.toLocaleString()}원)으로 정산 확정 완료!`);
-    }
-
-    async function captureAndShareSettlement() {
-      const target = document.getElementById('settlementCaptureArea');
-      const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#ffffff' });
-      canvas.toBlob(async blob => {
-        const file = new File([blob], '세종꿈의교회_식단정산서.png', { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({
-            title: '세종꿈의교회 식단 정산서',
-            text: document.getElementById('currentDate').value + ' 정산 내역입니다.',
-            files: [file]
-          });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = '세종꿈의교회_식단정산서.png';
-          a.click();
-          URL.revokeObjectURL(url);
-          alert('📸 정산서 화면이 이미지로 저장되었습니다!');
-        }
-      });
-    }
-
-    function printSettlementReport() {
-      const area = document.getElementById('settlementCaptureArea');
-      document.getElementById('print-area').classList.remove('print-active');
-      area.classList.add('print-active');
-      window.print();
-      area.classList.remove('print-active');
-    }
-
-    function openPhotoUploadModal() {
-      if (!isLeader) return alert('사진 올리기는 관리자(팀장)만 가능합니다.');
       document.getElementById('cropStageArea').classList.add('hidden');
       document.getElementById('croppedResultArea').classList.add('hidden');
       document.getElementById('photoUploadModal').classList.remove('hidden');
@@ -1989,7 +1776,7 @@
       document.getElementById('previewImgTag').src = dbPhotoStore[currentSavedPhotoId];
       document.getElementById('photoMetaInfo').innerText = `분리주소 ID: ${currentSavedPhotoId} (${approxKb}KB)`;
       document.getElementById('attachedPreview').classList.remove('hidden');
-      btn.innerText = "💾 저장하기 (0.7 압축 Firebase 분리저장)";
+      btn.innerText = "사진 저장";
       closePhotoUploadModal();
     }
 
@@ -2073,9 +1860,11 @@
 
     async function executeSelectedBasketDelete() {
       if (selectedBasketDeleteIds.length === 0) {
-        return alert('삭제할 반찬을 아래 목록에서 터치하여 선택해주세요.');
+        await showCustomAlert('삭제할 반찬을 아래 목록에서 터치하여 선택해주세요.', '👆');
+        return;
       }
-      if (!confirm(`선택하신 ${selectedBasketDeleteIds.length}개의 반찬을 바구니에서 삭제할까요?`)) return;
+      const ok = await showCustomConfirm(`선택하신 ${selectedBasketDeleteIds.length}개의 반찬을 바구니에서 삭제할까요?`, '🗑️');
+      if (!ok) return;
 
       const toDelete = [...selectedBasketDeleteIds];
       masterBasket = masterBasket.filter(d => !toDelete.includes(d.id));
@@ -2095,8 +1884,12 @@
     }
 
     async function executeAllBasketDelete() {
-      if (masterBasket.length === 0) return alert('삭제할 반찬이 없습니다.');
-      if (!confirm(`현재 등록된 반찬(${masterBasket.length}개)을 모두 전체 삭제할까요?`)) return;
+      if (masterBasket.length === 0) {
+        await showCustomAlert('삭제할 반찬이 없습니다.', 'ℹ️');
+        return;
+      }
+      const ok = await showCustomConfirm(`현재 등록된 반찬(${masterBasket.length}개)을 모두 전체 삭제할까요?`, '⚠️');
+      if (!ok) return;
 
       const allIds = masterBasket.map(d => d.id);
       masterBasket = [];
@@ -2191,13 +1984,11 @@
 
     async function removeFromTray(id) {
       currentTrayIds = currentTrayIds.filter(x => x !== id);
-      confirmedActualCost = null;
       renderTray();
       await syncCurrentStateToDb();
     }
 
     async function toggleDishInTray(id) {
-      confirmedActualCost = null;
       if (currentTrayIds.includes(id)) {
         requestRemoveFromTray(id);
       } else {
@@ -2226,12 +2017,13 @@
         const newName = document.getElementById('detailName').value.trim();
         if (newName) item.name = newName;
         item.kg = document.getElementById('detailKg').value.trim();
+        const priceEl = document.getElementById('detailPrice');
+        if (priceEl) item.price = Number(priceEl.value || 0);
         item.recipe = document.getElementById('detailRecipe').value.trim();
         if (db) {
           await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(console.error);
         }
       }
-      confirmedActualCost = null;
       closeDishDetailModal();
       renderTray();
       renderArchiveGrid();
@@ -2323,9 +2115,12 @@
       return '일반/김치';
     }
 
-    function importCsvFile() {
+    async function importCsvFile() {
       const file = document.getElementById('csvFileInput').files[0];
-      if (!file) return alert('불러올 CSV 파일을 선택해주세요!');
+      if (!file) {
+        await showCustomAlert('불러올 CSV 파일을 선택해주세요!', '📂');
+        return;
+      }
       const reader = new FileReader();
       reader.onload = async function(e) {
         const buffer = e.target.result;
@@ -2374,20 +2169,33 @@
               await batch.commit();
             }
           } catch (err) {
-            console.warn('basket 개별 저장 경고, currentState 백업 동기화로 처리:', err);
+            console.warn('basket 개별 저장 경고:', err);
           }
         }
 
         await syncCurrentStateToDb();
         closeCsvModal();
         renderTray();
-        alert(`🎉 총 ${added}개의 반찬이 등록되어 모든 기기(스마트폰/PC)에 동기화되었습니다!`);
+        await showCustomAlert(`총 ${added}개의 반찬이 등록되어 모든 기기에 동기화되었습니다!`, '🎉');
       };
       reader.readAsArrayBuffer(file);
     }
 
+    function selectCustomNewDishCat(catVal) {
+      const hiddenEl = document.getElementById('newDishCat');
+      if (hiddenEl) hiddenEl.value = catVal;
+      document.querySelectorAll('.new-dish-cat-btn').forEach(btn => {
+        const bCat = btn.getAttribute('data-cat');
+        if (bCat === catVal) {
+          btn.className = "new-dish-cat-btn py-1.5 rounded-lg border-2 border-slate-800 bg-slate-800 text-white font-extrabold";
+        } else {
+          btn.className = "new-dish-cat-btn py-1.5 rounded-lg border border-slate-200 bg-white text-slate-600";
+        }
+      });
+    }
+
     function openAddDishModal() {
-      document.getElementById('newDishCat').value = currentCat;
+      selectCustomNewDishCat(currentCat);
       document.getElementById('newDishName').value = '';
       document.getElementById('newDishKg').value = '';
       document.getElementById('newDishPrice').value = '';
@@ -2397,9 +2205,12 @@
     function closeAddDishModal() { document.getElementById('addDishModal').classList.add('hidden'); }
 
     async function createNewDishInBasket() {
-      const cat = document.getElementById('newDishCat').value;
+      const cat = document.getElementById('newDishCat').value || '밥/국';
       let name = document.getElementById('newDishName').value.trim();
-      if (!name) return alert('반찬 이름을 입력해주세요.');
+      if (!name) {
+        await showCustomAlert('반찬 이름을 입력해주세요.', '✏️');
+        return;
+      }
       if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
       const newDish = {
         id: 'custom_' + Date.now(),
@@ -2424,8 +2235,14 @@
     }
 
     async function confirmMenuToGrid() {
-      if (!isLeader) return alert('식단 확정은 관리자(팀장)만 가능합니다.');
-      if (currentTrayIds.length === 0) return alert('식판에 메뉴를 담아주세요.');
+      if (!isLeader) {
+        await showCustomAlert('식단 확정은 관리자(팀장)만 가능합니다.', '🔒');
+        return;
+      }
+      if (currentTrayIds.length === 0) {
+        await showCustomAlert('식판에 메뉴를 담아주세요.', '🍱');
+        return;
+      }
       const dateStr = document.getElementById('currentDate').value;
       const firstMain = masterBasket.find(d => currentTrayIds.includes(d.id) && d.cat === '메인반찬') || masterBasket.find(d => d.id === currentTrayIds[0]);
 
@@ -2450,12 +2267,32 @@
           .then(() => setCloudStatusLamp('connected'))
           .catch(() => setCloudStatusLamp('disconnected'));
       }
-      alert('✅ 이번 주 식단이 확정되어 지난 식단 기록에 저장되었습니다!');
+      await showCustomAlert('이번 주 식단이 확정되어 지난 식단 기록에 저장되었습니다!', '✅');
+    }
+
+    // ================= 커스텀 지난 식단 필터 모달 로직 =================
+    function openCustomFilterModal() {
+      const modal = document.getElementById('customFilterModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+    function closeCustomFilterModal() {
+      const modal = document.getElementById('customFilterModal');
+      if (modal) modal.classList.add('hidden');
+    }
+    function applyCustomArchiveFilter(val, labelText) {
+      const hiddenEl = document.getElementById('archiveFilter');
+      const txtEl = document.getElementById('archiveFilterTriggerText');
+      if (hiddenEl) hiddenEl.value = val;
+      if (txtEl) txtEl.innerText = labelText;
+      closeCustomFilterModal();
+      renderArchiveGrid();
     }
 
     function renderArchiveGrid() {
-      const filter = document.getElementById('archiveFilter').value;
+      const filterEl = document.getElementById('archiveFilter');
+      const filter = filterEl ? filterEl.value : '전체';
       const grid = document.getElementById('archiveGrid');
+      if (!grid) return;
       grid.innerHTML = '';
 
       const filtered = archiveList.filter(a => filter === '전체' || a.season === filter || a.menuType === filter);
@@ -2487,6 +2324,30 @@
       });
     }
 
+    function selectCustomArchSeason(seasonVal) {
+      const hiddenEl = document.getElementById('archEditSeason');
+      if (hiddenEl) hiddenEl.value = seasonVal;
+      document.querySelectorAll('.arch-season-btn').forEach(btn => {
+        if (btn.getAttribute('data-season') === seasonVal) {
+          btn.className = "arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold";
+        } else {
+          btn.className = "arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600";
+        }
+      });
+    }
+
+    function selectCustomArchType(typeVal) {
+      const hiddenEl = document.getElementById('archEditType');
+      if (hiddenEl) hiddenEl.value = typeVal;
+      document.querySelectorAll('.arch-type-btn').forEach(btn => {
+        if (btn.getAttribute('data-type') === typeVal) {
+          btn.className = "arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold";
+        } else {
+          btn.className = "arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600";
+        }
+      });
+    }
+
     function openArchiveModal(id) {
       selectedArchiveId = String(id);
       const item = archiveList.find(a => String(a.id) === selectedArchiveId);
@@ -2496,23 +2357,20 @@
       document.getElementById('archModalSeason').innerText = `${item.season} · ${item.menuType}`;
       document.getElementById('archModalDate').value = item.date;
       document.getElementById('archModalTitle').value = item.title;
-      document.getElementById('archEditSeason').value = item.season || '가을';
-      document.getElementById('archEditType').value = item.menuType || '육류';
+      selectCustomArchSeason(item.season || '가을');
+      selectCustomArchType(item.menuType || '육류');
       document.getElementById('archModalLikes').innerText = item.likes;
 
-      let sumCost = 0;
       const dishBox = document.getElementById('archModalDishes');
       dishBox.innerHTML = '';
 
       (item.dishIds || []).forEach(dId => {
         const d = masterBasket.find(x => x.id === dId);
         if (d) {
-          sumCost += Number(d.price || 0);
           dishBox.innerHTML += `<span class="bg-slate-100 border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold text-slate-700">${d.name} (${d.kg})</span>`;
         }
       });
 
-      document.getElementById('archModalCost').innerText = `총 ${sumCost.toLocaleString()}원`;
       document.getElementById('archiveModal').classList.remove('hidden');
     }
 
@@ -2528,7 +2386,6 @@
 
       currentTrayIds = [...item.dishIds];
       currentSavedPhotoId = item.photoId;
-      confirmedActualCost = null;
 
       if (db) {
         setCloudStatusLamp('saving');
@@ -2579,6 +2436,4 @@
     renderTray();
     renderArchiveGrid();
     verifyExistingSessionOnLoad();
-  </script>
-</body>
-</html>
+  </script></body></html>
