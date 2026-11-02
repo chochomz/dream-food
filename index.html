@@ -43,7 +43,7 @@
       <!-- 상부: tlogo.png + ttitle.png 중앙 배치 및 "주간 식단관리 시스템" -->
       <div class="flex flex-col items-center justify-center pt-1">
         <div class="flex items-center justify-center gap-2.5">
-          <img src="tlogo.png" alt="로고" class="h-11 w-auto object-contain shrink-0">
+          <div class="p-1 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center"><img src="tlogo.png" alt="로고" class="h-9 w-auto object-contain"></div>
           <img src="ttitle.png" alt="타이틀" class="h-10 w-auto object-contain shrink-0">
         </div>
         <p class="mt-4 text-xs font-bold text-slate-600 tracking-wide">
@@ -83,124 +83,126 @@
   </div>
 
   <!-- ================= 로그인 통과 후 열리는 앱 본문 (#protectedAppContent) ================= -->
-  <div id="protectedAppContent" class="hidden pb-20 bg-white">
+  <div id="protectedAppContent" class="hidden pb-16 bg-white">
 
-    <!-- 1. 최상단 타이틀 헤더: 로고+타이틀 중앙 배치 & 바로 밑 우측 끝 컨트롤 바 통일 -->
+    <!-- 1. 최상단 타이틀 헤더: 테두리 포함 로고 + 타이틀 중앙 배치 & 최소 여백 -->
     <header class="bg-white sticky top-0 z-30 border-b border-slate-200">
-      <!-- 상단: tlogo.png + ttitle.png 중앙 정렬 -->
-      <div class="px-4 pt-3 pb-2 flex items-center justify-center">
-        <div class="flex items-center justify-center gap-2.5">
-          <img src="tlogo.png" alt="로고" class="h-9 w-auto object-contain shrink-0">
-          <img src="ttitle.png" alt="타이틀" class="h-8 w-auto object-contain shrink-0">
+      <div class="px-2 py-1.5 flex items-center justify-center">
+        <div class="flex items-center justify-center gap-2 whitespace-nowrap">
+          <div class="p-1 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
+            <img src="tlogo.png" alt="로고" class="h-7 w-auto object-contain shrink-0">
+          </div>
+          <img src="ttitle.png" alt="타이틀" class="h-7 w-auto object-contain shrink-0">
         </div>
         <p id="dbStatusText" class="hidden">클라우드 연동중</p>
       </div>
 
-      <!-- 2-1) 타이틀 바로 밑: 우측 끝으로 하나로 통일 (순서: 관리/정산, A4출력, ⚙️설정아이콘, 팀장 000 : 로그아웃) -->
-      <div class="bg-slate-50 px-3 py-1.5 border-t border-slate-100 flex items-center justify-end gap-1.5 text-xs">
-        <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-1 rounded border border-slate-300 transition whitespace-nowrap">
+      <!-- 타이틀 바로 밑: 우측 끝으로 하나로 통일 (순서: 관리/정산, A4출력, ⚙️, 팀장 000 : 로그아웃) -->
+      <div class="bg-slate-50 px-2 py-1 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
+        <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           관리/정산
         </button>
-        <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-1 rounded border border-slate-300 transition whitespace-nowrap">
+        <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           A4출력
         </button>
-        <button id="adminCenterBtn" onclick="goToAdminCenter()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-7 h-6 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
+        <button id="adminCenterBtn" onclick="goToAdminCenter()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-6 h-5 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
           ⚙️
         </button>
-        <button onclick="logoutUser()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2.5 py-1 rounded border border-slate-300 transition whitespace-nowrap">
+        <button onclick="logoutUser()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           <span id="roleBadgeText">팀장 관리자 : 로그아웃</span>
         </button>
       </div>
     </header>
 
-    <!-- 2-2) 일자 드롭다운 메뉴 & 바로 옆 "어린이 반찬 N종 포함" (연한 초록, 테두리 없음) -->
-    <div class="bg-white px-3.5 py-2 border-b border-slate-200 flex items-center justify-start gap-2 flex-wrap">
-      <div class="flex items-center gap-1.5">
-        <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자 :</span>
-        <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="bg-slate-50 text-slate-800 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-slate-600 cursor-pointer">
+    <!-- 2. 일자 드롭다운(2026년 11월8일(2주), 해당주 핑크색) & 바로 옆 "어린이 반찬 0종"(연한 초록, 테두리 없음) -->
+    <div class="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center justify-start gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
+      <div class="flex items-center gap-1 shrink-0">
+        <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자:</span>
+        <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="bg-pink-50 text-pink-900 text-xs font-bold px-2 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap w-auto">
         </select>
       </div>
-      <span id="kidsBadge" class="text-[11px] bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md font-bold whitespace-nowrap">
-        어린이 반찬 4종 포함
+      <span id="kidsBadge" class="text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0">
+        어린이 반찬 0종
       </span>
     </div>
 
-    <!-- 3. 상단: 식판에 모으기 (두꺼운 6px 민트 테두리 제거 ➔ 단정한 1px 관공서풍 카드 & 글자 크기 맞춤 버튼) -->
-    <section class="p-3.5 bg-slate-50/60 border-b border-slate-200">
-      <div class="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
-        <div class="flex justify-between items-center mb-2 pb-1.5 border-b border-slate-100">
-          <span class="text-xs font-bold text-slate-800">식판에 모으기 <span class="text-[10px] font-normal text-slate-400">(메뉴터치: 세부설정 / ✕: 제외)</span></span>
-          <span id="totalSummaryAdmin" class="text-[11px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded whitespace-nowrap">
-            총 0종 · 0원
-          </span>
+    <!-- 3. 상단: 식판에 모으기 (최소 여백, 4계절 자동 연한 두꺼운 테두리, 설명문구 삭제, 우측하부 총계 배치) -->
+    <section class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
+      <div id="trayCardBox" class="bg-white p-2 rounded-xl border-[5px] border-emerald-200/90 shadow-2xs transition-colors duration-300">
+        <div class="flex justify-between items-center mb-1 pb-1 border-b border-slate-100 whitespace-nowrap">
+          <span class="text-xs font-bold text-slate-800">식판에 모으기</span>
+          <span id="seasonBorderBadge" class="text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50/70">봄 식판</span>
         </div>
 
-        <div id="currentTray" class="flex flex-wrap gap-1.5 min-h-[40px] items-center py-1"></div>
+        <div id="currentTray" class="flex flex-wrap gap-1 min-h-[34px] items-center py-0.5"></div>
 
-        <div id="attachedPreview" class="hidden mt-2 pt-2 border-t border-dashed border-slate-200 flex items-center justify-between bg-slate-50 px-2.5 py-1.5 rounded-lg">
-          <div class="text-[11px]">
+        <div id="attachedPreview" class="hidden mt-1.5 pt-1.5 border-t border-dashed border-slate-200 flex items-center justify-between bg-slate-50 px-2 py-1 rounded-lg whitespace-nowrap">
+          <div class="text-[11px] truncate pr-2">
             <p class="font-bold text-slate-700">식판 사진 저장됨</p>
-            <p id="photoMetaInfo" class="text-[10px] text-slate-500 font-medium"></p>
+            <p id="photoMetaInfo" class="text-[10px] text-slate-500 font-medium truncate"></p>
           </div>
-          <img id="previewImgTag" src="" class="w-14 h-10 object-cover rounded border border-slate-300">
+          <img id="previewImgTag" src="" class="w-12 h-8 object-cover rounded border border-slate-300 shrink-0">
         </div>
 
-        <!-- 컨펌/액션 버튼: 문자 크기에 맞게 컴팩트 우측 배치 -->
-        <div class="mt-2.5 pt-2 border-t border-slate-100">
-          <div id="adminActionBtns" class="flex items-center justify-end gap-1.5">
-            <button onclick="openPhotoUploadModal()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg text-xs transition active:scale-95">
+        <!-- 식판 하단 바: 좌측에 컴팩트 액션 버튼, 우측 하부에 "총 7종 : 금액" 배치 -->
+        <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1 whitespace-nowrap">
+          <div id="adminActionBtns" class="flex items-center gap-1 shrink-0">
+            <button onclick="openPhotoUploadModal()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold px-2.5 py-1 rounded-lg text-[11px] transition active:scale-95 whitespace-nowrap">
               사진올리기
             </button>
-            <button onclick="confirmMenuToGrid()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition active:scale-95">
+            <button onclick="confirmMenuToGrid()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-2.5 py-1 rounded-lg text-[11px] transition active:scale-95 whitespace-nowrap">
               식단확정
             </button>
           </div>
 
-          <div id="memberSummaryBar" class="hidden flex justify-between items-center bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 text-xs">
-            <span class="font-bold text-slate-700">식단 조립 모드</span>
-            <span id="totalSummaryMember" class="font-bold text-slate-800"></span>
+          <div id="memberSummaryBar" class="hidden flex items-center gap-1 text-[11px] shrink-0">
+            <span class="font-bold text-slate-600">식단조립</span>
+            <span id="totalSummaryMember" class="font-bold text-slate-800 hidden"></span>
           </div>
+
+          <!-- 우측 하부: 총 N종 : 금액 -->
+          <span id="totalSummaryAdmin" class="ml-auto text-[11px] font-extrabold text-slate-800 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded whitespace-nowrap shrink-0">
+            총 0종 : 0원
+          </span>
         </div>
       </div>
     </section>
 
-    <!-- 4 & 5. 중간: 반찬 바구니 (노란 배경 제거 & 컴팩트 버튼) -->
-    <section id="basketSection" class="p-3.5 bg-white border-b border-slate-200">
-      <div class="flex justify-between items-center mb-2">
-        <h2 class="text-xs font-bold text-slate-800 flex items-center gap-1">
-          반찬 바구니 <span class="text-[10px] font-normal text-slate-400">(터치하여 식판에 담기)</span>
-        </h2>
+    <!-- 4 & 5. 중간: 반찬 바구니 (최소 여백 & 카테고리별 아주 연한 파스텔 색상 통일) -->
+    <section id="basketSection" class="px-2 py-2 bg-white border-b border-slate-200">
+      <div class="flex justify-between items-center mb-1.5 whitespace-nowrap">
+        <h2 class="text-xs font-bold text-slate-800">반찬 바구니</h2>
         <div class="flex items-center gap-1">
-          <button onclick="openAddDishModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap transition">
+          <button onclick="openAddDishModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap transition">
             ＋반찬등록
           </button>
-          <button onclick="openCsvModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2.5 py-1 rounded-lg whitespace-nowrap transition">
+          <button onclick="openCsvModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-0.5 rounded-lg whitespace-nowrap transition">
             CSV불러오기
           </button>
         </div>
       </div>
 
-      <div class="relative w-full mb-2">
-        <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 이름이나 재료 검색" class="w-full pl-3 pr-7 py-1.5 text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:bg-white focus:border-slate-600">
-        <button onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-2.5 top-1.5 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      <div class="relative w-full mb-1.5">
+        <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 이름이나 재료 검색" class="w-full pl-2.5 pr-7 py-1 text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:bg-white focus:border-slate-600">
+        <button onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-2 top-1 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
       </div>
 
-      <div class="grid grid-cols-5 gap-1 mb-2 text-[11px] font-bold text-center">
-        <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1.5 rounded-lg border transition">밥/국</button>
-        <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1.5 rounded-lg border transition">메인</button>
-        <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1.5 rounded-lg border transition">어린이</button>
-        <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1.5 rounded-lg border transition">일반/김치</button>
-        <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1.5 rounded-lg border transition">사이드</button>
+      <div class="grid grid-cols-5 gap-1 mb-1.5 text-[11px] font-bold text-center whitespace-nowrap">
+        <button onclick="selectCategory('밥/국')" id="tab-밥/국" class="py-1 rounded-lg border transition whitespace-nowrap">밥/국</button>
+        <button onclick="selectCategory('메인반찬')" id="tab-메인반찬" class="py-1 rounded-lg border transition whitespace-nowrap">메인</button>
+        <button onclick="selectCategory('어린이반찬')" id="tab-어린이반찬" class="py-1 rounded-lg border transition whitespace-nowrap">어린이</button>
+        <button onclick="selectCategory('일반/김치')" id="tab-일반/김치" class="py-1 rounded-lg border transition whitespace-nowrap">일반/김치</button>
+        <button onclick="selectCategory('사이드메뉴')" id="tab-사이드메뉴" class="py-1 rounded-lg border transition whitespace-nowrap">사이드</button>
       </div>
 
-      <div id="basketList" class="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto p-1.5 bg-slate-50/50 rounded-lg border border-slate-200"></div>
+      <div id="basketList" class="grid grid-cols-2 gap-1 max-h-48 overflow-y-auto p-1 bg-slate-50/40 rounded-lg border border-slate-200"></div>
     </section>
 
-    <!-- 6. 하단: 지난 식단 바둑판 -->
-    <section class="p-3.5 bg-white">
-      <div class="flex justify-between items-center mb-2.5">
-        <h2 class="text-xs font-bold text-slate-800">지난 식단 기록 <span class="text-[10px] font-normal text-slate-400">(터치하여 수정/불러오기)</span></h2>
-        <select id="archiveFilter" onchange="renderArchiveGrid()" class="text-xs border border-slate-300 rounded-lg px-2 py-1 font-bold text-slate-700 bg-white focus:outline-none">
+    <!-- 6. 하단: 지난 식단 바둑판 (최소 여백) -->
+    <section class="px-2 py-2 bg-white">
+      <div class="flex justify-between items-center mb-2 whitespace-nowrap">
+        <h2 class="text-xs font-bold text-slate-800">지난 식단 기록</h2>
+        <select id="archiveFilter" onchange="renderArchiveGrid()" class="text-xs border border-slate-300 rounded-lg px-2 py-0.5 font-bold text-slate-700 bg-white focus:outline-none">
           <option value="전체">전체보기</option>
           <optgroup label="계절별">
             <option value="봄">봄 식단</option>
@@ -215,7 +217,7 @@
           </optgroup>
         </select>
       </div>
-      <div id="archiveGrid" class="grid grid-cols-2 gap-2.5"></div>
+      <div id="archiveGrid" class="grid grid-cols-2 gap-2"></div>
     </section>
 
   </div> <!-- //#protectedAppContent 끝 -->
@@ -624,6 +626,23 @@
     </div>
   </div>
 
+  
+  <!-- [팝업 9] 식판 메뉴 제외 Y/N 확인 모달 -->
+  <div id="removeTrayConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-xl border border-slate-200 text-center space-y-3">
+      <p id="removeTrayTargetName" class="text-xs font-bold text-slate-500 truncate"></p>
+      <p class="text-sm font-extrabold text-slate-800">식판에서 제외 할까요.?</p>
+      <div class="flex justify-center gap-2 pt-1 whitespace-nowrap">
+        <button type="button" onclick="confirmRemoveFromTray(true)" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-1.5 rounded-lg text-xs transition active:scale-95">
+          예 (Y)
+        </button>
+        <button type="button" onclick="confirmRemoveFromTray(false)" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-bold px-4 py-1.5 rounded-lg text-xs transition active:scale-95">
+          아니오 (N)
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
@@ -662,11 +681,31 @@
     let isDraggingCrop = false, startDragX = 0, startDragY = 0;
 
     const catStyles = {
-      '밥/국': { tabActive: 'bg-slate-800 text-white border-slate-800', badge: 'bg-slate-50 text-slate-800 border-slate-300' },
-      '메인반찬': { tabActive: 'bg-slate-800 text-white border-slate-800', badge: 'bg-slate-50 text-slate-800 border-slate-300' },
-      '어린이반찬': { tabActive: 'bg-slate-800 text-white border-slate-800', badge: 'bg-slate-50 text-slate-800 border-slate-300' },
-      '일반/김치': { tabActive: 'bg-slate-800 text-white border-slate-800', badge: 'bg-slate-50 text-slate-800 border-slate-300' },
-      '사이드메뉴': { tabActive: 'bg-slate-800 text-white border-slate-800', badge: 'bg-slate-50 text-slate-800 border-slate-300' }
+      '밥/국': {
+        tabActive: 'bg-[#FEF9C3]/75 text-slate-900 border-amber-300 font-extrabold shadow-2xs',
+        tabInactive: 'bg-[#FEFCE8]/60 text-slate-600 border-amber-100/80 hover:bg-[#FEF9C3]/40',
+        badge: 'bg-[#FEFCE8] text-slate-800 border-amber-200/70'
+      },
+      '메인반찬': {
+        tabActive: 'bg-[#FFE4E6]/75 text-slate-900 border-rose-300 font-extrabold shadow-2xs',
+        tabInactive: 'bg-[#FFF1F2]/60 text-slate-600 border-rose-100/80 hover:bg-[#FFE4E6]/40',
+        badge: 'bg-[#FFF1F2] text-slate-800 border-rose-200/70'
+      },
+      '어린이반찬': {
+        tabActive: 'bg-[#D1FAE5]/75 text-slate-900 border-emerald-300 font-extrabold shadow-2xs',
+        tabInactive: 'bg-[#ECFDF5]/60 text-slate-600 border-emerald-100/80 hover:bg-[#D1FAE5]/40',
+        badge: 'bg-[#ECFDF5] text-slate-800 border-emerald-200/70'
+      },
+      '일반/김치': {
+        tabActive: 'bg-[#E0F2FE]/75 text-slate-900 border-sky-300 font-extrabold shadow-2xs',
+        tabInactive: 'bg-[#F0F9FF]/60 text-slate-600 border-sky-100/80 hover:bg-[#E0F2FE]/40',
+        badge: 'bg-[#F0F9FF] text-slate-800 border-sky-200/70'
+      },
+      '사이드메뉴': {
+        tabActive: 'bg-[#F3E8FF]/75 text-slate-900 border-purple-300 font-extrabold shadow-2xs',
+        tabInactive: 'bg-[#FAF5FF]/60 text-slate-600 border-purple-100/80 hover:bg-[#F3E8FF]/40',
+        badge: 'bg-[#FAF5FF] text-slate-800 border-purple-200/70'
+      }
     };
 
     const defaultBasketSeed = [
@@ -940,22 +979,60 @@
       } catch (e) {}
     }
 
+    function normalizeCompactDateStr(str) {
+      if (!str) return '';
+      // "2026년 10월 8일(2주차)" -> "2026년 10월8일(2주)" 형태로 공백과 '차'를 줄여 가로폭 최소화
+      return String(str)
+        .replace(/월\s+(\d)/g, '월$1')
+        .replace(/(\d)주차\)/g, '$1주)')
+        .replace(/\s*\[이번주\]/g, '')
+        .replace(/\s*·\s*저장됨/g, '')
+        .trim();
+    }
+
     function formatWeekOptionString(dateObj) {
       const y = dateObj.getFullYear();
       const m = dateObj.getMonth() + 1;
       const d = dateObj.getDate();
       const weekNum = Math.ceil(d / 7);
-      return `${y}년 ${m}월 ${d}일(${weekNum}주차)`;
+      return `${y}년 ${m}월${d}일(${weekNum}주)`;
     }
 
     function getCurrentWeekSundayString() {
       const now = new Date();
-      const dayOfWeek = now.getDay(); // 0(일) ~ 6(토)
+      const dayOfWeek = now.getDay();
       const targetSunday = new Date(now);
-      // 월~토요일이면 다가오는 이번 주 일요일(또는 당일 일요일)로 기준 설정
       const diffToSunday = dayOfWeek === 0 ? 0 : (7 - dayOfWeek);
       targetSunday.setDate(now.getDate() + diffToSunday);
       return formatWeekOptionString(targetSunday);
+    }
+
+    // 선택된 일자(월)에 따라 봄·여름·가을·겨울 4계절 연한 식판 테두리 색상 자동 지정
+    function applySeasonalTrayBorder(dateStr) {
+      const trayBox = document.getElementById('trayCardBox');
+      const seasonBadge = document.getElementById('seasonBorderBadge');
+      if (!trayBox) return;
+
+      let month = new Date().getMonth() + 1;
+      const mMatch = String(dateStr || '').match(/(\d{1,2})월/);
+      if (mMatch && mMatch[1]) {
+        month = parseInt(mMatch[1], 10);
+      }
+
+      // 기본 및 봄(3~5월): 두껍고 연한 그린색, 여름(6~8월): 연한 하늘/민트, 가을(9~11월): 연한 살구/앰버, 겨울(12~2월): 연한 라벤더
+      if (month >= 3 && month <= 5) {
+        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-emerald-200/90 shadow-2xs transition-colors duration-300";
+        if (seasonBadge) { seasonBadge.textContent = "봄 식판"; seasonBadge.className = "text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50"; }
+      } else if (month >= 6 && month <= 8) {
+        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-teal-200/90 shadow-2xs transition-colors duration-300";
+        if (seasonBadge) { seasonBadge.textContent = "여름 식판"; seasonBadge.className = "text-[10px] font-semibold text-teal-700 px-1.5 py-0.2 rounded bg-teal-50"; }
+      } else if (month >= 9 && month <= 11) {
+        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-amber-200/90 shadow-2xs transition-colors duration-300";
+        if (seasonBadge) { seasonBadge.textContent = "가을 식판"; seasonBadge.className = "text-[10px] font-semibold text-amber-800 px-1.5 py-0.2 rounded bg-amber-50"; }
+      } else {
+        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-indigo-200/85 shadow-2xs transition-colors duration-300";
+        if (seasonBadge) { seasonBadge.textContent = "겨울 식판"; seasonBadge.className = "text-[10px] font-semibold text-indigo-700 px-1.5 py-0.2 rounded bg-indigo-50"; }
+      }
     }
 
     function populateDateDropdownOptions(selectedVal) {
@@ -963,10 +1040,9 @@
       if (!sel) return;
 
       const todayWeekStr = getCurrentWeekSundayString();
-      const targetVal = selectedVal || sel.value || todayWeekStr;
+      const targetVal = normalizeCompactDateStr(selectedVal || sel.value || todayWeekStr) || todayWeekStr;
 
       const dateSet = new Set();
-      // 과거 8주 ~ 향후 12주 일요일(주차) 자동 생성 (미리 설정 저장 가능)
       const now = new Date();
       const dayOfWeek = now.getDay();
       const baseSunday = new Date(now);
@@ -978,38 +1054,49 @@
         dateSet.add(formatWeekOptionString(d));
       }
 
-      // 지난 식단 기록(archiveList) 및 미리 저장된 주간 계획(weeklyPlanMap)의 일자도 모두 포함
       if (Array.isArray(archiveList)) {
-        archiveList.forEach(a => { if (a && a.date) dateSet.add(a.date); });
+        archiveList.forEach(a => { if (a && a.date) dateSet.add(normalizeCompactDateStr(a.date)); });
       }
-      Object.keys(weeklyPlanMap || {}).forEach(k => { if (k) dateSet.add(k); });
+      Object.keys(weeklyPlanMap || {}).forEach(k => { if (k) dateSet.add(normalizeCompactDateStr(k)); });
       if (targetVal) dateSet.add(targetVal);
 
       sel.innerHTML = '';
       Array.from(dateSet).forEach(dateStr => {
         const opt = document.createElement('option');
         opt.value = dateStr;
-        const hasSaved = (weeklyPlanMap && weeklyPlanMap[dateStr]) || (Array.isArray(archiveList) && archiveList.some(a => a.date === dateStr));
-        opt.textContent = dateStr === todayWeekStr ? `${dateStr} [이번주]` : (hasSaved ? `${dateStr} · 저장됨` : dateStr);
+        opt.textContent = dateStr; // 가로로 길어지지 않도록 순수 "2026년 11월8일(2주)"만 표시
+        if (dateStr === todayWeekStr) {
+          opt.style.backgroundColor = '#FCE7F3';
+          opt.style.color = '#9D174D';
+          opt.style.fontWeight = '800';
+        }
         sel.appendChild(opt);
       });
 
       sel.value = targetVal;
+
+      // 해당 주(이번 주)일 때 드롭다운 박스 색상을 연한 핑크색으로 적용
+      if (targetVal === todayWeekStr) {
+        sel.className = "bg-pink-50 text-pink-900 text-xs font-bold px-2 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap w-auto";
+      } else {
+        sel.className = "bg-slate-50 text-slate-800 text-xs font-bold px-2 py-1 rounded-lg border border-slate-300 focus:outline-none cursor-pointer whitespace-nowrap w-auto";
+      }
+
+      applySeasonalTrayBorder(targetVal);
     }
 
-    // 일자(주차) 드롭다운 변경 시 해당 주차 식단 불러오기 또는 새 식단 사전 저장 준비
     async function handleDateDropdownChange(selectedDateStr) {
       if (!selectedDateStr) return;
+      const cleanDate = normalizeCompactDateStr(selectedDateStr);
       loadLocalWeeklyPlans();
 
-      // 1) 미리 저장해 둔 주간 계획(weeklyPlanMap)이 있으면 즉시 불러오기
-      if (weeklyPlanMap[selectedDateStr] && Array.isArray(weeklyPlanMap[selectedDateStr].trayIds)) {
-        currentTrayIds = [...weeklyPlanMap[selectedDateStr].trayIds];
-        currentSavedPhotoId = weeklyPlanMap[selectedDateStr].photoId || 'default_4';
-        confirmedActualCost = weeklyPlanMap[selectedDateStr].confirmedActualCost ?? null;
+      const planEntry = weeklyPlanMap[cleanDate] || weeklyPlanMap[selectedDateStr];
+      if (planEntry && Array.isArray(planEntry.trayIds)) {
+        currentTrayIds = [...planEntry.trayIds];
+        currentSavedPhotoId = planEntry.photoId || 'default_4';
+        confirmedActualCost = planEntry.confirmedActualCost ?? null;
       } else {
-        // 2) 지난 식단 기록(archiveList)에 해당 일자가 있으면 불러오기
-        const matchedArch = (archiveList || []).find(a => a.date === selectedDateStr);
+        const matchedArch = (archiveList || []).find(a => normalizeCompactDateStr(a.date) === cleanDate);
         if (matchedArch && Array.isArray(matchedArch.dishIds)) {
           currentTrayIds = [...matchedArch.dishIds];
           currentSavedPhotoId = matchedArch.photoId || 'default_4';
@@ -1017,7 +1104,7 @@
         }
       }
 
-      populateDateDropdownOptions(selectedDateStr);
+      populateDateDropdownOptions(cleanDate);
       renderTray();
       await syncCurrentStateToDb();
     }
@@ -1583,6 +1670,8 @@
       closePhotoUploadModal();
     }
 
+    let pendingRemoveDishId = null;
+
     function renderTray() {
       const tray = document.getElementById('currentTray');
       tray.innerHTML = '';
@@ -1596,31 +1685,65 @@
 
         if (item.cat === '어린이반찬' || item.name.includes('👶')) kidsCnt++;
 
-        const style = catStyles[item.cat] ? catStyles[item.cat].badge : 'bg-slate-100 text-slate-700';
+        const style = catStyles[item.cat] ? catStyles[item.cat].badge : 'bg-slate-50 text-slate-800 border-slate-200';
 
         const chip = document.createElement('div');
-        chip.className = `${style} border px-2.5 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-sm`;
+        chip.className = `${style} border px-2 py-0.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-2xs whitespace-nowrap`;
         chip.innerHTML = `
-          <button onclick="openDishDetailModal('${item.id}')" class="hover:underline text-left">
+          <button type="button" onclick="openDishDetailModal('${item.id}')" class="hover:underline text-left whitespace-nowrap">
             ${item.name} <span class="text-[10px] font-normal opacity-75">(${item.kg})</span>
           </button>
-          <button onclick="removeFromTray('${item.id}')" class="text-rose-500 hover:text-rose-700 font-extrabold px-0.5">✕</button>
+          <button type="button" onclick="requestRemoveFromTray('${item.id}')" title="식판에서 제외" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 hover:text-rose-600 font-bold rounded px-1 py-0.2 text-[10px] leading-none ml-0.5 transition">✕</button>
         `;
         tray.appendChild(chip);
       });
 
       if (currentTrayIds.length === 0) {
-        tray.innerHTML = `<span class="text-xs text-slate-400">아래 반찬 바구니에서 메뉴를 터치해 담아주세요.</span>`;
+        tray.innerHTML = `<span class="text-xs text-slate-400 whitespace-nowrap">아래 반찬 바구니에서 메뉴를 터치해 담아주세요.</span>`;
       }
 
       const kb = document.getElementById('kidsBadge');
-      kb.innerText = `어린이 반찬 ${kidsCnt}종 포함`;
-      kb.className = "text-[11px] bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md font-bold whitespace-nowrap";
+      if (kb) {
+        kb.innerText = `어린이 반찬 ${kidsCnt}종`;
+        kb.className = "text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0";
+      }
 
-      const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(정산확정)` : `${totalCost.toLocaleString()}원`;
-      document.getElementById('totalSummaryAdmin').innerText = `총 ${currentTrayIds.length}종 · ${displayCost}`;
-      document.getElementById('totalSummaryMember').innerText = `총 ${currentTrayIds.length}종 담김`;
+      const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(확정)` : `${totalCost.toLocaleString()}원`;
+      const sumAdmin = document.getElementById('totalSummaryAdmin');
+      if (sumAdmin) {
+        sumAdmin.innerText = `총 ${currentTrayIds.length}종 : ${displayCost}`;
+      }
+      const sumMember = document.getElementById('totalSummaryMember');
+      if (sumMember) {
+        sumMember.innerText = `총 ${currentTrayIds.length}종`;
+      }
+
+      const selDate = document.getElementById('currentDate');
+      if (selDate) applySeasonalTrayBorder(selDate.value);
+
       renderBasket();
+    }
+
+    // ✕ 클릭 시 "식판에서 제외 할까요.?" Y/N 확인 모달 오픈
+    function requestRemoveFromTray(id) {
+      pendingRemoveDishId = id;
+      const item = masterBasket.find(d => d.id === id);
+      const nameEl = document.getElementById('removeTrayTargetName');
+      if (nameEl) nameEl.innerText = item ? `[${item.name}]` : '';
+      const modal = document.getElementById('removeTrayConfirmModal');
+      if (modal) modal.classList.remove('hidden');
+    }
+
+    async function confirmRemoveFromTray(isYes) {
+      const modal = document.getElementById('removeTrayConfirmModal');
+      if (modal) modal.classList.add('hidden');
+      if (!isYes || !pendingRemoveDishId) {
+        pendingRemoveDishId = null;
+        return;
+      }
+      const targetId = pendingRemoveDishId;
+      pendingRemoveDishId = null;
+      await removeFromTray(targetId);
     }
 
     async function removeFromTray(id) {
@@ -1633,7 +1756,7 @@
     async function toggleDishInTray(id) {
       confirmedActualCost = null;
       if (currentTrayIds.includes(id)) {
-        await removeFromTray(id);
+        requestRemoveFromTray(id);
       } else {
         currentTrayIds.push(id);
         renderTray();
@@ -1653,18 +1776,24 @@
     }
     function closeDishDetailModal() { document.getElementById('dishDetailModal').classList.add('hidden'); }
 
+    // 세부사항에서 이름·정보 변경 시 식판과 반찬 바구니(masterBasket & DB) 모두 동시 수정
     async function saveDishDetail() {
       const item = masterBasket.find(d => d.id === editingDishId);
       if (item) {
-        item.name = document.getElementById('detailName').value.trim() || item.name;
+        const newName = document.getElementById('detailName').value.trim();
+        if (newName) item.name = newName;
         item.kg = document.getElementById('detailKg').value.trim();
         item.price = Number(document.getElementById('detailPrice').value || 0);
         item.recipe = document.getElementById('detailRecipe').value.trim();
-        if (db) await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(console.error);
+        if (db) {
+          await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(console.error);
+        }
       }
       confirmedActualCost = null;
       closeDishDetailModal();
       renderTray();
+      renderArchiveGrid();
+      await syncCurrentStateToDb();
     }
 
     function selectCategory(cat) {
@@ -1676,9 +1805,10 @@
     function renderBasket() {
       Object.keys(catStyles).forEach(cat => {
         const btn = document.getElementById(`tab-${cat}`);
+        if (!btn) return;
         btn.className = cat === currentCat
-          ? `py-1.5 rounded-lg border font-extrabold transition ${catStyles[cat].tabActive}`
-          : "py-1.5 rounded-lg border bg-white text-slate-500 border-slate-200 hover:bg-slate-50";
+          ? `py-1 rounded-lg border transition whitespace-nowrap ${catStyles[cat].tabActive}`
+          : `py-1 rounded-lg border transition whitespace-nowrap ${catStyles[cat].tabInactive || 'bg-white text-slate-600 border-slate-200'}`;
       });
 
       const keyword = document.getElementById('basketSearch').value.trim();
@@ -1691,17 +1821,18 @@
 
       filtered.forEach(dish => {
         const inTray = currentTrayIds.includes(dish.id);
+        const catBadgeStyle = catStyles[dish.cat] ? catStyles[dish.cat].badge : 'bg-white text-slate-700 border-slate-200';
         const btn = document.createElement('button');
         btn.onclick = () => toggleDishInTray(dish.id);
         btn.className = inTray
-          ? "flex justify-between items-center p-2 rounded-lg bg-slate-200/80 border border-slate-400 text-slate-900 text-xs font-bold text-left"
-          : "flex justify-between items-center p-2 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-medium text-left";
+          ? `flex justify-between items-center px-2 py-1.5 rounded-lg ${catBadgeStyle} border-2 border-slate-400 text-slate-900 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden`
+          : `flex justify-between items-center px-2 py-1.5 rounded-lg ${catBadgeStyle} border hover:border-slate-300 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden`;
         btn.innerHTML = `
-          <div class="truncate pr-1">
+          <div class="truncate pr-1 min-w-0">
             <p class="truncate">${dish.name}</p>
-            <p class="text-[10px] ${inTray ? 'text-teal-700' : 'text-slate-400'} font-normal">${dish.kg} · ${(dish.price/10000).toFixed(0)}만원</p>
+            <p class="text-[10px] text-slate-500 font-normal truncate">${dish.kg} · ${(dish.price/10000).toFixed(0)}만원</p>
           </div>
-          <span class="text-[10px] whitespace-nowrap ${inTray ? 'text-teal-800' : 'text-slate-400'}">${inTray ? '✓담김' : '＋담기'}</span>
+          <span class="text-[10px] whitespace-nowrap shrink-0 ${inTray ? 'text-slate-900 font-extrabold' : 'text-slate-400'}">${inTray ? '✓담김' : '＋담기'}</span>
         `;
         listEl.appendChild(btn);
       });
