@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>세종꿈의교회 식단관리</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
@@ -38,9 +38,9 @@
 <body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative border-x border-slate-100">
 
   <!-- [보안 게이트] 초기값 안내 포함 & 100% 즉시 작동 로그인 창 -->
-  <div id="loginGateModal" class="fixed inset-0 bg-slate-100/95 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-sm w-full p-7 shadow-xl border border-slate-200 text-center space-y-6">
-      <!-- 1) 상부: tlogo.png + ttitle.png 중앙 배치 및 조금 떨어진 밑에 "주간 식단관리 시스템" 배치 -->
+  <div id="loginGateModal" class="fixed inset-0 bg-slate-100/95 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div id="loginGateCard" class="bg-white rounded-3xl max-w-sm w-full p-7 shadow-xl border border-slate-200 text-center space-y-6 transition-transform duration-200 ease-out">
+      <!-- 상부: tlogo.png + ttitle.png 중앙 배치 및 "주간 식단관리 시스템" -->
       <div class="flex flex-col items-center justify-center pt-1">
         <div class="flex items-center justify-center gap-2.5">
           <img src="tlogo.png" alt="로고" class="h-11 w-auto object-contain shrink-0">
@@ -51,26 +51,31 @@
         </p>
       </div>
 
-      <!-- 2) 로그인 박스: ID 이름, 코드 (내부 문구 없음, 한글 조합 완료 후 코드로 안전 이동, 코드 일치 시 자동 진행) -->
+      <!-- 로그인 박스: 16px 폰트로 터치 확대 방지 & 포커스 시 카드 상단 이동 -->
       <div class="space-y-3.5 text-left text-xs">
         <div>
           <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">ID 이름</label>
           <input id="gateUserName" type="text" autocomplete="off"
+                 style="font-size: 16px !important;"
+                 onfocus="adjustLoginCardForKeyboard(true)"
+                 onblur="adjustLoginCardForKeyboard(false)"
                  oninput="handleGateNameAutoAdvance(this, event)"
                  oncompositionend="handleGateNameAutoAdvance(this, event, true)"
                  onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('gateAccessCode').focus();}"
-                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
+                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
         <div>
           <label class="font-bold text-slate-700 block mb-1.5 pl-0.5">코드</label>
           <input id="gateAccessCode" type="password" inputmode="numeric" autocomplete="off"
+                 style="font-size: 16px !important;"
+                 onfocus="adjustLoginCardForKeyboard(true)"
+                 onblur="adjustLoginCardForKeyboard(false)"
                  oninput="handleGateCodeAutoSubmit(this)"
                  onkeydown="if(event.key==='Enter'){event.preventDefault(); handleStrictLogin(false);}"
-                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2.5 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
+                 class="w-full border border-slate-300 rounded-xl px-3.5 py-2 font-bold text-slate-800 bg-white focus:outline-none focus:border-slate-700 transition">
         </div>
       </div>
 
-      <!-- 3) 버튼 문구 "로그인" 수정 -->
       <button type="button" onclick="handleStrictLogin(false)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
         로그인
       </button>
@@ -80,10 +85,10 @@
   <!-- ================= 로그인 통과 후 열리는 앱 본문 (#protectedAppContent) ================= -->
   <div id="protectedAppContent" class="hidden pb-20 bg-white">
 
-    <!-- 1. 최상단 타이틀 헤더: 로그인 창과 동일한 로고+타이틀 중앙 배치 & 하단 균형 컨트롤 바 -->
+    <!-- 1. 최상단 타이틀 헤더: 로고+타이틀 중앙 배치 & 바로 밑 우측 끝 컨트롤 바 통일 -->
     <header class="bg-white sticky top-0 z-30 border-b border-slate-200">
       <!-- 상단: tlogo.png + ttitle.png 중앙 정렬 -->
-      <div class="px-4 pt-3 pb-2.5 flex items-center justify-center">
+      <div class="px-4 pt-3 pb-2 flex items-center justify-center">
         <div class="flex items-center justify-center gap-2.5">
           <img src="tlogo.png" alt="로고" class="h-9 w-auto object-contain shrink-0">
           <img src="ttitle.png" alt="타이틀" class="h-8 w-auto object-contain shrink-0">
@@ -91,38 +96,32 @@
         <p id="dbStatusText" class="hidden">클라우드 연동중</p>
       </div>
 
-      <!-- 하단: 로그인 정보 및 기능 버튼(설정, 정산, A4출력, 로그아웃) 균형 배치 -->
-      <div class="bg-slate-50 px-3.5 py-1.5 border-t border-slate-100 flex items-center justify-between text-xs">
-        <div class="flex items-center gap-1.5">
-          <span id="roleBadgeText" class="text-[11px] text-slate-700 font-bold px-2 py-0.5 rounded bg-white border border-slate-200">
-            인증됨
-          </span>
-        </div>
-        <div class="flex items-center gap-1">
-          <button id="adminCenterBtn" onclick="goToAdminCenter()" class="hidden text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2.5 py-1 rounded border border-slate-300 transition">
-            설정
-          </button>
-          <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2.5 py-1 rounded border border-slate-300 transition">
-            관리/정산
-          </button>
-          <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2.5 py-1 rounded border border-slate-300 transition">
-            A4출력
-          </button>
-          <button onclick="logoutUser()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-600 font-semibold px-2.5 py-1 rounded border border-slate-300 transition">
-            로그아웃
-          </button>
-        </div>
+      <!-- 2-1) 타이틀 바로 밑: 우측 끝으로 하나로 통일 (순서: 관리/정산, A4출력, ⚙️설정아이콘, 팀장 000 : 로그아웃) -->
+      <div class="bg-slate-50 px-3 py-1.5 border-t border-slate-100 flex items-center justify-end gap-1.5 text-xs">
+        <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-1 rounded border border-slate-300 transition whitespace-nowrap">
+          관리/정산
+        </button>
+        <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-1 rounded border border-slate-300 transition whitespace-nowrap">
+          A4출력
+        </button>
+        <button id="adminCenterBtn" onclick="goToAdminCenter()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-7 h-6 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
+          ⚙️
+        </button>
+        <button onclick="logoutUser()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2.5 py-1 rounded border border-slate-300 transition whitespace-nowrap">
+          <span id="roleBadgeText">팀장 관리자 : 로그아웃</span>
+        </button>
       </div>
     </header>
 
-    <!-- 2. 기준 날짜 및 어린이 반찬 현황 바 (화려한 분홍 배경 제거) -->
-    <div class="bg-white px-3.5 py-2 border-b border-slate-200 flex justify-between items-center">
+    <!-- 2-2) 일자 드롭다운 메뉴 & 바로 옆 "어린이 반찬 N종 포함" (연한 초록, 테두리 없음) -->
+    <div class="bg-white px-3.5 py-2 border-b border-slate-200 flex items-center justify-start gap-2 flex-wrap">
       <div class="flex items-center gap-1.5">
-        <span class="text-[11px] font-bold text-slate-500">기준일</span>
-        <input id="currentDate" onchange="syncCurrentStateToDb()" type="text" value="2026년 10월 8일(2주차)" class="bg-slate-50 text-slate-800 text-xs font-bold px-2.5 py-1 rounded border border-slate-300 w-40 focus:outline-none focus:border-slate-600">
+        <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자 :</span>
+        <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="bg-slate-50 text-slate-800 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-300 focus:outline-none focus:border-slate-600 cursor-pointer">
+        </select>
       </div>
-      <span id="kidsBadge" class="text-[11px] bg-slate-100 text-slate-700 border border-slate-300 px-2.5 py-0.5 rounded font-bold whitespace-nowrap">
-        어린이 4종
+      <span id="kidsBadge" class="text-[11px] bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md font-bold whitespace-nowrap">
+        어린이 반찬 4종 포함
       </span>
     </div>
 
@@ -731,6 +730,23 @@
       return base;
     }
 
+    let kbBlurTimer = null;
+    function adjustLoginCardForKeyboard(isFocused) {
+      const card = document.getElementById('loginGateCard');
+      if (!card) return;
+      if (kbBlurTimer) clearTimeout(kbBlurTimer);
+      if (isFocused) {
+        card.style.transform = 'translateY(-56px)';
+      } else {
+        kbBlurTimer = setTimeout(() => {
+          const active = document.activeElement;
+          if (!active || (active.id !== 'gateUserName' && active.id !== 'gateAccessCode')) {
+            card.style.transform = 'translateY(0px)';
+          }
+        }, 120);
+      }
+    }
+
     function syncGateAuthCache() {
       try {
         const raw = localStorage.getItem('sejong_auth_config_backup');
@@ -807,7 +823,7 @@
       if (rawVal !== cleanCode) {
         inputEl.value = cleanCode;
       }
-      if (cleanCode.length >= 4) {
+      if (cleanCode.length >= 1) {
         handleStrictLogin(true);
       }
     }
@@ -907,6 +923,105 @@
       }
     }
 
+    let weeklyPlanMap = {};
+    let hasInitializedTodayWeek = false;
+
+    function loadLocalWeeklyPlans() {
+      try {
+        const raw = localStorage.getItem('sejong_weekly_plans');
+        if (raw) weeklyPlanMap = JSON.parse(raw) || {};
+      } catch (e) { weeklyPlanMap = {}; }
+    }
+    loadLocalWeeklyPlans();
+
+    function saveLocalWeeklyPlans() {
+      try {
+        localStorage.setItem('sejong_weekly_plans', JSON.stringify(weeklyPlanMap));
+      } catch (e) {}
+    }
+
+    function formatWeekOptionString(dateObj) {
+      const y = dateObj.getFullYear();
+      const m = dateObj.getMonth() + 1;
+      const d = dateObj.getDate();
+      const weekNum = Math.ceil(d / 7);
+      return `${y}년 ${m}월 ${d}일(${weekNum}주차)`;
+    }
+
+    function getCurrentWeekSundayString() {
+      const now = new Date();
+      const dayOfWeek = now.getDay(); // 0(일) ~ 6(토)
+      const targetSunday = new Date(now);
+      // 월~토요일이면 다가오는 이번 주 일요일(또는 당일 일요일)로 기준 설정
+      const diffToSunday = dayOfWeek === 0 ? 0 : (7 - dayOfWeek);
+      targetSunday.setDate(now.getDate() + diffToSunday);
+      return formatWeekOptionString(targetSunday);
+    }
+
+    function populateDateDropdownOptions(selectedVal) {
+      const sel = document.getElementById('currentDate');
+      if (!sel) return;
+
+      const todayWeekStr = getCurrentWeekSundayString();
+      const targetVal = selectedVal || sel.value || todayWeekStr;
+
+      const dateSet = new Set();
+      // 과거 8주 ~ 향후 12주 일요일(주차) 자동 생성 (미리 설정 저장 가능)
+      const now = new Date();
+      const dayOfWeek = now.getDay();
+      const baseSunday = new Date(now);
+      baseSunday.setDate(now.getDate() + (dayOfWeek === 0 ? 0 : (7 - dayOfWeek)));
+
+      for (let w = -8; w <= 12; w++) {
+        const d = new Date(baseSunday);
+        d.setDate(baseSunday.getDate() + w * 7);
+        dateSet.add(formatWeekOptionString(d));
+      }
+
+      // 지난 식단 기록(archiveList) 및 미리 저장된 주간 계획(weeklyPlanMap)의 일자도 모두 포함
+      if (Array.isArray(archiveList)) {
+        archiveList.forEach(a => { if (a && a.date) dateSet.add(a.date); });
+      }
+      Object.keys(weeklyPlanMap || {}).forEach(k => { if (k) dateSet.add(k); });
+      if (targetVal) dateSet.add(targetVal);
+
+      sel.innerHTML = '';
+      Array.from(dateSet).forEach(dateStr => {
+        const opt = document.createElement('option');
+        opt.value = dateStr;
+        const hasSaved = (weeklyPlanMap && weeklyPlanMap[dateStr]) || (Array.isArray(archiveList) && archiveList.some(a => a.date === dateStr));
+        opt.textContent = dateStr === todayWeekStr ? `${dateStr} [이번주]` : (hasSaved ? `${dateStr} · 저장됨` : dateStr);
+        sel.appendChild(opt);
+      });
+
+      sel.value = targetVal;
+    }
+
+    // 일자(주차) 드롭다운 변경 시 해당 주차 식단 불러오기 또는 새 식단 사전 저장 준비
+    async function handleDateDropdownChange(selectedDateStr) {
+      if (!selectedDateStr) return;
+      loadLocalWeeklyPlans();
+
+      // 1) 미리 저장해 둔 주간 계획(weeklyPlanMap)이 있으면 즉시 불러오기
+      if (weeklyPlanMap[selectedDateStr] && Array.isArray(weeklyPlanMap[selectedDateStr].trayIds)) {
+        currentTrayIds = [...weeklyPlanMap[selectedDateStr].trayIds];
+        currentSavedPhotoId = weeklyPlanMap[selectedDateStr].photoId || 'default_4';
+        confirmedActualCost = weeklyPlanMap[selectedDateStr].confirmedActualCost ?? null;
+      } else {
+        // 2) 지난 식단 기록(archiveList)에 해당 일자가 있으면 불러오기
+        const matchedArch = (archiveList || []).find(a => a.date === selectedDateStr);
+        if (matchedArch && Array.isArray(matchedArch.dishIds)) {
+          currentTrayIds = [...matchedArch.dishIds];
+          currentSavedPhotoId = matchedArch.photoId || 'default_4';
+          confirmedActualCost = null;
+        }
+      }
+
+      populateDateDropdownOptions(selectedDateStr);
+      renderTray();
+      await syncCurrentStateToDb();
+    }
+
     function applyRoleUI() {
       const badge = document.getElementById('roleBadgeText');
       const adminCenterBtn = document.getElementById('adminCenterBtn');
@@ -914,16 +1029,22 @@
       const adminActions = document.getElementById('adminActionBtns');
       const memberBar = document.getElementById('memberSummaryBar');
 
+      if (!hasInitializedTodayWeek) {
+        hasInitializedTodayWeek = true;
+        const todayWeek = getCurrentWeekSundayString();
+        populateDateDropdownOptions(todayWeek);
+      } else {
+        populateDateDropdownOptions();
+      }
+
       if (isLeader) {
-        badge.innerText = `관리자 · ${currentUser}`;
-        badge.className = "text-[11px] bg-white text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-300";
+        badge.innerText = `팀장 ${currentUser} : 로그아웃`;
         adminCenterBtn.classList.remove('hidden');
         settleBtn.classList.remove('hidden');
         adminActions.classList.remove('hidden');
         memberBar.classList.add('hidden');
       } else {
-        badge.innerText = `팀원 · ${currentUser}`;
-        badge.className = "text-[11px] bg-white text-slate-700 font-bold px-2 py-0.5 rounded border border-slate-300";
+        badge.innerText = `팀원 ${currentUser} : 로그아웃`;
         adminCenterBtn.classList.add('hidden');
         settleBtn.classList.add('hidden');
         adminActions.classList.add('hidden');
@@ -1131,7 +1252,16 @@
           } else {
             const data = doc.data();
             currentTrayIds = data.trayIds || [];
-            document.getElementById('currentDate').value = data.date || "2026년 10월 8일(2주차)";
+            if (data.weeklyPlans && typeof data.weeklyPlans === 'object') {
+              weeklyPlanMap = { ...weeklyPlanMap, ...data.weeklyPlans };
+              saveLocalWeeklyPlans();
+            }
+            const todayWeek = getCurrentWeekSundayString();
+            const activeDate = hasInitializedTodayWeek ? (document.getElementById('currentDate').value || todayWeek) : todayWeek;
+            populateDateDropdownOptions(activeDate);
+            if (weeklyPlanMap[activeDate] && Array.isArray(weeklyPlanMap[activeDate].trayIds)) {
+              currentTrayIds = [...weeklyPlanMap[activeDate].trayIds];
+            }
             confirmedActualCost = data.confirmedActualCost ?? null;
             currentSavedPhotoId = data.photoId || 'default_4';
             renderTray();
@@ -1156,13 +1286,27 @@
     }
 
     async function syncCurrentStateToDb() {
+      const selEl = document.getElementById('currentDate');
+      const selectedDate = selEl ? selEl.value : getCurrentWeekSundayString();
+
+      // 선택된 일자(주차)별로 식단 구성을 미리 저장(weeklyPlanMap)
+      weeklyPlanMap[selectedDate] = {
+        trayIds: [...currentTrayIds],
+        confirmedActualCost: confirmedActualCost,
+        photoId: currentSavedPhotoId,
+        updatedAt: Date.now()
+      };
+      saveLocalWeeklyPlans();
+      populateDateDropdownOptions(selectedDate);
+
       if (!db) return;
       try {
         await db.collection('settings').doc('currentState').set({
-          date: document.getElementById('currentDate').value,
+          date: selectedDate,
           trayIds: currentTrayIds,
           confirmedActualCost: confirmedActualCost,
           photoId: currentSavedPhotoId,
+          weeklyPlans: weeklyPlanMap,
           updatedAt: Date.now()
         }, { merge: true });
       } catch (e) { console.error(e); }
@@ -1470,8 +1614,8 @@
       }
 
       const kb = document.getElementById('kidsBadge');
-      kb.innerText = `어린이 반찬 ${kidsCnt}종`;
-      kb.className = "text-[11px] bg-slate-100 text-slate-700 border border-slate-300 px-2.5 py-0.5 rounded font-bold whitespace-nowrap";
+      kb.innerText = `어린이 반찬 ${kidsCnt}종 포함`;
+      kb.className = "text-[11px] bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-md font-bold whitespace-nowrap";
 
       const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(정산확정)` : `${totalCost.toLocaleString()}원`;
       document.getElementById('totalSummaryAdmin').innerText = `총 ${currentTrayIds.length}종 · ${displayCost}`;
@@ -1788,6 +1932,7 @@
       printArea.classList.remove('print-active');
     }
 
+    populateDateDropdownOptions(getCurrentWeekSundayString());
     renderTray();
     renderArchiveGrid();
     verifyExistingSessionOnLoad();
