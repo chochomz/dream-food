@@ -99,45 +99,39 @@
   <!-- ================= 로그인 통과 후 열리는 앱 본문 (#protectedAppContent) ================= -->
   <div id="protectedAppContent" class="hidden pb-16 bg-white">
 
-    <!-- 1. 최상단 타이틀 헤더: 아이폰 상부 url 바와 완전히 밀착되도록 초밀착 패딩 적용 -->
+    <!-- 1. 최상단 타이틀 헤더: 로고 테두리 박스와 세종꿈의교회 타이틀 이미지 높이(h-9) 1:1 일치 -->
     <header class="bg-white sticky top-0 z-30 border-b border-slate-200">
-      <div class="px-2 pt-0.5 pb-1 flex items-center justify-center">
-        <div class="flex items-center justify-center gap-1.5 whitespace-nowrap">
-          <div class="h-8 px-1 rounded-lg border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
-            <img src="tlogo.png" alt="로고" class="h-6 w-auto object-contain shrink-0">
+      <div class="px-2 py-1.5 flex items-center justify-center">
+        <div class="flex items-center justify-center gap-2 whitespace-nowrap">
+          <div class="h-9 px-1.5 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
+            <img src="tlogo.png" alt="로고" class="h-7 w-auto object-contain shrink-0">
           </div>
-          <img src="ttitle.png" alt="타이틀" class="h-8 w-auto object-contain shrink-0">
+          <img src="ttitle.png" alt="타이틀" class="h-9 w-auto object-contain shrink-0">
         </div>
+        <p id="dbStatusText" class="hidden">클라우드 연동중</p>
       </div>
 
-      <!-- 타이틀 바로 밑: 2차 확인 후 진행 적용, 테두리 제거된 램프 및 팀장 무테두리, 반개방 회색문 이모지 -->
-      <div class="bg-slate-50 px-2 py-0.5 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
-        <button id="adminSettlementBtn" onclick="openSettlementModalWithConfirm()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
+      <!-- 타이틀 바로 밑: 우측 끝으로 하나로 통일 (관리/정산, A4출력, ⚙️, 팀장 000 : 로그아웃) -->
+      <div class="bg-slate-50 px-2 py-1 border-t border-slate-100 flex items-center justify-end gap-1 text-xs whitespace-nowrap overflow-x-auto no-scrollbar">
+        <button id="adminSettlementBtn" onclick="openSettlementModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           관리/정산
         </button>
-        <button onclick="openPrintModalWithConfirm()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
+        <button onclick="openPrintModal()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
           A4출력
         </button>
-        <button id="adminCenterBtn" onclick="goToAdminCenterWithConfirm()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-6 h-5 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
+        <button id="adminCenterBtn" onclick="goToAdminCenter()" title="설정" class="hidden text-xs bg-white hover:bg-slate-100 text-slate-700 font-bold w-6 h-5 flex items-center justify-center rounded border border-slate-300 transition shrink-0">
           ⚙️
         </button>
-
-        <!-- [지시사항 3] 클라우드 연동 램프: 테두리 완전 삭제, 아주 연한 파스텔 배경, 이모지만 표시 -->
-        <span id="cloudStatusLamp" title="클라우드 연동 상태" class="text-[11px] px-1 py-0.5 rounded bg-emerald-50/50 shrink-0 flex items-center justify-center leading-none transition-all duration-200">
-          🟢
-        </span>
-
-        <!-- [지시사항 3] 팀장 000 테두리 삭제, 반쯤 열린 회색 문 이모지 -->
-        <button onclick="logoutUser()" title="로그아웃" class="text-[11px] text-slate-700 font-bold px-1.5 py-0.5 rounded hover:bg-slate-200/50 transition whitespace-nowrap shrink-0 flex items-center gap-1">
-          <span id="roleBadgeText">팀장 관리자 <span class="half-door-gray">🚪</span></span>
+        <button onclick="logoutUser()" class="text-[11px] bg-white hover:bg-slate-100 text-slate-800 font-bold px-2 py-0.5 rounded border border-slate-300 transition whitespace-nowrap shrink-0">
+          <span id="roleBadgeText">팀장 관리자 : 로그아웃</span>
         </button>
       </div>
     </header>
 
-    <!-- 2. 일자 드롭다운(2026년 11월8일(2주), 해당주 핑크색) & 바로 옆 "어린이 반찬 0종"(연한 초록, 테두리 없음) -->
+    <!-- 2. "일자 선택" 드롭다운(2026년 11월8일(2주), 해당주 핑크색) & 바로 옆 "어린이 반찬 0종"(연한 초록, 테두리 없음) -->
     <div class="bg-white px-2 py-1.5 border-b border-slate-200 flex items-center justify-start gap-1.5 whitespace-nowrap overflow-x-auto no-scrollbar">
-      <div class="flex items-center gap-1 shrink-0">
-        <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자:</span>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <span class="text-xs font-bold text-slate-700 whitespace-nowrap">일자 선택</span>
         <select id="currentDate" onchange="handleDateDropdownChange(this.value)" class="bg-pink-50 text-pink-900 text-xs font-bold px-2 py-1 rounded-lg border border-pink-200 focus:outline-none cursor-pointer whitespace-nowrap w-auto">
         </select>
       </div>
@@ -146,12 +140,12 @@
       </span>
     </div>
 
-    <!-- 3. 상단: 식판에 모으기 (중앙 타이틀 1pt 확대, 하단 좌측 무테두리 금액 / 우측 사진올리기·식단확정 1pt 확대) -->
+    <!-- 3. 상단: 식판에 모으기 (조금 더 두꺼운 연한 분홍색 테두리 border-[7px], 금액 삭제, 우측 사진올리기·식단확정 1pt 확대) -->
     <section class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
-      <div id="trayCardBox" class="bg-white p-2 rounded-xl border-[5px] border-emerald-200/90 shadow-2xs transition-colors duration-300">
+      <div id="trayCardBox" class="bg-white p-2 rounded-xl border-[7px] border-pink-200/90 shadow-2xs transition-colors duration-300">
         <div class="relative flex justify-center items-center mb-1 pb-1 border-b border-slate-100 whitespace-nowrap">
           <span class="text-[13px] font-extrabold text-slate-800 text-center">식판에 모으기</span>
-          <span id="seasonBorderBadge" class="absolute right-0 text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50/70">봄 식판</span>
+          <span id="seasonBorderBadge" class="hidden"></span>
         </div>
 
         <div id="currentTray" class="flex flex-wrap gap-1 min-h-[34px] items-center py-0.5"></div>
@@ -164,10 +158,10 @@
           <img id="previewImgTag" src="" class="w-12 h-8 object-cover rounded border border-slate-300 shrink-0">
         </div>
 
-        <!-- 식판 하단 바: 좌측에 테두리 없는 "총 7종 : 금액", 우측에 "사진올리기, 식단확정(1pt 확대)" 배치 -->
+        <!-- 식판 하단 바: 좌측에 테두리 없는 "총 N종" (금액 삭제), 우측에 "사진올리기, 식단확정(1pt 확대)" -->
         <div class="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between gap-1 whitespace-nowrap">
           <span id="totalSummaryAdmin" class="text-[11.5px] font-extrabold text-slate-800 px-1 py-0.5 whitespace-nowrap shrink-0">
-            총 0종 : 0원
+            총 0종
           </span>
 
           <div id="adminActionBtns" class="ml-auto flex items-center gap-1 shrink-0">
@@ -187,25 +181,52 @@
       </div>
     </section>
 
-    <!-- 4 & 5. 중간: 반찬 바구니 (연한 갈색 두꺼운 테두리 박스 통합, 중앙 13px 타이틀, 검색·반찬등록·CSV불러오기 같은 1열 배치) -->
+    <!-- 4 & 5. 중간: 반찬 바구니 (조금 더 두꺼운 연한 초록색 테두리 border-[7px], 검색창과 [반찬등록/삭제/불러오기] 2개만 같은 1열 배치) -->
     <section id="basketSection" class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
-      <div class="bg-white p-2 rounded-xl border-[5px] border-[#E6D5C3] shadow-2xs">
+      <div class="bg-white p-2 rounded-xl border-[7px] border-emerald-200/90 shadow-2xs">
         <div class="flex justify-center items-center mb-1.5 pb-1 border-b border-slate-100 whitespace-nowrap">
           <h2 class="text-[13px] font-extrabold text-slate-800 text-center">반찬 바구니</h2>
         </div>
 
-        <!-- 검색 · ＋반찬등록 · CSV불러오기 순서대로 같은 1열 배치 -->
-        <div class="flex items-center gap-1 mb-1.5 w-full whitespace-nowrap">
+        <!-- 같은 라인에 검색창과 [반찬등록/삭제/불러오기] 딱 2개만 배치 -->
+        <div class="flex items-center gap-1.5 mb-1.5 w-full whitespace-nowrap relative">
           <div class="relative flex-1 min-w-0">
-            <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 이름·재료 검색" class="w-full pl-2.5 pr-6 py-1 text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:bg-white focus:border-slate-600">
-            <button onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-1.5 top-1 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
+            <input id="basketSearch" oninput="renderBasket()" type="text" placeholder="반찬 이름·재료 검색" class="w-full pl-2.5 pr-6 py-1.5 text-xs font-medium bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:bg-white focus:border-slate-600">
+            <button type="button" onclick="document.getElementById('basketSearch').value=''; renderBasket();" class="absolute right-2 top-1.5 text-xs text-slate-400 hover:text-slate-600 font-bold">✕</button>
           </div>
-          <button onclick="openAddDishModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap transition shrink-0">
-            ＋반찬등록
-          </button>
-          <button onclick="openCsvModal()" class="bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-[11px] font-bold px-2 py-1 rounded-lg whitespace-nowrap transition shrink-0">
-            CSV불러오기
-          </button>
+
+          <div class="relative shrink-0" id="basketManageDropdownWrap">
+            <button type="button" id="basketManageMenuBtn" onclick="toggleBasketSlideMenu(event)" class="bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-bold px-2.5 py-1.5 rounded-lg whitespace-nowrap transition flex items-center gap-1 shadow-2xs active:scale-95">
+              <span>반찬등록/삭제/불러오기</span>
+              <span id="basketManageArrow" class="text-[9px] transition-transform duration-200">▼</span>
+            </button>
+
+            <!-- 슬라이드 드롭다운 메뉴 (+반찬등록, 반찬삭제, 불러오기) -->
+            <div id="basketSlideDropdown" class="hidden absolute right-0 top-full mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 py-1 z-40 overflow-hidden">
+              <button type="button" onclick="handleBasketMenuAction('add')" class="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between border-b border-slate-100">
+                <span>＋반찬등록</span>
+                <span class="text-[10px] text-slate-400">직접추가</span>
+              </button>
+              <button type="button" onclick="handleBasketMenuAction('delete')" class="w-full px-3 py-2 text-left text-xs font-bold text-rose-600 hover:bg-rose-50 flex items-center justify-between border-b border-slate-100">
+                <span>반찬삭제</span>
+                <span class="text-[10px] text-rose-400">선택/전체</span>
+              </button>
+              <button type="button" onclick="handleBasketMenuAction('csv')" class="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between">
+                <span>불러오기</span>
+                <span class="text-[10px] text-slate-400">CSV파일</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 반찬삭제(선택삭제 / 전체삭제) 활성화 컨트롤 바 -->
+        <div id="basketDeleteControlBar" class="hidden mb-1.5 p-1.5 bg-rose-50 border border-rose-200 rounded-lg flex items-center justify-between gap-1 text-xs whitespace-nowrap">
+          <span class="text-[11px] font-extrabold text-rose-900 pl-1">삭제 선택 (<span id="deleteSelectedCount">0</span>개)</span>
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="executeSelectedBasketDelete()" class="bg-rose-600 hover:bg-rose-700 text-white font-bold px-2 py-1 rounded text-[11px] transition active:scale-95">선택삭제</button>
+            <button type="button" onclick="executeAllBasketDelete()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-2 py-1 rounded text-[11px] transition active:scale-95">전체삭제</button>
+            <button type="button" onclick="exitBasketDeleteMode()" class="bg-white border border-slate-300 text-slate-600 font-bold px-2 py-1 rounded text-[11px]">완료</button>
+          </div>
         </div>
 
         <!-- 5개 카테고리 탭 및 메뉴 리스트 -->
@@ -518,7 +539,7 @@
       <div class="p-4 text-xs space-y-2.5">
         <div class="flex justify-between items-center">
           <input id="archModalDate" type="text" class="font-extrabold text-teal-900 bg-teal-50 px-2 py-1 rounded border border-teal-200 w-44">
-          <span id="archModalCost" class="font-extrabold text-slate-700"></span>
+          <span id="archModalCost" class="hidden"></span>
         </div>
         <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b pb-1 focus:outline-none">
         <div class="flex gap-2">
@@ -1057,28 +1078,8 @@
 
     function applySeasonalTrayBorder(dateStr) {
       const trayBox = document.getElementById('trayCardBox');
-      const seasonBadge = document.getElementById('seasonBorderBadge');
       if (!trayBox) return;
-
-      let month = new Date().getMonth() + 1;
-      const mMatch = String(dateStr || '').match(/(\d{1,2})월/);
-      if (mMatch && mMatch[1]) {
-        month = parseInt(mMatch[1], 10);
-      }
-
-      if (month >= 3 && month <= 5) {
-        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-emerald-200/90 shadow-2xs transition-colors duration-300";
-        if (seasonBadge) { seasonBadge.textContent = "봄 식판"; seasonBadge.className = "text-[10px] font-semibold text-emerald-700 px-1.5 py-0.2 rounded bg-emerald-50"; }
-      } else if (month >= 6 && month <= 8) {
-        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-teal-200/90 shadow-2xs transition-colors duration-300";
-        if (seasonBadge) { seasonBadge.textContent = "여름 식판"; seasonBadge.className = "text-[10px] font-semibold text-teal-700 px-1.5 py-0.2 rounded bg-teal-50"; }
-      } else if (month >= 9 && month <= 11) {
-        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-amber-200/90 shadow-2xs transition-colors duration-300";
-        if (seasonBadge) { seasonBadge.textContent = "가을 식판"; seasonBadge.className = "text-[10px] font-semibold text-amber-800 px-1.5 py-0.2 rounded bg-amber-50"; }
-      } else {
-        trayBox.className = "bg-white p-2 rounded-xl border-[5px] border-indigo-200/85 shadow-2xs transition-colors duration-300";
-        if (seasonBadge) { seasonBadge.textContent = "겨울 식판"; seasonBadge.className = "text-[10px] font-semibold text-indigo-700 px-1.5 py-0.2 rounded bg-indigo-50"; }
-      }
+      trayBox.className = "bg-white p-2 rounded-xl border-[7px] border-pink-200/90 shadow-2xs transition-colors duration-300";
     }
 
     function populateDateDropdownOptions(selectedVal) {
@@ -1413,6 +1414,9 @@
           } else {
             const data = doc.data();
             currentTrayIds = data.trayIds || [];
+            if (Array.isArray(data.basketSnapshot) && data.basketSnapshot.length > 0) {
+              masterBasket = data.basketSnapshot;
+            }
             if (data.weeklyPlans && typeof data.weeklyPlans === 'object') {
               weeklyPlanMap = { ...weeklyPlanMap, ...data.weeklyPlans };
               saveLocalWeeklyPlans();
@@ -1762,13 +1766,135 @@
     }
 
     let pendingRemoveDishId = null;
+    let isBasketDeleteMode = false;
+    let selectedBasketDeleteIds = [];
+
+    function toggleBasketSlideMenu(e) {
+      if (e) e.stopPropagation();
+      const menu = document.getElementById('basketSlideDropdown');
+      const arrow = document.getElementById('basketManageArrow');
+      if (!menu) return;
+      const isHidden = menu.classList.contains('hidden');
+      if (isHidden) {
+        menu.classList.remove('hidden');
+        if (arrow) arrow.style.transform = 'rotate(180deg)';
+      } else {
+        menu.classList.add('hidden');
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+      }
+    }
+
+    function closeBasketSlideMenu() {
+      const menu = document.getElementById('basketSlideDropdown');
+      const arrow = document.getElementById('basketManageArrow');
+      if (menu) menu.classList.add('hidden');
+      if (arrow) arrow.style.transform = 'rotate(0deg)';
+    }
+
+    document.addEventListener('click', function(e) {
+      const wrap = document.getElementById('basketManageDropdownWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        closeBasketSlideMenu();
+      }
+    });
+
+    function handleBasketMenuAction(actionType) {
+      closeBasketSlideMenu();
+      if (actionType === 'add') {
+        exitBasketDeleteMode();
+        openAddDishModal();
+      } else if (actionType === 'delete') {
+        enterBasketDeleteMode();
+      } else if (actionType === 'csv') {
+        exitBasketDeleteMode();
+        openCsvModal();
+      }
+    }
+
+    function enterBasketDeleteMode() {
+      isBasketDeleteMode = true;
+      selectedBasketDeleteIds = [];
+      const bar = document.getElementById('basketDeleteControlBar');
+      if (bar) bar.classList.remove('hidden');
+      updateDeleteSelectedCountUI();
+      renderBasket();
+    }
+
+    function exitBasketDeleteMode() {
+      isBasketDeleteMode = false;
+      selectedBasketDeleteIds = [];
+      const bar = document.getElementById('basketDeleteControlBar');
+      if (bar) bar.classList.add('hidden');
+      renderBasket();
+    }
+
+    function updateDeleteSelectedCountUI() {
+      const el = document.getElementById('deleteSelectedCount');
+      if (el) el.innerText = String(selectedBasketDeleteIds.length);
+    }
+
+    function toggleSelectDishForDelete(dishId) {
+      if (selectedBasketDeleteIds.includes(dishId)) {
+        selectedBasketDeleteIds = selectedBasketDeleteIds.filter(id => id !== dishId);
+      } else {
+        selectedBasketDeleteIds.push(dishId);
+      }
+      updateDeleteSelectedCountUI();
+      renderBasket();
+    }
+
+    async function executeSelectedBasketDelete() {
+      if (selectedBasketDeleteIds.length === 0) {
+        return alert('삭제할 반찬을 아래 목록에서 터치하여 선택해주세요.');
+      }
+      if (!confirm(`선택하신 ${selectedBasketDeleteIds.length}개의 반찬을 바구니에서 삭제할까요?`)) return;
+
+      const toDelete = [...selectedBasketDeleteIds];
+      masterBasket = masterBasket.filter(d => !toDelete.includes(d.id));
+      currentTrayIds = currentTrayIds.filter(id => !toDelete.includes(id));
+
+      if (db) {
+        try {
+          const batch = db.batch();
+          toDelete.forEach(id => batch.delete(db.collection('basket').doc(id)));
+          await batch.commit();
+        } catch (e) { console.warn(e); }
+      }
+
+      exitBasketDeleteMode();
+      renderTray();
+      await syncCurrentStateToDb();
+    }
+
+    async function executeAllBasketDelete() {
+      if (masterBasket.length === 0) return alert('삭제할 반찬이 없습니다.');
+      if (!confirm(`현재 등록된 반찬(${masterBasket.length}개)을 모두 전체 삭제할까요?`)) return;
+
+      const allIds = masterBasket.map(d => d.id);
+      masterBasket = [];
+      currentTrayIds = [];
+
+      if (db) {
+        try {
+          for (let i = 0; i < allIds.length; i += 350) {
+            const chunk = allIds.slice(i, i + 350);
+            const batch = db.batch();
+            chunk.forEach(id => batch.delete(db.collection('basket').doc(id)));
+            await batch.commit();
+          }
+        } catch (e) { console.warn(e); }
+      }
+
+      exitBasketDeleteMode();
+      renderTray();
+      await syncCurrentStateToDb();
+    }
 
     function renderTray() {
       const tray = document.getElementById('currentTray');
       tray.innerHTML = '';
 
       let kidsCnt = 0;
-      let totalCost = getExpectedTotalCost();
 
       currentTrayIds.forEach(id => {
         const item = masterBasket.find(d => d.id === id);
@@ -1799,10 +1925,9 @@
         kb.className = "text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0";
       }
 
-      const displayCost = confirmedActualCost !== null ? `${confirmedActualCost.toLocaleString()}원(확정)` : `${totalCost.toLocaleString()}원`;
       const sumAdmin = document.getElementById('totalSummaryAdmin');
       if (sumAdmin) {
-        sumAdmin.innerText = `총 ${currentTrayIds.length}종 : ${displayCost}`;
+        sumAdmin.innerText = `총 ${currentTrayIds.length}종`;
       }
       const sumMember = document.getElementById('totalSummaryMember');
       if (sumMember) {
@@ -1860,7 +1985,8 @@
       if (!item) return;
       document.getElementById('detailName').value = item.name;
       document.getElementById('detailKg').value = item.kg;
-      document.getElementById('detailPrice').value = item.price;
+      const priceEl = document.getElementById('detailPrice');
+      if (priceEl) priceEl.value = item.price || 0;
       document.getElementById('detailRecipe').value = item.recipe;
       document.getElementById('dishDetailModal').classList.remove('hidden');
     }
@@ -1872,13 +1998,9 @@
         const newName = document.getElementById('detailName').value.trim();
         if (newName) item.name = newName;
         item.kg = document.getElementById('detailKg').value.trim();
-        item.price = Number(document.getElementById('detailPrice').value || 0);
         item.recipe = document.getElementById('detailRecipe').value.trim();
         if (db) {
-          setCloudStatusLamp('saving');
-          await db.collection('basket').doc(item.id).set(item, { merge: true })
-            .then(() => setCloudStatusLamp('connected'))
-            .catch(() => setCloudStatusLamp('disconnected'));
+          await db.collection('basket').doc(item.id).set(item, { merge: true }).catch(console.error);
         }
       }
       confirmedActualCost = null;
@@ -1908,24 +2030,40 @@
       listEl.innerHTML = '';
 
       const filtered = keyword
-        ? masterBasket.filter(d => (d.name && d.name.includes(keyword)) || (d.recipe && d.recipe.includes(keyword)))
+        ? masterBasket.filter(d => d.name.includes(keyword) || (d.recipe && d.recipe.includes(keyword)))
         : masterBasket.filter(d => d.cat === currentCat);
 
       filtered.forEach(dish => {
         const inTray = currentTrayIds.includes(dish.id);
+        const isDelSelected = isBasketDeleteMode && selectedBasketDeleteIds.includes(dish.id);
         const catBadgeStyle = catStyles[dish.cat] ? catStyles[dish.cat].badge : 'bg-white text-slate-700 border-slate-200';
         const btn = document.createElement('button');
-        btn.onclick = () => toggleDishInTray(dish.id);
-        btn.className = inTray
-          ? `flex justify-between items-center px-2 py-1.5 rounded-lg ${catBadgeStyle} border-2 border-slate-400 text-slate-900 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden`
-          : `flex justify-between items-center px-2 py-1.5 rounded-lg ${catBadgeStyle} border hover:border-slate-300 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden`;
-        btn.innerHTML = `
-          <div class="truncate pr-1 min-w-0">
-            <p class="truncate">${dish.name}</p>
-            <p class="text-[10px] text-slate-500 font-normal truncate">${dish.kg} · ${(dish.price/10000).toFixed(0)}만원</p>
-          </div>
-          <span class="text-[10px] whitespace-nowrap shrink-0 ${inTray ? 'text-slate-900 font-extrabold' : 'text-slate-400'}">${inTray ? '✓담김' : '＋담기'}</span>
-        `;
+
+        if (isBasketDeleteMode) {
+          btn.onclick = () => toggleSelectDishForDelete(dish.id);
+          btn.className = isDelSelected
+            ? "flex justify-between items-center px-2 py-1.5 rounded-lg bg-rose-100 border-2 border-rose-500 text-rose-950 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden"
+            : "flex justify-between items-center px-2 py-1.5 rounded-lg bg-white border border-rose-200 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden";
+          btn.innerHTML = `
+            <div class="truncate pr-1 min-w-0">
+              <p class="truncate">${dish.name}</p>
+              <p class="text-[10px] text-slate-500 font-normal truncate">${dish.kg || ''}</p>
+            </div>
+            <span class="text-[10px] whitespace-nowrap shrink-0 ${isDelSelected ? 'text-rose-700 font-extrabold' : 'text-slate-400'}">${isDelSelected ? '☑️선택' : '☐선택'}</span>
+          `;
+        } else {
+          btn.onclick = () => toggleDishInTray(dish.id);
+          btn.className = inTray
+            ? `flex justify-between items-center px-2 py-1.5 rounded-lg ${catBadgeStyle} border-2 border-slate-400 text-slate-900 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden`
+            : `flex justify-between items-center px-2 py-1.5 rounded-lg ${catBadgeStyle} border hover:border-slate-300 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden`;
+          btn.innerHTML = `
+            <div class="truncate pr-1 min-w-0">
+              <p class="truncate">${dish.name}</p>
+              <p class="text-[10px] text-slate-500 font-normal truncate">${dish.kg || ''}</p>
+            </div>
+            <span class="text-[10px] whitespace-nowrap shrink-0 ${inTray ? 'text-slate-900 font-extrabold' : 'text-slate-400'}">${inTray ? '✓담김' : '＋담기'}</span>
+          `;
+        }
         listEl.appendChild(btn);
       });
     }
@@ -1934,10 +2072,10 @@
     function closeCsvModal() { document.getElementById('csvModal').classList.add('hidden'); }
 
     function downloadCsvTemplate() {
-      const csvContent = "\uFEFF카테고리,반찬이름,준비kg,가격(원),조리방법\n"
-        + "밥/국,강황쌀밥,35kg,90000,강황가루 풀어 취사\n"
-        + "메인반찬,오징어채소볶음,35kg,280000,양배추와 매콤하게 볶음\n"
-        + "어린이반찬,비엔나소시지케첩볶음(👶),15kg,110000,케첩과 올리고당 코팅\n";
+      const csvContent = "\uFEFF카테고리,반찬이름,준비kg,조리방법\n"
+        + "밥/국,강황쌀밥,35kg,강황가루 풀어 취사\n"
+        + "메인반찬,오징어채소볶음,35kg,양배추와 매콤하게 볶음\n"
+        + "어린이반찬,비엔나소시지케첩볶음(👶),15kg,케첩과 올리고당 코팅\n";
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1947,119 +2085,76 @@
       URL.revokeObjectURL(url);
     }
 
-    function parseCsvLine(line) {
-      const result = [];
-      let insideQuote = false;
-      let currentVal = '';
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"' || char === "'") {
-          insideQuote = !insideQuote;
-        } else if (char === ',' && !insideQuote) {
-          result.push(currentVal.trim());
-          currentVal = '';
-        } else {
-          currentVal += char;
-        }
-      }
-      result.push(currentVal.trim());
-      return result;
+    function normalizeCategoryName(rawCat) {
+      const c = String(rawCat || '').trim();
+      if (c.includes('밥') || c.includes('국') || c.includes('탕') || c.includes('찌개')) return '밥/국';
+      if (c.includes('메인') || c.includes('주메뉴') || c.includes('고기') || c.includes('육류')) return '메인반찬';
+      if (c.includes('어린이') || c.includes('아이') || c.includes('키즈')) return '어린이반찬';
+      if (c.includes('사이드') || c.includes('간식') || c.includes('과일') || c.includes('후식')) return '사이드메뉴';
+      if (catStyles[c]) return c;
+      return '일반/김치';
     }
 
     function importCsvFile() {
-      const fileInput = document.getElementById('csvFileInput');
-      const file = fileInput.files[0];
+      const file = document.getElementById('csvFileInput').files[0];
       if (!file) return alert('불러올 CSV 파일을 선택해주세요!');
-
-      const importBtn = document.getElementById('importCsvBtn');
-      if (importBtn) importBtn.innerText = "⏳ 모바일 데이터 분석 및 저장중...";
-
       const reader = new FileReader();
       reader.onload = async function(e) {
-        let buffer = e.target.result;
-        let text = "";
-
-        try {
-          const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
-          text = utf8Decoder.decode(buffer);
-        } catch (err) {
-          try {
-            const euckrDecoder = new TextDecoder('euc-kr');
-            text = euckrDecoder.decode(buffer);
-          } catch (e2) {
-            text = new TextDecoder().decode(buffer);
-          }
+        const buffer = e.target.result;
+        let text = new TextDecoder('utf-8').decode(buffer);
+        if (text.includes('\uFFFD')) {
+          text = new TextDecoder('euc-kr').decode(buffer);
         }
-
-        const lines = text.split(/\r\n|\n|\r/);
+        const lines = text.split(/\r?\n/);
         let added = 0;
-        let firstAddedCat = null;
-        const batch = db ? db.batch() : null;
+        const newItems = [];
 
-        for (let i = 1; i < lines.length; i++) {
-          const rawLine = lines[i].trim();
-          if (!rawLine) continue;
-          const cols = parseCsvLine(rawLine);
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line) continue;
+          const cols = line.split(',');
+          if (i === 0 && (cols[0].includes('카테고리') || cols[0].includes('분류') || cols[1]?.includes('이름'))) continue;
           if (cols.length >= 2) {
-            let cat = cols[0].replace(/['"]/g, '').trim();
-            if (!catStyles[cat]) {
-              if (cat.includes('밥') || cat.includes('국')) cat = '밥/국';
-              else if (cat.includes('메인')) cat = '메인반찬';
-              else if (cat.includes('어린이')) cat = '어린이반찬';
-              else if (cat.includes('사이드')) cat = '사이드메뉴';
-              else cat = '일반/김치';
-            }
-
-            let name = cols[1].replace(/['"]/g, '').trim();
+            const cat = normalizeCategoryName(cols[0]);
+            let name = cols[1].trim();
             if (!name) continue;
             if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
-
-            const kg = (cols[2] || '적당량').replace(/['"]/g, '').trim();
-            const price = Number((cols[3] || '0').replace(/[^0-9]/g, ''));
-            const recipe = (cols[4] || '기본 조리').replace(/['"]/g, '').trim();
-
             const newId = 'csv_' + Date.now() + '_' + i;
+            const kgVal = (cols[2] || '적당량').trim();
+            const recipeVal = (cols.length >= 5 ? cols[4] : (cols[3] || '기본 조리')).trim();
             const newItem = {
               id: newId,
               cat: cat,
               name: name,
-              kg: kg || '적당량',
-              price: isNaN(price) ? 50000 : price,
-              recipe: recipe || '기본 조리'
+              kg: kgVal,
+              price: 0,
+              recipe: recipeVal,
+              createdAt: Date.now() + i
             };
-
             masterBasket.unshift(newItem);
-            if (!firstAddedCat) firstAddedCat = cat;
-            if (batch) batch.set(db.collection('basket').doc(newId), newItem);
+            newItems.push(newItem);
             added++;
           }
         }
 
-        if (batch) {
-          setCloudStatusLamp('saving');
+        if (db && newItems.length > 0) {
           try {
-            await batch.commit();
-            setCloudStatusLamp('connected');
+            for (let c = 0; c < newItems.length; c += 350) {
+              const chunk = newItems.slice(c, c + 350);
+              const batch = db.batch();
+              chunk.forEach(item => batch.set(db.collection('basket').doc(item.id), item));
+              await batch.commit();
+            }
           } catch (err) {
-            console.error(err);
-            setCloudStatusLamp('disconnected');
+            console.warn('basket 개별 저장 경고, currentState 백업 동기화로 처리:', err);
           }
         }
 
-        if (firstAddedCat) {
-          currentCat = firstAddedCat;
-        }
-
+        await syncCurrentStateToDb();
         closeCsvModal();
-        if (importBtn) importBtn.innerText = "✅ 불러와서 반찬 바구니(DB)에 즉시 저장";
-        fileInput.value = '';
-
-        renderBasket();
         renderTray();
-
-        alert(`🎉 총 ${added}개의 반찬이 반찬 바구니에 즉시 등록되었습니다!`);
+        alert(`🎉 총 ${added}개의 반찬이 등록되어 모든 기기(스마트폰/PC)에 동기화되었습니다!`);
       };
-
       reader.readAsArrayBuffer(file);
     }
 
