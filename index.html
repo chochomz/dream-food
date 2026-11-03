@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-        <style>
+          <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     body { 
       font-family: 'Pretendard', sans-serif; 
@@ -27,7 +27,7 @@
     .crop-yellow-box {
       border: 4px dashed #facc15;
       box-shadow: 0 0 0 9999px rgba(255, 255, 255, 0.62);
-       box-sizing: border-box;
+      box-sizing: border-box;
     }
     .corner-dot {
       width: 22px;
@@ -169,7 +169,7 @@
     <section class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
       <div id="trayCardBox" class="bg-white p-2 rounded-xl border-[9px] border-pink-400 shadow-2xs transition-colors duration-300">
         <div class="relative flex justify-center items-center mb-1 pb-1 border-b border-slate-100 whitespace-nowrap">
-          <span class="text-[13px] font-extrabold text-slate-800 text-center">식판에 모으기</span>
+          <span class="text-[16px] font-black text-pink-700 text-center tracking-tight">식판에 모으기</span>
           <span id="seasonBorderBadge" class="hidden"></span>
         </div>
 
@@ -210,7 +210,7 @@
     <section id="basketSection" class="px-2 py-1.5 bg-slate-50/50 border-b border-slate-200">
       <div class="bg-white p-2 rounded-xl border-[9px] border-emerald-400 shadow-2xs">
         <div class="flex justify-center items-center mb-1.5 pb-1 border-b border-slate-100 whitespace-nowrap">
-          <h2 class="text-[13px] font-extrabold text-slate-800 text-center">반찬 바구니</h2>
+          <h2 class="text-[16px] font-black text-emerald-700 text-center tracking-tight">반찬 바구니</h2>
         </div>
 
         <!-- 같은 라인에 검색창과 [반찬등록/삭제/불러오기] 딱 2개만 배치 -->
@@ -280,7 +280,7 @@
 
   <!-- ================= 팝업 모달창들 ================= -->
 
-    <!-- [팝업 2] 📸 사진올리기 -->
+      <!-- [팝업 2] 📸 사진올리기 -->
   <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none">
     <div class="bg-white rounded-2xl w-[92vw] max-w-sm p-3.5 shadow-2xl border-2 border-slate-200 flex flex-col overflow-hidden box-border">
       <div class="flex justify-between items-center pb-2 border-b border-slate-100 shrink-0 whitespace-nowrap">
@@ -299,10 +299,8 @@
         </button>
       </div>
 
-      <!-- 다중 선택 사진 전환 탭 (2장 이상 선택 시 표시) -->
       <div id="multiPhotoQueueTabs" class="hidden flex items-center gap-1 overflow-x-auto no-scrollbar pb-1.5 shrink-0"></div>
 
-      <!-- 환한 배경 크롭 스테이지 + 노란 두꺼운 점선 4개 꼭짓점 이동 + 사진 확대/축소/이동 -->
       <div id="cropStageArea" class="hidden flex flex-col space-y-2.5 mt-0.5">
         <div class="flex justify-between items-center text-[10.5px] px-0.5 whitespace-nowrap">
           <span class="font-extrabold text-amber-700">👆 사진 이동/확대 · 노란 모서리점으로 틀 조절</span>
@@ -332,7 +330,6 @@
         </div>
       </div>
 
-      <!-- 호환용 숨김 요소 -->
       <input id="zoomSlider" type="hidden" value="1">
       <div id="croppedResultArea" class="hidden"><img id="finalCroppedFrame" src=""><span id="compressionInfo"></span></div>
     </div>
@@ -435,71 +432,74 @@
     </div>
   </div>
 
-      <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
-  <div id="archiveModal" onclick="if(event.target===this) closeArchiveModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl w-[92vw] max-w-sm max-h-[88vh] flex flex-col overflow-hidden shadow-2xl border-2 border-slate-300 box-border">
-      <div class="relative h-36 bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border-b border-slate-200">
+        <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
+  <div id="archiveModal" onclick="if(event.target===this) closeArchiveModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-[90vw] max-w-sm max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border-[5px] border-teal-400 box-border">
+      <!-- 상단 고정: 사진 영역 -->
+      <div class="relative h-32 bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border-b border-slate-200">
         <img id="archModalImg" src="" class="w-full h-full object-cover">
         <div id="archModalNoPhotoText" class="hidden inset-0 flex items-center justify-center p-4 text-center select-none"><span class="text-slate-300 font-black text-2xl tracking-tight leading-snug break-keep"></span></div>
         <div id="archModalOverlayTitle" class="absolute inset-0 flex items-center justify-center pointer-events-none p-3 text-center">
           <span id="archModalOverlaySpan" class="bg-slate-900/65 text-white font-black text-base px-3 py-1 rounded-xl shadow opacity-80 break-keep"></span>
         </div>
-        <button type="button" onclick="closeArchiveModal()" class="absolute top-2 right-2 bg-white/90 text-slate-700 rounded-full w-7 h-7 font-bold shadow">✕</button>
-        <span id="archModalSeason" class="absolute top-2 left-2 bg-teal-100/95 text-teal-900 text-[10px] px-2 py-0.5 rounded-md font-extrabold shadow-2xs"></span>
+        <span id="archModalSeason" class="absolute top-2 left-2 bg-teal-50/95 text-teal-900 border border-teal-200 text-[10px] px-2 py-0.5 rounded-md font-extrabold shadow-2xs"></span>
       </div>
-      <div class="p-3.5 text-xs space-y-2 overflow-y-auto flex-1">
+
+      <!-- 중단 스크롤: 수정 폼 (불필요한 아이콘/문구 제거) -->
+      <div class="p-3.5 text-xs space-y-2.5 overflow-y-auto flex-1">
         <div class="flex justify-between items-center gap-2">
-          <input id="archModalDate" type="text" class="font-extrabold text-teal-900 bg-teal-50 px-2 py-1 rounded border border-teal-200 w-full">
+          <input id="archModalDate" type="text" class="font-extrabold text-teal-900 bg-teal-50/70 px-2.5 py-1.5 rounded-lg border border-teal-200 w-full focus:outline-none focus:border-teal-500">
           <span id="archModalCost" class="hidden"></span>
         </div>
-        <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b border-slate-200 pb-1 focus:outline-none">
+        <input id="archModalTitle" type="text" class="w-full text-sm font-extrabold text-slate-800 border-b border-slate-200 pb-1 focus:outline-none focus:border-teal-500">
+
         <div class="space-y-1.5 bg-slate-50 p-2 rounded-xl border border-slate-200">
           <input type="hidden" id="archEditSeason" value="가을">
           <div class="grid grid-cols-4 gap-1 text-[11px] font-bold">
-            <button type="button" onclick="selectCustomArchSeason('봄')" data-season="봄" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🌸 봄</button>
-            <button type="button" onclick="selectCustomArchSeason('여름')" data-season="여름" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">☀️ 여름</button>
-            <button type="button" onclick="selectCustomArchSeason('가을')" data-season="가을" class="arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🍁 가을</button>
-            <button type="button" onclick="selectCustomArchSeason('겨울')" data-season="겨울" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">❄️ 겨울</button>
+            <button type="button" onclick="selectCustomArchSeason('봄')" data-season="봄" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">봄</button>
+            <button type="button" onclick="selectCustomArchSeason('여름')" data-season="여름" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">여름</button>
+            <button type="button" onclick="selectCustomArchSeason('가을')" data-season="가을" class="arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">가을</button>
+            <button type="button" onclick="selectCustomArchSeason('겨울')" data-season="겨울" class="arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600">겨울</button>
           </div>
           <input type="hidden" id="archEditType" value="육류">
           <div class="grid grid-cols-3 gap-1 text-[11px] font-bold">
-            <button type="button" onclick="selectCustomArchType('육류')" data-type="육류" class="arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">🥩 육류</button>
-            <button type="button" onclick="selectCustomArchType('해물/두부')" data-type="해물/두부" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🐟 해물/두부</button>
-            <button type="button" onclick="selectCustomArchType('일품/간편')" data-type="일품/간편" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">🍛 일품/간편</button>
+            <button type="button" onclick="selectCustomArchType('육류')" data-type="육류" class="arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold">육류</button>
+            <button type="button" onclick="selectCustomArchType('해물/두부')" data-type="해물/두부" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">해물/두부</button>
+            <button type="button" onclick="selectCustomArchType('일품/간편')" data-type="일품/간편" class="arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600">일품/간편</button>
           </div>
         </div>
+
         <div id="archModalDishes" class="flex flex-wrap gap-1 pt-0.5"></div>
-        <div id="archExtraFieldsBox" class="space-y-1.5 pt-2 border-t border-slate-100 text-[11px]">
+
+        <div id="archExtraFieldsBox" class="space-y-2 pt-2 border-t border-slate-100 text-[11px]">
           <div class="grid grid-cols-2 gap-1.5">
             <div>
-              <label class="font-bold text-slate-600 block mb-0.5">👥 식수인원</label>
-              <input id="archEditHeadcount" type="text" placeholder="예: 325명" class="w-full border border-slate-200 rounded px-2 py-1 font-bold text-slate-800 bg-amber-50/40">
+              <label class="font-bold text-slate-600 block mb-0.5">식수인원</label>
+              <input id="archEditHeadcount" type="text" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 font-bold text-slate-800 bg-slate-50/60 focus:outline-none focus:border-teal-500">
             </div>
             <div>
-              <label class="font-bold text-slate-600 block mb-0.5">📝 남은반찬/부족 피드백</label>
-              <input id="archEditLeftover" type="text" placeholder="예: 계란말이 6말이 남음" class="w-full border border-slate-200 rounded px-2 py-1 font-bold text-rose-800 bg-rose-50/40">
+              <label class="font-bold text-slate-600 block mb-0.5">남은반찬/피드백</label>
+              <input id="archEditLeftover" type="text" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 font-bold text-slate-800 bg-slate-50/60 focus:outline-none focus:border-teal-500">
             </div>
           </div>
           <div>
-            <label class="font-bold text-slate-600 block mb-0.5">🛒 주간 장보기 재료 목록</label>
-            <textarea id="archEditRawIng" rows="2" class="w-full border border-slate-200 rounded p-1.5 text-slate-700 bg-slate-50/60 leading-snug"></textarea>
+            <label class="font-bold text-slate-600 block mb-0.5">주간 장보기 재료 목록</label>
+            <textarea id="archEditRawIng" rows="2" class="w-full border border-slate-200 rounded-lg p-2 text-slate-700 bg-slate-50/60 leading-snug focus:outline-none focus:border-teal-500"></textarea>
           </div>
           <div>
-            <label class="font-bold text-slate-600 block mb-0.5">🧂 양념 및 소모품/비품</label>
-            <input id="archEditSupplies" type="text" placeholder="예: 참치액젓, 미림, 라텍스장갑, 냅킨" class="w-full border border-slate-200 rounded px-2 py-1 text-slate-700 bg-slate-50/60">
+            <label class="font-bold text-slate-600 block mb-0.5">양념 및 소모품/비품</label>
+            <input id="archEditSupplies" type="text" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-slate-700 bg-slate-50/60 focus:outline-none focus:border-teal-500">
           </div>
         </div>
       </div>
-      <!-- 하단 고정 버튼: 수정 / 삭제 / 식판에 올리기 -->
-      <div class="p-2.5 bg-slate-50 border-t border-slate-200 grid grid-cols-3 gap-1.5 shrink-0">
-        <button type="button" onclick="saveArchiveEditsOnly()" class="bg-teal-600 hover:bg-teal-700 text-white font-extrabold py-2 rounded-xl text-xs shadow-2xs transition active:scale-95">
-          ✏️ 수정
+
+      <!-- 하단 고정: 취소후 돌아가기 / 식판에 올리기 -->
+      <div class="p-2.5 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-2 shrink-0">
+        <button type="button" onclick="closeArchiveModal()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">
+          취소후 돌아가기
         </button>
-        <button type="button" onclick="deleteSelectedArchive()" class="bg-rose-600 hover:bg-rose-700 text-white font-extrabold py-2 rounded-xl text-xs shadow-2xs transition active:scale-95">
-          🗑️ 삭제
-        </button>
-        <button type="button" onclick="loadArchiveToCurrentTray()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 rounded-xl text-xs shadow-2xs transition active:scale-95">
-          🍱 식판에 올리기
+        <button type="button" onclick="loadArchiveToCurrentTray()" class="bg-teal-600 hover:bg-teal-700 border border-teal-500 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-2xs transition active:scale-95">
+          식판에 올리기
         </button>
       </div>
     </div>
@@ -4146,22 +4146,39 @@
       reader.readAsArrayBuffer(file);
     };
 
-                populateDateDropdownOptions(getCurrentWeekSundayString());
+                    populateDateDropdownOptions(getCurrentWeekSundayString());
     renderTray();
     renderArchiveGrid();
 
-    // ================= [패치 적용 v4] 모든 요구사항 순서대로 완벽 반영 =================
+    // ================= [패치 적용 v5] 모든 요구사항 순서대로 완벽 반영 =================
 
-    // [1번 & 4번] 식판에 모으기 / 반찬바구니 테두리 강화 & 식단확정 버튼 색상/테두리 통일
+    // [1번] 식판에 모으기 / 반찬바구니 테두리, 타이틀 폰트(+2pt & 진한 맞춤 색상), 버튼 색상 통일
     applySeasonalTrayBorder = function(dateStr) {
       const trayBox = document.getElementById('trayCardBox');
       if (trayBox) {
         trayBox.className = 'bg-white p-2 rounded-xl border-[9px] border-pink-400 shadow-sm transition-colors duration-300';
+        const trayTitle = trayBox.querySelector('span');
+        if (trayTitle && trayTitle.textContent.indexOf('식판에 모으기') >= 0) {
+          trayTitle.className = 'text-[16px] font-black text-pink-700 text-center tracking-tight';
+        }
       }
+
       const basketBox = document.querySelector('#basketSection > div');
       if (basketBox) {
         basketBox.className = 'bg-white p-2 rounded-xl border-[9px] border-emerald-400 shadow-sm';
+        const basketTitle = basketBox.querySelector('h2');
+        if (basketTitle) {
+          basketTitle.className = 'text-[16px] font-black text-emerald-700 text-center tracking-tight';
+        }
       }
+
+      // 반찬등록/삭제/불러오기 버튼을 반찬바구니 테두리 색상(emerald)과 통일
+      const basketManageBtn = document.getElementById('basketManageMenuBtn');
+      if (basketManageBtn) {
+        basketManageBtn.className = 'bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-400 text-white text-[11px] font-extrabold px-2.5 py-1.5 rounded-lg whitespace-nowrap transition flex items-center gap-1 shadow-2xs active:scale-95';
+      }
+
+      // 식단확정 버튼을 식판에 모으기 테두리 색상(pink)과 통일
       const confirmBtn = document.querySelector('#adminActionBtns button[onclick*="confirmMenuToGrid"]');
       if (confirmBtn) {
         confirmBtn.className = 'bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold px-2.5 py-1 rounded-lg text-[12px] shadow-2xs transition active:scale-95 whitespace-nowrap';
@@ -4195,9 +4212,9 @@
       setTimeout(resetScrollToTop, 60);
     };
 
-    // ================= [2번 & 3번] 사진 최대 5장 다중 선택 + 환한 배경 + 노란 점선 4꼭짓점 드래그 조절 + 바로저장 =================
+    // 사진 최대 5장 다중 선택 + 환한 배경 + 노란 점선 4꼭짓점 드래그 조절 + 바로저장
     let currentSavedPhotoIds = [];
-    let multiUploadQueue = []; // [{ src, imgW, imgH, cropX, cropY, cropScale, boxLeft, boxTop, boxW, boxH }]
+    let multiUploadQueue = [];
     let activeQueueIdx = 0;
 
     function syncPhotoArrayFromLegacy() {
@@ -4284,7 +4301,6 @@
       document.getElementById('photoUploadModal').classList.add('hidden');
     };
 
-    // 폰에서 한 번에 최대 5장까지 다중 선택 처리
     startCropProcess = async function(event) {
       const files = Array.from(event.target.files || []);
       if (files.length === 0) return;
@@ -4426,13 +4442,12 @@
       applyImageTransformDirect();
     }
 
-    // 크롭 뷰포트: 사진 이동/핀치줌 + 노란 점선 4꼭짓점 핸들 드래그로 사각틀 크기 조절
     (function setupAdvancedCropViewport() {
       const vp = document.getElementById('cropViewport');
       const box = document.getElementById('yellowCropBox');
       if (!vp || !box) return;
 
-      let mode = null; // 'pan' | 'corner'
+      let mode = null;
       let activeCorner = null;
       let startPX = 0, startPY = 0;
       let origCropX = 0, origCropY = 0;
@@ -4558,7 +4573,6 @@
       };
     })();
 
-    // 큐 아이템 1장을 노란 점선 박스 영역 기준으로 정확히 크롭 & 0.6 압축하여 DataURL 반환
     function renderQueueItemToCompressedDataUrl(q) {
       return new Promise(function(resolve) {
         const tempImg = new Image();
@@ -4595,7 +4609,6 @@
       });
     }
 
-    // [설정 바로저장] 클릭 시 선택된 사진(1~5장)을 즉시 0.6 압축 및 주소 분리 병렬 고속 저장
     savePhotoToDb = async function() {
       saveCurrentStageToQueueItem();
       if (!multiUploadQueue || multiUploadQueue.length === 0) {
@@ -4732,7 +4745,7 @@
       renderTrayPhotosStrip();
     };
 
-    // ================= [4번] 식단확정 버튼 터치 시 다이얼 슬라이드(전·후 일자 스크롤) 모달 오픈 및 즉시 확정 저장 =================
+    // 식단확정 다이얼 슬라이드 모달
     let dialSundaysList = [];
     let dialSelectedDateStr = '';
     let dialScrollTimer = null;
@@ -4844,12 +4857,10 @@
       return '겨울';
     }
 
-    // 다이얼에서 선택한 일자로 모든 관련 부분(식판 일자, 주간 계획, 지난 식단 기록, 달력 각주) 즉시 확정 저장
     async function executeDialConfirmSave() {
       const dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
       closeConfirmDialModal();
 
-      // 1) 상단 선택 일자 및 주간 계획 동기화
       const curDateInput = document.getElementById('currentDate');
       if (curDateInput) curDateInput.value = dateStr;
       populateDateDropdownOptions(dateStr);
@@ -4904,7 +4915,7 @@
       await showCustomAlert('[' + dateStr + ']\n식단이 확정되어 모든 기록과 달력에 즉시 저장되었습니다!', '✅');
     }
 
-    // ================= [1번] 달력 렌더링 및 상하 테두리 화면 내 안정화 =================
+    // 달력 렌더링
     getSundayStatusFootnote = function(sundayDateObj, isConfirmed) {
       if (!isConfirmed) return null;
       const now = new Date(), dayOfWeek = now.getDay();
@@ -5151,7 +5162,6 @@
       }
     };
 
-    // [1번] 달력 오픈 시 상하 테두리가 잘리지 않도록 고정된 높이 내에서만 스크롤 위치 이동
     openCustomCalendarModal = function() {
       const modal = document.getElementById('customCalendarModal');
       if (!modal) return;
@@ -5172,7 +5182,7 @@
       });
     };
 
-    // 지난 식단 기록: 첫장 사진 표시 + 주메뉴 문자 오버랩(투명도 80%) + 3번 터치 시 오픈
+    // ================= [2번] 지난 식단 기록: 3회 터치 삭제 ➔ 1회 터치 시 테두리 변경 & 길게 누르면 상세창 오픈 =================
     function getFirstPhotoSrcForArchive(item) {
       if (!item) return null;
       if (Array.isArray(item.photoIds) && item.photoIds.length > 0) {
@@ -5187,26 +5197,76 @@
       return null;
     }
 
-    let archiveTapTracker = {};
+    let highlightedArchiveId = null;
 
-    function handleArchiveTripleTap(archId) {
-      const key = String(archId);
-      const now = Date.now();
-      if (!archiveTapTracker[key]) {
-        archiveTapTracker[key] = { count: 0, lastTime: 0 };
-      }
-      const record = archiveTapTracker[key];
-      if (now - record.lastTime < 650) {
-        record.count += 1;
-      } else {
-        record.count = 1;
-      }
-      record.lastTime = now;
+    function highlightArchiveCard(archId) {
+      highlightedArchiveId = String(archId);
+      const grid = document.getElementById('archiveGrid');
+      if (!grid) return;
+      Array.from(grid.children).forEach(function(cardEl) {
+        const cid = cardEl.getAttribute('data-arch-id');
+        if (cid === highlightedArchiveId) {
+          cardEl.className = 'bg-white rounded-2xl shadow-md border-[3px] border-teal-500 ring-2 ring-teal-200/80 overflow-hidden cursor-pointer transition select-none';
+        } else {
+          cardEl.className = 'bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden cursor-pointer transition select-none';
+        }
+      });
+    }
 
-      if (record.count >= 3) {
-        record.count = 0;
-        openArchiveModal(key);
-      }
+    function attachSingleTapAndLongPress(cardEl, archId) {
+      let pressTimer = null;
+      let startX = 0, startY = 0;
+      let longPressTriggered = false;
+
+      cardEl.oncontextmenu = function(e) {
+        e.preventDefault();
+      };
+
+      cardEl.onpointerdown = function(e) {
+        startX = e.clientX;
+        startY = e.clientY;
+        longPressTriggered = false;
+        if (pressTimer) clearTimeout(pressTimer);
+
+        pressTimer = setTimeout(function() {
+          longPressTriggered = true;
+          highlightArchiveCard(archId);
+          openArchiveModal(archId);
+        }, 450);
+      };
+
+      cardEl.onpointermove = function(e) {
+        if (!pressTimer) return;
+        const dist = Math.hypot(e.clientX - startX, e.clientY - startY);
+        if (dist > 10) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
+
+      const finishPointer = function() {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+          if (!longPressTriggered) {
+            highlightArchiveCard(archId);
+          }
+        }
+      };
+
+      cardEl.onpointerup = finishPointer;
+      cardEl.onpointercancel = function() {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
+      cardEl.onpointerleave = function() {
+        if (pressTimer) {
+          clearTimeout(pressTimer);
+          pressTimer = null;
+        }
+      };
     }
 
     renderArchiveGrid = function() {
@@ -5233,7 +5293,7 @@
         const firstPhotoSrc = getFirstPhotoSrcForArchive(item);
         const mainMenuTitle = getMainMenuDisplayTitle(item);
         const hcBadge = item.headcount
-          ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">👥 ' + item.headcount + '</span>'
+          ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">' + item.headcount + '</span>'
           : '';
 
         const mediaAreaHtml = firstPhotoSrc
@@ -5245,9 +5305,15 @@
               '<span class="text-slate-400 font-black text-base tracking-tight leading-snug break-keep opacity-80">' + mainMenuTitle + '</span>' +
             '</div>';
 
+        const isHighlighted = (String(item.id) === String(highlightedArchiveId));
         const card = document.createElement('div');
-        card.className = 'bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden cursor-pointer hover:ring-2 hover:ring-teal-300 transition select-none active:scale-[0.99]';
-        card.onclick = function() { handleArchiveTripleTap(item.id); };
+        card.setAttribute('data-arch-id', String(item.id));
+        card.className = isHighlighted
+          ? 'bg-white rounded-2xl shadow-md border-[3px] border-teal-500 ring-2 ring-teal-200/80 overflow-hidden cursor-pointer transition select-none'
+          : 'bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden cursor-pointer transition select-none';
+
+        attachSingleTapAndLongPress(card, item.id);
+
         card.innerHTML =
           '<div class="relative h-28 border-b border-slate-100">' +
             mediaAreaHtml +
@@ -5262,6 +5328,27 @@
             '<p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">' + names + '</p>' +
           '</div>';
         grid.appendChild(card);
+      });
+    };
+
+    // 계절/유형 버튼 선택 시 불필요한 아이콘 없이 깔끔한 텍스트 유지
+    selectCustomArchSeason = function(seasonVal) {
+      const hiddenEl = document.getElementById('archEditSeason');
+      if (hiddenEl) hiddenEl.value = seasonVal;
+      document.querySelectorAll('.arch-season-btn').forEach(function(btn) {
+        btn.className = (btn.getAttribute('data-season') === seasonVal)
+          ? 'arch-season-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold'
+          : 'arch-season-btn py-1 rounded border border-slate-200 bg-white text-slate-600';
+      });
+    };
+
+    selectCustomArchType = function(typeVal) {
+      const hiddenEl = document.getElementById('archEditType');
+      if (hiddenEl) hiddenEl.value = typeVal;
+      document.querySelectorAll('.arch-type-btn').forEach(function(btn) {
+        btn.className = (btn.getAttribute('data-type') === typeVal)
+          ? 'arch-type-btn py-1 rounded border-2 border-teal-500 bg-teal-50 text-teal-950 font-extrabold'
+          : 'arch-type-btn py-1 rounded border border-slate-200 bg-white text-slate-600';
       });
     };
 
@@ -5320,56 +5407,7 @@
       document.getElementById('archiveModal').classList.remove('hidden');
     };
 
-    async function saveArchiveEditsOnly() {
-      const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
-      if (!item) return;
-
-      item.date = document.getElementById('archModalDate').value.trim();
-      item.title = document.getElementById('archModalTitle').value.trim();
-      item.season = document.getElementById('archEditSeason').value;
-      item.menuType = document.getElementById('archEditType').value;
-
-      const hcEl = document.getElementById('archEditHeadcount'); if (hcEl) item.headcount = hcEl.value.trim();
-      const loEl = document.getElementById('archEditLeftover'); if (loEl) item.leftoverNote = loEl.value.trim();
-      const ingEl = document.getElementById('archEditRawIng'); if (ingEl) item.rawIngredients = ingEl.value.trim();
-      const supEl = document.getElementById('archEditSupplies'); if (supEl) item.supplies = supEl.value.trim();
-
-      if (db) {
-        setCloudStatusLamp('saving');
-        await db.collection('archives').doc(String(item.id)).set(item, { merge: true })
-          .then(function() { setCloudStatusLamp('connected'); })
-          .catch(function() { setCloudStatusLamp('disconnected'); });
-      }
-      renderArchiveGrid();
-      closeArchiveModal();
-      await showCustomAlert('식단 기록이 수정되었습니다.', '✏️');
-    }
-
-    async function deleteSelectedArchive() {
-      if (!isLeader) {
-        await showCustomAlert('지난 식단 기록 삭제는 관리자(팀장)만 가능합니다.', '🔒');
-        return;
-      }
-      const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
-      if (!item) return;
-
-      const ok = await showCustomConfirm('[' + item.date + ' - ' + item.title + ']\n이 식단 기록을 삭제하시겠습니까?', '🗑️');
-      if (!ok) return;
-
-      const targetId = String(item.id);
-      archiveList = archiveList.filter(function(a) { return String(a.id) !== targetId; });
-
-      if (db) {
-        setCloudStatusLamp('saving');
-        await db.collection('archives').doc(targetId).delete()
-          .then(function() { setCloudStatusLamp('connected'); })
-          .catch(function() { setCloudStatusLamp('disconnected'); });
-      }
-      renderArchiveGrid();
-      closeArchiveModal();
-      await showCustomAlert('해당 식단 기록이 삭제되었습니다.', '🗑️');
-    }
-
+    // [식판에 올리기] 클릭 시 안에서 스크롤하여 수정한 내용을 저장한 후 즉시 상단 식판으로 불러오기
     loadArchiveToCurrentTray = async function() {
       const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
       if (!item) return;
@@ -5515,7 +5553,7 @@
     renderArchiveGrid();
   </script>
 
-  <!-- [팝업 10] 📅 커스텀 상하 스크롤 달력 모달 (상하 테두리 완벽 고정 & 상단 1열 깔끔 표시) -->
+  <!-- [팝업 10] 📅 커스텀 상하 스크롤 달력 모달 -->
   <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl w-[92vw] max-w-sm px-3 py-2.5 shadow-2xl border-2 border-slate-300 flex flex-col max-h-[80vh] box-border" onclick="closeCalendarQuickPreview()">
       <div class="flex justify-between items-center pb-1.5 border-b border-slate-200 shrink-0 px-0.5 whitespace-nowrap">
@@ -5542,15 +5580,10 @@
 
       <p class="text-[11px] font-bold text-slate-500">다이얼을 위·아래로 스크롤하여 확정할 주일을 맞추세요</p>
 
-      <!-- 다이얼 휠 피커 영역 -->
       <div class="relative h-[132px] bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-        <!-- 중앙 선택 하이라이트 가이드 바 -->
         <div class="pointer-events-none absolute left-2 right-2 top-[44px] h-[44px] rounded-xl bg-pink-100/70 border-2 border-pink-400 z-0 shadow-2xs"></div>
-        <!-- 상하 그라데이션 페이드 -->
         <div class="pointer-events-none absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent z-20"></div>
         <div class="pointer-events-none absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent z-20"></div>
-
-        <!-- 실제 스크롤 리스트 -->
         <div id="confirmDialWheel" onscroll="onConfirmDialScroll()" class="dial-wheel-scroll relative z-10 h-full overflow-y-auto no-scrollbar" style="padding-top: 44px; padding-bottom: 44px;"></div>
       </div>
 
