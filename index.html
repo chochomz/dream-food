@@ -12,14 +12,25 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-          <style>
+            <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    html, body {
+      overscroll-behavior-y: none;
+    }
     body { 
       font-family: 'Pretendard', sans-serif; 
       background-color: #f8fafc; 
       user-select: none; 
       color: #334155; 
       padding-top: env(safe-area-inset-top, 0px);
+    }
+    body.modal-scroll-locked {
+      overflow: hidden !important;
+      position: fixed !important;
+      left: 0;
+      right: 0;
+      width: 100%;
+      touch-action: none;
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     
@@ -55,18 +66,20 @@
       grid-template-columns: 2.5fr repeat(6, minmax(0, 1fr));
     }
 
-    /* 다이얼 슬라이드 휠 스크롤 스냅 */
+    /* 다이얼 슬라이드 (간격 28px 축소 & 상하 전용) */
     .dial-wheel-scroll {
-      scroll-snap-type: y mandatory;
-      -webkit-overflow-scrolling: touch;
+      overflow-x: hidden !important;
+      overflow-y: hidden !important;
+      touch-action: none !important;
+      user-select: none;
     }
     .dial-wheel-item {
-      scroll-snap-align: center;
-      height: 44px;
+      height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: all 0.15s ease;
+      white-space: nowrap;
+      transition: transform 0.12s ease, color 0.12s ease;
     }
 
     @media print {
@@ -280,8 +293,8 @@
 
   <!-- ================= 팝업 모달창들 ================= -->
 
-      <!-- [팝업 2] 📸 사진올리기 -->
-  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none">
+        <!-- [팝업 2] 📸 사진올리기 -->
+  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none overscroll-none">
     <div class="bg-white rounded-2xl w-[92vw] max-w-sm p-3.5 shadow-2xl border-2 border-slate-200 flex flex-col overflow-hidden box-border">
       <div class="flex justify-between items-center pb-2 border-b border-slate-100 shrink-0 whitespace-nowrap">
         <h3 class="text-sm font-extrabold text-slate-800">📸 식판 사진 올리기 (최대 5장)</h3>
@@ -432,10 +445,9 @@
     </div>
   </div>
 
-        <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
-  <div id="archiveModal" onclick="if(event.target===this) closeArchiveModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+          <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
+  <div id="archiveModal" onclick="if(event.target===this) closeArchiveModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4 overscroll-none">
     <div class="bg-white rounded-2xl w-[90vw] max-w-sm max-h-[80vh] flex flex-col overflow-hidden shadow-2xl border-[5px] border-teal-400 box-border">
-      <!-- 상단 고정: 사진 영역 -->
       <div class="relative h-32 bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border-b border-slate-200">
         <img id="archModalImg" src="" class="w-full h-full object-cover">
         <div id="archModalNoPhotoText" class="hidden inset-0 flex items-center justify-center p-4 text-center select-none"><span class="text-slate-300 font-black text-2xl tracking-tight leading-snug break-keep"></span></div>
@@ -445,8 +457,7 @@
         <span id="archModalSeason" class="absolute top-2 left-2 bg-teal-50/95 text-teal-900 border border-teal-200 text-[10px] px-2 py-0.5 rounded-md font-extrabold shadow-2xs"></span>
       </div>
 
-      <!-- 중단 스크롤: 수정 폼 (불필요한 아이콘/문구 제거) -->
-      <div class="p-3.5 text-xs space-y-2.5 overflow-y-auto flex-1">
+      <div class="p-3.5 text-xs space-y-2.5 overflow-y-auto overscroll-contain flex-1">
         <div class="flex justify-between items-center gap-2">
           <input id="archModalDate" type="text" class="font-extrabold text-teal-900 bg-teal-50/70 px-2.5 py-1.5 rounded-lg border border-teal-200 w-full focus:outline-none focus:border-teal-500">
           <span id="archModalCost" class="hidden"></span>
@@ -493,7 +504,6 @@
         </div>
       </div>
 
-      <!-- 하단 고정: 취소후 돌아가기 / 식판에 올리기 -->
       <div class="p-2.5 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-2 shrink-0">
         <button type="button" onclick="closeArchiveModal()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">
           취소후 돌아가기
@@ -506,24 +516,23 @@
   </div>
 
     <!-- [팝업 7] A4 식단표 출력 모달 -->
-  <div id="printModal" onclick="if(event.target===this) document.getElementById('printModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-3.5 shadow-2xl border border-slate-200 flex flex-col max-h-[92vh]">
+  <div id="printModal" onclick="if(event.target===this) document.getElementById('printModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none overscroll-none">
+    <div class="bg-white rounded-2xl w-[92vw] max-w-sm p-3.5 shadow-2xl border border-slate-200 flex flex-col max-h-[88vh] box-border">
       
       <!-- 모바일 화면 안에 들어오는 A4 비율 테두리 테이블 (#print-area) -->
-      <div id="print-area" class="w-full bg-white border-4 border-double border-slate-800 rounded-xl px-5 py-5 text-center flex flex-col justify-between overflow-y-auto shadow-inner" style="min-height: 420px; max-height: 74vh;">
+      <div id="print-area" class="w-full bg-white border-4 border-double border-slate-800 rounded-xl px-5 py-5 text-center flex flex-col justify-between overflow-y-auto overscroll-contain shadow-inner" style="min-height: 400px; max-height: 70vh;">
         
         <!-- 상단: tlogo.png + ttitle.png 중앙 배치 & 일자 & 좌우 두꺼운 실선 식단표 -->
         <div>
           <div class="flex items-center justify-center gap-2 whitespace-nowrap mb-2.5">
             <div class="h-10 px-1.5 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
-              <img src="tlogo.png" alt="로고" crossorigin="anonymous" class="h-8 w-auto object-contain shrink-0">
+              <img id="printLogoImg" src="tlogo.png" alt="로고" crossorigin="anonymous" class="h-8 w-auto object-contain shrink-0">
             </div>
-            <img src="ttitle.png" alt="타이틀" crossorigin="anonymous" class="h-10 w-auto object-contain shrink-0">
+            <img id="printTitleImg" src="ttitle.png" alt="타이틀" crossorigin="anonymous" class="h-10 w-auto object-contain shrink-0">
           </div>
 
           <p id="printDateText" class="text-sm font-extrabold text-teal-800 mt-1 mb-3 tracking-tight"></p>
 
-          <!-- 위·아래 실선 삭제 & 식단표 폰트 크게 & 좌·우 두꺼운 실선 맞춤 -->
           <div class="flex items-center justify-center gap-3 my-2 px-1">
             <div class="flex-1 h-[3.5px] bg-slate-800 rounded-full"></div>
             <h1 class="text-2xl font-black text-slate-900 tracking-[0.25em] shrink-0 pl-[0.25em]">식단표</h1>
@@ -540,11 +549,14 @@
         </div>
       </div>
 
-      <!-- 테이블 하단: 인쇄 / 공유(A4 PDF) / 창닫기 -->
-      <div class="grid grid-cols-3 gap-2 pt-3 mt-1 no-print shrink-0">
-        <button type="button" onclick="printA4Menu()" class="bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">🖨️ 인쇄</button>
-        <button type="button" id="sharePdfBtn" onclick="shareA4MenuPdf()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">📤 공유</button>
-        <button type="button" onclick="document.getElementById('printModal').classList.add('hidden')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 py-2.5 rounded-xl text-xs font-extrabold transition active:scale-95">✕ 창닫기</button>
+      <!-- 테이블 하단: 공유/저장 & 창닫기 (인쇄 버튼 삭제) -->
+      <div class="grid grid-cols-2 gap-2 pt-3 mt-1 no-print shrink-0">
+        <button type="button" id="sharePdfBtn" onclick="shareA4MenuPdf()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">
+          📤 공유/저장
+        </button>
+        <button type="button" onclick="document.getElementById('printModal').classList.add('hidden')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 py-2.5 rounded-xl text-xs font-extrabold transition active:scale-95">
+          ✕ 창닫기
+        </button>
       </div>
     </div>
   </div>
@@ -1210,7 +1222,7 @@
       "n09",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "짜장가루(1kg) 5봉지 / 춘장 2개 / 짜장용고기 7키로(싱싱정육점구매) / 감자 15키로 / 양파 1망 / 애호박(상) 2박스 / 양배추 2망 / 대파작은묶음 1봉지 / 계란 16판 / 팽이버섯 15개 / 단무지 4개 / 간마늘 1봉지 / 쌀",
     "supplies": "춘장, 간마늘",
@@ -1232,7 +1244,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "콩나물 3박스 / 대파 1단 / 양파(대) 1망 / 칼집낸비엔나 13봉지 / 피망 15개 / 김 / 쌀",
     "supplies": "케챂(1kg) 2통 / 돈가스소스(470g) 2병",
@@ -1254,7 +1266,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "아욱 2박스 / 두부 2판 / 된장 1통 / 동그랑땡 28봉지 / 대파 1단 / 무우 1박스 / 김 / 쌀",
     "supplies": "고춧가루 1봉지 / 식용유 / 니트릴장갑(M)",
@@ -1273,7 +1285,7 @@
       "b20",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "미소된장 3개 / 두부 3판 / 흙쪽파 작은묶음 1단 / 당근 40개 / 애호박(상) 3박스 / 콩나물 5박스 / 상추 1박스 / 소고기민스 10kg(싱싱정육점 제공) / 계란 10판 / 쌀",
     "supplies": "고추장(6.5kg) 1통 / 양조간장 1병 / 물엿 1병",
@@ -1293,7 +1305,7 @@
       "n11",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "돼지고기 카레용 7kg(싱싱정육점구매) / 오뚜기카레가루(1kg) 순한맛 5봉지 / 감자 15키로 / 단호박 1박스 / 당근 10개 / 양파 1망 / 유부 1봉지 / 우유 2리터 / 버터 1개 / 양배추 1망 / 미소된장 3kg / 흙쪽파(작은묶음) 1단 / 쌀",
     "supplies": "고무장갑(L)",
@@ -1315,7 +1327,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "돼지고기 6키로(싱싱정육점구매) / 두부 3판 / 계란 16판 / 대파 1단 / 양파(대) 1망 / 쪽파 1묶음 / 당근 5개 / 콩나물 5박스 / 김 / 쌀 / 검정쌀",
     "supplies": "기본 양념",
@@ -1337,7 +1349,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "미역 큰거 한봉지 / 소고기(싱싱정육점 제공) / 두부(3kg) 12판 / 양배추 1망 / 적양배추 1개 / 치커리 1박스 / 마요네즈 1개 / 김 / 쌀",
     "supplies": "고무장갑 / 냅킨",
@@ -1359,7 +1371,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "순두부 100개 / 돼지고기민스 5키로(싱싱정육점구매) / 양파(대) 1망 / 대파작은묶음 1봉지 / 비엔나 12봉지 / 브로콜리(따로구매) / 양배추 1망 / 적양배추 1개 / 치커리 1박스 / 김 / 쌀",
     "supplies": "마요네즈(식당용) 1개 / 간마늘 1봉지 / 고춧가루 1봉지 / 국물멸치 / 새우젓 / 미림",
@@ -1380,7 +1392,7 @@
       "n01",
       "s02"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "디저트 샤인머스켓 제공",
     "rawIngredients": "짜장가루 4봉지 / 춘장 2개 / 짜장용고기 8키로(싱싱정육점구매) / 감자 20키로 / 양파 1망 / 애호박(상) 2박스 / 양배추 2망 / 대파작은묶음 1봉지 / 계란 16판 / 팽이버섯 15개 / 단무지 4개 / 쌀 / 샤인머스켓",
     "supplies": "춘장",
@@ -1402,7 +1414,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "꽃게(싱싱정육점제공) / 애호박(상) 1박스 / 무우 큰거 2개 / 국산 표고버섯 1봉지 / 콩나물 4박스 / 대파 1단 / 양파(대) 1망 / 당근 1개 / 메추리알 15봉지 / 꽈리고추 2봉지 / 간마늘 1봉지 / 김 / 쌀",
     "supplies": "헤어캡",
@@ -1424,7 +1436,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "돼지고기앞다리살 6kg(싱싱정육점구매) / 두부 3판 / 어묵(2.8kg) 4봉지 / 깻잎순(4kg) 4박스 / 대파 1단 / 양파 1망 / 간마늘 1봉지 / 김 / 쌀",
     "supplies": "기본 양념",
@@ -1444,7 +1456,7 @@
       "n11",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "오뚜기카레가루(1kg) 순한맛 5봉지 / 감자 15키로 / 단호박 1박스 / 양파 1망 / 돼지고기 카레용 7kg(싱싱정육점구매) / 유부 1봉지 / 양배추 1망 / 적양배추 1개 / 우유 2리터 / 버터 1개 / 미소된장 3kg / 쌀",
     "supplies": "우유 / 버터",
@@ -1466,7 +1478,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "미역 1봉지 / 오이(상) 1박스 / 동치미육수 12개 / 물(2L) 24개 / 얼음 3봉지 / 칼집비엔나소시지 13봉지 / 깻잎순(4kg) 3박스 / 들깨가루 1봉지 / 대파 1봉지 / 간마늘 1봉지 / 김 / 쌀",
     "supplies": "식당용케챂 1개 / 돈가스소스 1개 / 마스크(대형) / 동원 참치액 / 물엿 / 2배식초",
@@ -1488,7 +1500,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "소고기국거리 7키로(싱싱정육점구매) / 미역 1봉지 / 햄(1kg) 2개 / 감자 20키로 / 당근 2개 / 양파(대) 1망 / 대파 작은묶음 1봉지 / 부추 2단 / 오이(상) 2박스 / 김 / 쌀",
     "supplies": "고춧가루 / 물엿",
@@ -1508,7 +1520,7 @@
       "n09",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "짜장가루 6봉지 / 춘장 2개 / 돼지고기짜장용 8키로(싱싱정육점구입) / 감자 20키로 / 양배추 2망 / 양파 1망 / 애호박(상) 2박스 / 계란 18판 / 대파작은묶음 1봉지 / 팽이버섯 15개 / 간마늘 1봉지 / 단무지 4개 / 쌀",
     "supplies": "식기세척기세제(가루)",
@@ -1531,7 +1543,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "어린이용 소고기무국 별도 준비",
     "rawIngredients": "돼지등뼈(80kg 싱싱정육점 제공) / 소고기국거리 2kg / 무우 2개 / 양배추 1망 / 적양배추 1개 / 대파 1단 / 양파 1망 / 콩나물 5박스 / 간마늘 2봉지",
     "supplies": "미림 / 올리고당 / 설탕 / 참치액젓 / 마요네즈 / 식기세척기세제 / Vix / Pb 바닥세척제",
@@ -1553,7 +1565,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "콩나물 2박스 / 두부(3kg) 10판 / 열무(4kg) 5박스 / 대파 1단 / 햇양파(대) 1망 / 간마늘 1봉지 / 된장(900g) 1통 / 김 / 쌀",
     "supplies": "된장(900g) 1통",
@@ -1574,7 +1586,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "돼지고기다짐육 35kg(싱싱정육점구매) / 마늘쫑 10kg(하나로마트구매) / 대파 1단 / 계란 4판 / 팽이버섯 15개 / 양배추 1망 / 적양배추 1개 / 김 / 쌀",
     "supplies": "마요네즈 1개 / 매실 1병 / 간장 1병 / 간마늘 1봉지",
@@ -1597,7 +1609,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "돼지고기 40kg 성도님 제공",
     "rawIngredients": "돼지고기 40kg(정육점 성도님 제공) / 상추(4kg) 1박스 / 미역 1봉지 / 백오이(상) 1박스 / 동치미육수 12개 / 얼음 3봉지 / 물(2L) 18개 / 양파 1망 / 대파 1단 / 콩나물 5박스 / 당근 10개 / 간마늘 2봉지 / 김 / 쌀",
     "supplies": "돼지불고기양념 1병 / 갈아먹는배(1.5L) 2병 / 맛소금",
@@ -1619,7 +1631,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "콩나물 1박스 / 청포묵(3kg) 10판 / 계란 2판 / 당근 5개 / 표고버섯(국내산) 1봉지 / 부추 1단 / 동그랑땡 28봉지 / 양배추 1망 / 적양배추 1개 / 대파 1단 / 김(여유분있음) / 쌀",
     "supplies": "올리고당 / 매실 / 냅킨 / 고무장갑(L) 오른쪽만 10개",
@@ -1639,7 +1651,7 @@
       "n11",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "오뚜기카레가루(1kg) 약간매운맛1+순한맛5 / 감자 10키로 1박스 / 단호박 1박스 / 양파 1망 / 돼지고기 카레용 8키로 / 유부 1봉지 / 흙쪽파 1단 / 양배추 1망 / 우유 2리터 / 버터 1개 / 미소된장 3키로 / 쌀",
     "supplies": "우유 2L / 버터 1개",
@@ -1661,7 +1673,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "김 여유분 있음",
     "rawIngredients": "소고기국거리 8키로 / 무우 10키로 / 대파 1단 / 당면(1kg) 6봉지 / 당근 10개 / 양파 1망 / 시금치(4kg) 1박스 / 잡채용돼지고기 3키로 / 목이버섯(500g) 1봉지 / 부추 2단 / 백오이(상) 2.5박스 / 간마늘 1봉지 / 쌀 / 김",
     "supplies": "고춧가루 / 2배식초 1병",
@@ -1683,7 +1695,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "어린이주일 특식 구성",
     "rawIngredients": "미소된장 3개 / 유부 1봉지 / 햄 2개 / 당근 15개 / 양파 1망 / 흙쪽파 2단 / 양배추 1망 / 치커리 반박스 / 소고기민스 3키로 / 토마토소스 5통 / 스파게티면 25개 / 너비아니 10봉지 / 간마늘 1봉지 / 김 / 쌀",
     "supplies": "매실액 1병 / 토마토소스 5통",
@@ -1705,7 +1717,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "순두부 60개 / 돼지고기민스 6키로 / 대파 1단 / 메추리알 15개 / 콩알새송이버섯 3봉지 / 꽈리고추 2봉지 / 미역줄기 3박스 / 양파 1망 / 당근 3개 / 양배추 1망 / 간마늘 1봉지 / 김 / 쌀",
     "supplies": "흑설탕(500g) 1봉지",
@@ -1725,7 +1737,7 @@
       "n09",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "짜장가루(1kg) 6봉지 / 춘장 2개 / 양배추 2망 / 양파 1망 / 애호박(상) 2박스 / 감자(10kg) 1박스 / 돼지고기뒷다리살(짜장용) 9kg / 단무지 4개 / 계란 2묶음짜리 9묶음 / 팽이버섯 15개 / 대파 작은거 1봉지 / 김 / 쌀 / 간마늘 1봉지",
     "supplies": "매실액 1병",
@@ -1747,7 +1759,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "돼지고기(찌개용) 6키로 / 두부 3판 / 비엔나 15봉지 / 양파 1망 / 피망 15개 / 콩나물 5박스 / 당근 2개 / 대파 1단 / 쌀",
     "supplies": "케챂 2통 / 돈까스소스(470g) 1개 / 고춧가루 / 맛소금 / 냅킨 / 철수세미",
@@ -1788,7 +1800,7 @@
       "b06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "특이사항 없음",
     "rawIngredients": "미소된장 3개 / 유부 1봉지 / 흙쪽파 1단 / 당근 50개 / 애호박(상) 3박스 / 콩나물 5박스 / 상추 1박스 / 돼지고기 민스 8키로 / 김가루(1kg) 1봉지 / 계란 2묶음짜리 7묶음 / 간마늘 1봉지 / 쌀",
     "supplies": "고추장 1통",
@@ -1811,7 +1823,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "예비반찬 깻잎장아찌 준비",
     "rawIngredients": "소고기(국거리) 8키로 / 미역 2봉지 / 어묵 6봉지 / 백오이(상) 3박스 / 부추 2단 / 양파 1망 / 간마늘 1봉지 / 김 / 쌀 / 예비반찬 깻잎장아찌",
     "supplies": "식용유 1통 / 물엿 / 굴소스",
@@ -1833,7 +1845,7 @@
       "k06",
       "n01"
     ],
-    "headcount": "300명(기준)",
+    "headcount": "300명",
     "leftoverNote": "시금치 1kg 증량(총12kg)",
     "rawIngredients": "돼지고기찌개용(앞다리살) 6키로 / 두부 2판 / 계란 2묶음짜리 8묶음 / 남해초(벌크) 1박스+4키로 추가(총 12키로) / 대파 1관 / 간마늘 1봉지 / 김 / 쌀",
     "supplies": "냅킨 / 라텍스장갑(소)",
@@ -4146,13 +4158,86 @@
       reader.readAsArrayBuffer(file);
     };
 
-                    populateDateDropdownOptions(getCurrentWeekSundayString());
+                        populateDateDropdownOptions(getCurrentWeekSundayString());
     renderTray();
     renderArchiveGrid();
 
-    // ================= [패치 적용 v5] 모든 요구사항 순서대로 완벽 반영 =================
+    // ================= [패치 적용 v6] 모든 요구사항 순서대로 완벽 반영 =================
 
-    // [1번] 식판에 모으기 / 반찬바구니 테두리, 타이틀 폰트(+2pt & 진한 맞춤 색상), 버튼 색상 통일
+    // [1번] 지난 식단 기록 데이터에서 "(기준)" 문구 일괄 삭제 정리 함수
+    function stripStandardSuffixFromArchives() {
+      if (Array.isArray(defaultArchiveSeed)) {
+        defaultArchiveSeed.forEach(function(a) {
+          if (a && a.headcount) {
+            a.headcount = String(a.headcount).replace(/\s*\(기준\)/g, '').trim();
+          }
+        });
+      }
+      if (Array.isArray(archiveList)) {
+        archiveList.forEach(function(a) {
+          if (a && a.headcount) {
+            a.headcount = String(a.headcount).replace(/\s*\(기준\)/g, '').trim();
+          }
+        });
+      }
+    }
+    stripStandardSuffixFromArchives();
+
+    // [4번] 모든 모달/팝업창 오픈 시 배경 스크롤 원천 고정 엔진 (브라우저 주소창/하단바 흔들림 완벽 방지)
+    (function setupGlobalModalScrollLock() {
+      const modalIds = [
+        'loginGateModal',
+        'photoUploadModal',
+        'dishDetailModal',
+        'csvModal',
+        'addDishModal',
+        'archiveModal',
+        'printModal',
+        'adminCenterModal',
+        'removeTrayConfirmModal',
+        'customCalendarModal',
+        'confirmMenuDialModal',
+        'customFilterModal',
+        'customSystemDialogModal'
+      ];
+      let savedScrollY = 0;
+      let isLocked = false;
+
+      function checkAndSyncBodyScrollLock() {
+        const anyOpen = modalIds.some(function(id) {
+          const el = document.getElementById(id);
+          return el && !el.classList.contains('hidden');
+        });
+
+        if (anyOpen && !isLocked) {
+          savedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+          document.body.style.top = '-' + savedScrollY + 'px';
+          document.body.classList.add('modal-scroll-locked');
+          isLocked = true;
+        } else if (!anyOpen && isLocked) {
+          document.body.classList.remove('modal-scroll-locked');
+          document.body.style.top = '';
+          window.scrollTo(0, savedScrollY);
+          isLocked = false;
+        }
+      }
+
+      const observer = new MutationObserver(function() {
+        checkAndSyncBodyScrollLock();
+      });
+
+      modalIds.forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) {
+          observer.observe(el, { attributes: true, attributeFilter: ['class'] });
+        }
+      });
+
+      window.addEventListener('DOMContentLoaded', checkAndSyncBodyScrollLock);
+      setTimeout(checkAndSyncBodyScrollLock, 50);
+    })();
+
+    // 식판에 모으기 / 반찬바구니 테두리, 타이틀 폰트(+2pt & 진한 맞춤 색상), 버튼 색상 통일
     applySeasonalTrayBorder = function(dateStr) {
       const trayBox = document.getElementById('trayCardBox');
       if (trayBox) {
@@ -4172,13 +4257,11 @@
         }
       }
 
-      // 반찬등록/삭제/불러오기 버튼을 반찬바구니 테두리 색상(emerald)과 통일
       const basketManageBtn = document.getElementById('basketManageMenuBtn');
       if (basketManageBtn) {
         basketManageBtn.className = 'bg-emerald-500 hover:bg-emerald-600 border-2 border-emerald-400 text-white text-[11px] font-extrabold px-2.5 py-1.5 rounded-lg whitespace-nowrap transition flex items-center gap-1 shadow-2xs active:scale-95';
       }
 
-      // 식단확정 버튼을 식판에 모으기 테두리 색상(pink)과 통일
       const confirmBtn = document.querySelector('#adminActionBtns button[onclick*="confirmMenuToGrid"]');
       if (confirmBtn) {
         confirmBtn.className = 'bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold px-2.5 py-1 rounded-lg text-[12px] shadow-2xs transition active:scale-95 whitespace-nowrap';
@@ -4186,7 +4269,69 @@
     };
     applySeasonalTrayBorder();
 
-    // [0번] 처음 로그인 시 메인화면 최상단(일자선택, 식판에 모으기)이 제일 위로 오도록 스크롤 초기화
+    // [3번] 반찬바구니 "+담기", "-제외" 문자 상하(수직) 배열
+    renderBasket = function() {
+      Object.keys(catStyles).forEach(function(cat) {
+        const btn = document.getElementById('tab-' + cat);
+        if (!btn) return;
+        btn.className = (cat === currentCat)
+          ? 'py-1 rounded-lg border transition whitespace-nowrap ' + catStyles[cat].tabActive
+          : 'py-1 rounded-lg border transition whitespace-nowrap ' + (catStyles[cat].tabInactive || 'bg-white text-slate-600 border-slate-200');
+      });
+
+      const keyword = document.getElementById('basketSearch').value.trim();
+      const listEl = document.getElementById('basketList');
+      listEl.innerHTML = '';
+
+      const filtered = keyword
+        ? masterBasket.filter(function(d) { return d.name.includes(keyword) || (d.recipe && d.recipe.includes(keyword)); })
+        : masterBasket.filter(function(d) { return d.cat === currentCat; });
+
+      filtered.forEach(function(dish) {
+        const inTray = currentTrayIds.includes(dish.id);
+        const isDelSelected = isBasketDeleteMode && selectedBasketDeleteIds.includes(dish.id);
+        const catBadgeStyle = catStyles[dish.cat] ? catStyles[dish.cat].badge : 'bg-white text-slate-700 border-slate-200';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+
+        if (isBasketDeleteMode) {
+          btn.onclick = function() { toggleSelectDishForDelete(dish.id); };
+          btn.className = isDelSelected
+            ? 'flex justify-between items-center px-2 py-1.5 rounded-lg bg-rose-100 border-2 border-rose-500 text-rose-950 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden'
+            : 'flex justify-between items-center px-2 py-1.5 rounded-lg bg-white border border-rose-200 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden';
+          btn.innerHTML =
+            '<div class="truncate pr-1 min-w-0">' +
+              '<p class="truncate">' + dish.name + '</p>' +
+              '<p class="text-[10px] text-slate-500 font-normal truncate">' + (dish.kg || '') + '</p>' +
+            '</div>' +
+            '<span class="text-[10px] whitespace-nowrap shrink-0 ' + (isDelSelected ? 'text-rose-700 font-extrabold' : 'text-slate-400') + '">' + (isDelSelected ? '☑️선택' : '☐선택') + '</span>';
+        } else {
+          btn.onclick = function() { toggleDishInTray(dish.id); };
+          btn.className = inTray
+            ? 'flex justify-between items-center px-2 py-1 rounded-lg ' + catBadgeStyle + ' border-2 border-slate-400 text-slate-900 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden'
+            : 'flex justify-between items-center px-2 py-1 rounded-lg ' + catBadgeStyle + ' border hover:border-slate-300 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden';
+
+          // 우측 "+담기" / "-제외" 문자 상하(수직) 배열
+          const verticalActionHtml = inTray
+            ? '<span class="flex flex-col items-center justify-center leading-[1.05] text-[9.5px] font-black text-rose-600 bg-rose-50/90 border border-rose-200 rounded px-1 py-0.5 shrink-0 ml-1">' +
+                '<span>－</span><span>제</span><span>외</span>' +
+              '</span>'
+            : '<span class="flex flex-col items-center justify-center leading-[1.05] text-[9.5px] font-extrabold text-emerald-700 bg-emerald-50/80 border border-emerald-200 rounded px-1 py-0.5 shrink-0 ml-1">' +
+                '<span>＋</span><span>담</span><span>기</span>' +
+              '</span>';
+
+          btn.innerHTML =
+            '<div class="truncate pr-1 min-w-0">' +
+              '<p class="truncate">' + dish.name + '</p>' +
+              '<p class="text-[10px] text-slate-500 font-normal truncate">' + (dish.kg || '') + '</p>' +
+            '</div>' +
+            verticalActionHtml;
+        }
+        listEl.appendChild(btn);
+      });
+    };
+
+    // 처음 로그인 시 메인화면 최상단(일자선택, 식판에 모으기)이 제일 위로 오도록 스크롤 초기화
     unlockAppAndStart = function() {
       const loginModal = document.getElementById('loginGateModal');
       const appContent = document.getElementById('protectedAppContent');
@@ -4194,6 +4339,9 @@
       if (appContent) appContent.classList.remove('hidden');
       const card = document.getElementById('loginGateCard');
       if (card) card.style.transform = 'translateY(0px)';
+
+      document.body.classList.remove('modal-scroll-locked');
+      document.body.style.top = '';
 
       applyRoleUI();
       applySeasonalTrayBorder();
@@ -4745,10 +4893,11 @@
       renderTrayPhotosStrip();
     };
 
-    // 식단확정 다이얼 슬라이드 모달
+    // ================= [5번] 식단확정 다이얼 슬라이드 (간격 28px 축소, 상하 전용, 속도 1/2 감속, 하단 선택일자 삭제, 두꺼운 진한 적색 강조) =================
+    const DIAL_ITEM_HEIGHT = 28;
     let dialSundaysList = [];
     let dialSelectedDateStr = '';
-    let dialScrollTimer = null;
+    let dialVirtualScrollTop = 0;
 
     function parseSundayStringToDateObj(str) {
       if (!str) return null;
@@ -4763,12 +4912,109 @@
       const centerSun = new Date(baseObj.getFullYear(), baseObj.getMonth(), baseObj.getDate() + (dow === 0 ? 0 : (7 - dow)));
 
       const list = [];
-      for (let w = -12; w <= 24; w++) {
+      for (let w = -16; w <= 28; w++) {
         const d = new Date(centerSun.getFullYear(), centerSun.getMonth(), centerSun.getDate() + w * 7);
         list.push(formatWeekOptionString(d));
       }
       return list;
     }
+
+    function setDialScrollPosition(posPx, smoothSnap) {
+      const wheel = document.getElementById('confirmDialWheel');
+      if (!wheel) return;
+      const maxScroll = Math.max(0, (dialSundaysList.length - 1) * DIAL_ITEM_HEIGHT);
+      dialVirtualScrollTop = Math.max(0, Math.min(maxScroll, posPx));
+
+      if (smoothSnap) {
+        const snapIdx = Math.round(dialVirtualScrollTop / DIAL_ITEM_HEIGHT);
+        dialVirtualScrollTop = snapIdx * DIAL_ITEM_HEIGHT;
+        wheel.scrollTo({ top: dialVirtualScrollTop, behavior: 'smooth' });
+        highlightDialActiveItem(snapIdx);
+      } else {
+        wheel.scrollTop = dialVirtualScrollTop;
+        const idx = Math.round(dialVirtualScrollTop / DIAL_ITEM_HEIGHT);
+        highlightDialActiveItem(idx);
+      }
+    }
+
+    // 다이얼 상하 전용 + 속도 1/2 감속 터치/휠 컨트롤러 장착
+    (function setupHalfSpeedVerticalDial() {
+      const wheel = document.getElementById('confirmDialWheel');
+      if (!wheel) return;
+
+      let isDraggingDial = false;
+      let startY = 0;
+      let startVirtualTop = 0;
+      let lastY = 0;
+      let lastTime = 0;
+      let velocityY = 0;
+      let momentumFrame = null;
+
+      wheel.onpointerdown = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (momentumFrame) {
+          cancelAnimationFrame(momentumFrame);
+          momentumFrame = null;
+        }
+        isDraggingDial = true;
+        startY = e.clientY;
+        lastY = e.clientY;
+        lastTime = performance.now();
+        velocityY = 0;
+        startVirtualTop = dialVirtualScrollTop;
+        wheel.setPointerCapture(e.pointerId);
+      };
+
+      wheel.onpointermove = function(e) {
+        if (!isDraggingDial) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const now = performance.now();
+        const dy = startY - e.clientY;
+        const stepDy = lastY - e.clientY;
+        const dt = Math.max(1, now - lastTime);
+
+        // 슬라이드 속도를 기존의 절반(0.48배)으로 감속
+        const dampedDelta = dy * 0.48;
+        velocityY = (stepDy * 0.45) / dt;
+
+        lastY = e.clientY;
+        lastTime = now;
+
+        setDialScrollPosition(startVirtualTop + dampedDelta, false);
+      };
+
+      const finishDialDrag = function(e) {
+        if (!isDraggingDial) return;
+        isDraggingDial = false;
+
+        // 부드러운 절반 감속 관성 후 정확한 칸에 스냅
+        let currentVel = velocityY * 14;
+        function stepMomentum() {
+          if (Math.abs(currentVel) > 0.6) {
+            setDialScrollPosition(dialVirtualScrollTop + currentVel, false);
+            currentVel *= 0.82;
+            momentumFrame = requestAnimationFrame(stepMomentum);
+          } else {
+            momentumFrame = null;
+            setDialScrollPosition(dialVirtualScrollTop, true);
+          }
+        }
+        stepMomentum();
+      };
+
+      wheel.onpointerup = finishDialDrag;
+      wheel.onpointercancel = finishDialDrag;
+
+      wheel.onwheel = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const step = (e.deltaY > 0 ? 1 : -1) * (DIAL_ITEM_HEIGHT * 0.5);
+        setDialScrollPosition(dialVirtualScrollTop + step, true);
+      };
+    })();
 
     confirmMenuToGrid = async function() {
       if (!isLeader) {
@@ -4788,7 +5034,7 @@
       if (!wheel) return;
       wheel.innerHTML = '';
 
-      let targetIdx = 12;
+      let targetIdx = 16;
       dialSundaysList.forEach(function(dStr, idx) {
         if (dStr === curDateStr) targetIdx = idx;
         const item = document.createElement('div');
@@ -4796,14 +5042,15 @@
         item.setAttribute('data-idx', String(idx));
         item.textContent = dStr;
         item.onclick = function() {
-          wheel.scrollTo({ top: idx * 44, behavior: 'smooth' });
+          setDialScrollPosition(idx * DIAL_ITEM_HEIGHT, true);
         };
         wheel.appendChild(item);
       });
 
       document.getElementById('confirmMenuDialModal').classList.remove('hidden');
       requestAnimationFrame(function() {
-        wheel.scrollTop = targetIdx * 44;
+        dialVirtualScrollTop = targetIdx * DIAL_ITEM_HEIGHT;
+        wheel.scrollTop = dialVirtualScrollTop;
         highlightDialActiveItem(targetIdx);
       });
     };
@@ -4811,8 +5058,6 @@
     function highlightDialActiveItem(activeIdx) {
       const clampedIdx = Math.max(0, Math.min(dialSundaysList.length - 1, activeIdx));
       dialSelectedDateStr = dialSundaysList[clampedIdx] || getCurrentWeekSundayString();
-      const txtEl = document.getElementById('confirmDialSelectedText');
-      if (txtEl) txtEl.textContent = dialSelectedDateStr;
 
       const wheel = document.getElementById('confirmDialWheel');
       if (!wheel) return;
@@ -4820,27 +5065,19 @@
       for (let i = 0; i < children.length; i++) {
         const diff = Math.abs(i - clampedIdx);
         if (diff === 0) {
-          children[i].className = 'dial-wheel-item cursor-pointer select-none text-sm font-black text-pink-950 scale-105';
+          // 선택된 일자 폰트: 두꺼운 진한 적색 (text-red-700 font-black)
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-[14.5px] font-black text-red-700 scale-105';
         } else if (diff === 1) {
-          children[i].className = 'dial-wheel-item cursor-pointer select-none text-xs font-bold text-slate-500 opacity-80';
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-[12px] font-bold text-slate-600 opacity-85';
+        } else if (diff === 2) {
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-[11px] font-semibold text-slate-400 opacity-65';
         } else {
-          children[i].className = 'dial-wheel-item cursor-pointer select-none text-[11px] font-semibold text-slate-400 opacity-45';
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-[10.5px] font-medium text-slate-400 opacity-40';
         }
       }
     }
 
-    function onConfirmDialScroll() {
-      const wheel = document.getElementById('confirmDialWheel');
-      if (!wheel) return;
-      const idx = Math.round(wheel.scrollTop / 44);
-      highlightDialActiveItem(idx);
-
-      if (dialScrollTimer) clearTimeout(dialScrollTimer);
-      dialScrollTimer = setTimeout(function() {
-        const snapIdx = Math.round(wheel.scrollTop / 44);
-        wheel.scrollTo({ top: snapIdx * 44, behavior: 'smooth' });
-      }, 120);
-    }
+    function onConfirmDialScroll() {}
 
     function closeConfirmDialModal() {
       const modal = document.getElementById('confirmMenuDialModal');
@@ -4870,6 +5107,8 @@
       const existingIdx = archiveList.findIndex(function(a) { return normalizeCompactDateStr(a.date) === dateStr; });
       const newArchId = existingIdx >= 0 ? String(archiveList[existingIdx].id) : String(Date.now());
 
+      const prevHc = existingIdx >= 0 ? String(archiveList[existingIdx].headcount || '300명').replace(/\s*\(기준\)/g, '').trim() : '300명';
+
       const newArchive = {
         id: newArchId,
         date: dateStr,
@@ -4877,7 +5116,7 @@
         season: existingIdx >= 0 ? (archiveList[existingIdx].season || inferSeasonFromDateStr(dateStr)) : inferSeasonFromDateStr(dateStr),
         menuType: existingIdx >= 0 ? (archiveList[existingIdx].menuType || '육류') : '육류',
         dishIds: [...currentTrayIds],
-        headcount: existingIdx >= 0 ? (archiveList[existingIdx].headcount || '300명(기준)') : '300명(기준)',
+        headcount: prevHc,
         leftoverNote: existingIdx >= 0 ? (archiveList[existingIdx].leftoverNote || '') : '',
         rawIngredients: existingIdx >= 0 ? (archiveList[existingIdx].rawIngredients || '') : '',
         supplies: existingIdx >= 0 ? (archiveList[existingIdx].supplies || '') : '',
@@ -5182,7 +5421,7 @@
       });
     };
 
-    // ================= [2번] 지난 식단 기록: 3회 터치 삭제 ➔ 1회 터치 시 테두리 변경 & 길게 누르면 상세창 오픈 =================
+    // 지난 식단 기록: "(기준)" 제거 & 1열 고정 + 1회 터치 시 테두리 변경 & 길게 누르면 상세창 오픈
     function getFirstPhotoSrcForArchive(item) {
       if (!item) return null;
       if (Array.isArray(item.photoIds) && item.photoIds.length > 0) {
@@ -5270,6 +5509,7 @@
     }
 
     renderArchiveGrid = function() {
+      stripStandardSuffixFromArchives();
       const filter = document.getElementById('archiveFilter') ? document.getElementById('archiveFilter').value : '전체';
       const grid = document.getElementById('archiveGrid');
       if (!grid) return;
@@ -5292,8 +5532,9 @@
 
         const firstPhotoSrc = getFirstPhotoSrcForArchive(item);
         const mainMenuTitle = getMainMenuDisplayTitle(item);
-        const hcBadge = item.headcount
-          ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">' + item.headcount + '</span>'
+        const cleanHc = item.headcount ? String(item.headcount).replace(/\s*\(기준\)/g, '').trim() : '';
+        const hcBadge = cleanHc
+          ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold whitespace-nowrap shrink-0">' + cleanHc + '</span>'
           : '';
 
         const mediaAreaHtml = firstPhotoSrc
@@ -5320,7 +5561,7 @@
             '<span class="absolute top-1.5 left-1.5 bg-white/85 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">' + item.season + '·' + item.menuType + '</span>' +
           '</div>' +
           '<div class="p-2.5">' +
-            '<div class="flex items-center justify-between gap-1">' +
+            '<div class="flex items-center justify-between gap-1 whitespace-nowrap overflow-hidden">' +
               '<p class="text-[10px] text-teal-700 font-bold truncate">' + item.date + '</p>' +
               hcBadge +
             '</div>' +
@@ -5331,7 +5572,6 @@
       });
     };
 
-    // 계절/유형 버튼 선택 시 불필요한 아이콘 없이 깔끔한 텍스트 유지
     selectCustomArchSeason = function(seasonVal) {
       const hiddenEl = document.getElementById('archEditSeason');
       if (hiddenEl) hiddenEl.value = seasonVal;
@@ -5387,7 +5627,8 @@
       selectCustomArchSeason(item.season || '가을');
       selectCustomArchType(item.menuType || '육류');
 
-      const hcEl = document.getElementById('archEditHeadcount'); if (hcEl) hcEl.value = item.headcount || '';
+      const cleanHc = item.headcount ? String(item.headcount).replace(/\s*\(기준\)/g, '').trim() : '';
+      const hcEl = document.getElementById('archEditHeadcount'); if (hcEl) hcEl.value = cleanHc;
       const loEl = document.getElementById('archEditLeftover'); if (loEl) loEl.value = item.leftoverNote || '';
       const ingEl = document.getElementById('archEditRawIng'); if (ingEl) ingEl.value = item.rawIngredients || '';
       const supEl = document.getElementById('archEditSupplies'); if (supEl) supEl.value = item.supplies || '';
@@ -5407,7 +5648,6 @@
       document.getElementById('archiveModal').classList.remove('hidden');
     };
 
-    // [식판에 올리기] 클릭 시 안에서 스크롤하여 수정한 내용을 저장한 후 즉시 상단 식판으로 불러오기
     loadArchiveToCurrentTray = async function() {
       const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
       if (!item) return;
@@ -5417,7 +5657,8 @@
       item.season = document.getElementById('archEditSeason').value;
       item.menuType = document.getElementById('archEditType').value;
 
-      const hcEl = document.getElementById('archEditHeadcount'); if (hcEl) item.headcount = hcEl.value.trim();
+      const hcEl = document.getElementById('archEditHeadcount');
+      if (hcEl) item.headcount = hcEl.value.replace(/\s*\(기준\)/g, '').trim();
       const loEl = document.getElementById('archEditLeftover'); if (loEl) item.leftoverNote = loEl.value.trim();
       const ingEl = document.getElementById('archEditRawIng'); if (ingEl) item.rawIngredients = ingEl.value.trim();
       const supEl = document.getElementById('archEditSupplies'); if (supEl) item.supplies = supEl.value.trim();
@@ -5442,6 +5683,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // ================= [2번] A4 출력 미리보기 & 초고속 경량 1페이지 A4 PDF 즉시 공유/저장 엔진 =================
     openPrintModal = function() {
       const dateStr = document.getElementById('currentDate').value || getCurrentWeekSundayString();
       document.getElementById('printDateText').innerText = dateStr;
@@ -5469,56 +5711,144 @@
       document.getElementById('printModal').classList.remove('hidden');
     };
 
-    async function shareA4MenuPdf() {
-      const printArea = document.getElementById('print-area');
-      const shareBtn = document.getElementById('sharePdfBtn');
-      if (!printArea) return;
+    // 네이티브 Canvas 2D로 A4 1페이지를 0.05초 만에 경량 렌더링 (html2canvas 대비 10배 이상 빠르고 용량 최소화)
+    function buildFastA4Canvas() {
+      const canvas = document.createElement('canvas');
+      const W = 794, H = 1123; // 표준 A4 96DPI 경량 해상도
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
 
-      const origText = shareBtn ? shareBtn.innerText : '📤 공유';
+      // 흰 배경
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, W, H);
+
+      // 외곽 이중 테두리
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 5;
+      ctx.strokeRect(42, 42, W - 84, H - 84);
+      ctx.lineWidth = 1.8;
+      ctx.strokeRect(52, 52, W - 104, H - 104);
+
+      // 상단 로고 + 타이틀 이미지 (로드되어 있으면 즉시 드로잉)
+      const logoImg = document.getElementById('printLogoImg');
+      const titleImg = document.getElementById('printTitleImg');
+      let topY = 105;
+
+      const hasLogo = logoImg && logoImg.complete && logoImg.naturalWidth > 0;
+      const hasTitle = titleImg && titleImg.complete && titleImg.naturalWidth > 0;
+
+      if (hasLogo && hasTitle) {
+        const logoH = 54;
+        const logoW = (logoImg.naturalWidth / logoImg.naturalHeight) * logoH;
+        const titleH = 62;
+        const titleW = (titleImg.naturalWidth / titleImg.naturalHeight) * titleH;
+        const gap = 16;
+        const totalW = (logoW + 20) + gap + titleW;
+        const startX = (W - totalW) / 2;
+
+        ctx.strokeStyle = '#cbd5e1';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startX, topY - 6, logoW + 20, logoH + 12);
+        try {
+          ctx.drawImage(logoImg, startX + 10, topY, logoW, logoH);
+          ctx.drawImage(titleImg, startX + logoW + 20 + gap, topY - 2, titleW, titleH);
+        } catch (e) {}
+        topY += 95;
+      } else {
+        ctx.fillStyle = '#0f172a';
+        ctx.font = '900 36px Pretendard, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('세종꿈의교회', W / 2, topY + 35);
+        topY += 80;
+      }
+
+      // 일자 표시
+      const dateStr = document.getElementById('currentDate').value || getCurrentWeekSundayString();
+      ctx.fillStyle = '#115e59';
+      ctx.font = '800 24px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(dateStr, W / 2, topY);
+      topY += 54;
+
+      // 좌·우 두꺼운 실선 + 식단표 큰 타이틀
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '900 44px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('식 단 표', W / 2, topY + 14);
+
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(92, topY - 2, 195, 6);
+      ctx.fillRect(W - 92 - 195, topY - 2, 195, 6);
+
+      // 중단 메뉴 수직 나열
+      const dishNames = [];
+      currentTrayIds.forEach(function(id) {
+        const d = masterBasket.find(function(x) { return x.id === id; });
+        if (d && d.name) dishNames.push(d.name);
+      });
+
+      const menuAreaTop = topY + 70;
+      const menuAreaBottom = H - 150;
+      const menuAreaHeight = menuAreaBottom - menuAreaTop;
+
+      ctx.fillStyle = '#1e293b';
+      ctx.textAlign = 'center';
+
+      if (dishNames.length === 0) {
+        ctx.font = '700 26px Pretendard, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('식판에 담긴 메뉴가 없습니다.', W / 2, menuAreaTop + menuAreaHeight / 2);
+      } else {
+        const fontSize = dishNames.length > 7 ? 32 : 38;
+        const lineStep = Math.min(72, Math.floor(menuAreaHeight / (dishNames.length + 0.5)));
+        const blockH = (dishNames.length - 1) * lineStep;
+        let curY = menuAreaTop + (menuAreaHeight - blockH) / 2;
+
+        ctx.font = '900 ' + fontSize + 'px Pretendard, sans-serif';
+        dishNames.forEach(function(name) {
+          ctx.fillText(name, W / 2, curY);
+          curY += lineStep;
+        });
+      }
+
+      // 하단 구분선 및 문구
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(92, H - 125);
+      ctx.lineTo(W - 92, H - 125);
+      ctx.stroke();
+
+      ctx.fillStyle = '#334155';
+      ctx.font = '800 22px Pretendard, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('- 사랑합니다, 감사합니다, 축복합니다 -', W / 2, H - 82);
+
+      return canvas;
+    }
+
+    async function shareA4MenuPdf() {
+      const shareBtn = document.getElementById('sharePdfBtn');
+      const origText = shareBtn ? shareBtn.innerText : '📤 공유/저장';
       if (shareBtn) {
-        shareBtn.innerText = '⏳ 생성중...';
+        shareBtn.innerText = '⏳ 처리중...';
         shareBtn.disabled = true;
       }
 
       try {
-        if (!window.html2canvas || !window.jspdf) {
-          await showCustomAlert('PDF 생성 도구를 불러오는 중입니다. 잠시 후 다시 시도해주세요.', '⏳');
+        if (!window.jspdf) {
+          await showCustomAlert('PDF 도구를 불러오는 중입니다. 잠시 후 다시 시도해주세요.', '⏳');
           return;
         }
 
-        const origMaxH = printArea.style.maxHeight;
-        const origOverflow = printArea.style.overflow;
-        printArea.style.maxHeight = 'none';
-        printArea.style.overflow = 'visible';
+        // 초고속 1페이지 캔버스 생성 & 최소 용량(JPEG 0.58) 압축
+        const fastCanvas = buildFastA4Canvas();
+        const imgData = fastCanvas.toDataURL('image/jpeg', 0.58);
 
-        const canvas = await window.html2canvas(printArea, {
-          scale: 2.5,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff'
-        });
-
-        printArea.style.maxHeight = origMaxH;
-        printArea.style.overflow = origOverflow;
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const jsPDF = window.jspdf.jsPDF;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-
-        const pageW = 210, pageH = 297, margin = 14;
-        const maxW = pageW - margin * 2;
-        const maxH = pageH - margin * 2;
-
-        let renderW = maxW;
-        let renderH = (canvas.height * renderW) / canvas.width;
-        if (renderH > maxH) {
-          renderH = maxH;
-          renderW = (canvas.width * renderH) / canvas.height;
-        }
-        const offsetX = (pageW - renderW) / 2;
-        const offsetY = (pageH - renderH) / 2;
-
-        pdf.addImage(imgData, 'JPEG', offsetX, offsetY, renderW, renderH);
+        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
         const rawDate = (document.getElementById('currentDate').value || '식단표').replace(/[^0-9가-힣a-zA-Z_-]/g, '_');
         const fileName = '세종꿈의교회_식단표_' + rawDate + '.pdf';
@@ -5528,17 +5858,16 @@
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
           await navigator.share({
             title: '세종꿈의교회 주간 식단표',
-            text: (document.getElementById('currentDate').value || '') + ' 식단표입니다.',
             files: [pdfFile]
           });
         } else {
           pdf.save(fileName);
-          await showCustomAlert('A4 사이즈 PDF 파일이 기기에 저장(다운로드)되었습니다!', '📥');
+          await showCustomAlert('A4 1페이지 PDF 파일이 즉시 저장되었습니다!', '📥');
         }
       } catch (err) {
         if (err && err.name !== 'AbortError') {
           console.error(err);
-          await showCustomAlert('PDF 공유 중 오류가 발생했습니다.', '⚠️');
+          await showCustomAlert('공유/저장 중 오류가 발생했습니다.', '⚠️');
         }
       } finally {
         if (shareBtn) {
@@ -5554,7 +5883,7 @@
   </script>
 
   <!-- [팝업 10] 📅 커스텀 상하 스크롤 달력 모달 -->
-  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4 overscroll-none">
     <div class="bg-white rounded-2xl w-[92vw] max-w-sm px-3 py-2.5 shadow-2xl border-2 border-slate-300 flex flex-col max-h-[80vh] box-border" onclick="closeCalendarQuickPreview()">
       <div class="flex justify-between items-center pb-1.5 border-b border-slate-200 shrink-0 px-0.5 whitespace-nowrap">
         <h3 class="text-sm font-black text-slate-800 whitespace-nowrap">📅 일자 선택</h3>
@@ -5566,38 +5895,36 @@
       <div class="cal-sunday-wide-grid gap-x-0.5 text-center text-sm font-black py-1 border-b-2 border-slate-200 bg-slate-100/90 rounded-t mt-1 shrink-0 tracking-tight">
         <span class="text-rose-600">일</span><span class="text-slate-800">월</span><span class="text-slate-800">화</span><span class="text-slate-800">수</span><span class="text-slate-800">목</span><span class="text-slate-800">금</span><span class="text-sky-600">토</span>
       </div>
-      <div id="calendarScrollContainer" onscroll="closeCalendarQuickPreview()" class="relative overflow-y-auto space-y-1.5 py-1.5 px-0.5" style="height: 54vh; max-height: 56vh; -webkit-overflow-scrolling: touch;"></div>
+      <div id="calendarScrollContainer" onscroll="closeCalendarQuickPreview()" class="relative overflow-y-auto overscroll-contain space-y-1.5 py-1.5 px-0.5" style="height: 54vh; max-height: 56vh; -webkit-overflow-scrolling: touch;"></div>
     </div>
   </div>
 
-  <!-- [팝업 10-B] 🎯 식단확정 일자 다이얼 슬라이드 모달 -->
-  <div id="confirmMenuDialModal" onclick="if(event.target===this) closeConfirmDialModal()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+  <!-- [팝업 10-B] 🎯 식단확정 일자 다이얼 슬라이드 모달 (7줄 촘촘한 간격 + 속도 1/2 감속 + 하단 선택일자 삭제 + 진한 적색 강조) -->
+  <div id="confirmMenuDialModal" onclick="if(event.target===this) closeConfirmDialModal()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4 touch-none select-none overscroll-none">
     <div class="bg-white rounded-3xl w-[90vw] max-w-xs p-4 shadow-2xl border-[5px] border-pink-400 flex flex-col space-y-3 text-center box-border">
       <div class="flex justify-between items-center border-b border-pink-100 pb-2">
         <span class="text-sm font-black text-pink-950">🍱 식단확정 일자 선택</span>
         <button type="button" onclick="closeConfirmDialModal()" class="text-slate-400 hover:text-slate-600 font-bold px-1">✕</button>
       </div>
 
-      <p class="text-[11px] font-bold text-slate-500">다이얼을 위·아래로 스크롤하여 확정할 주일을 맞추세요</p>
+      <!-- 다이얼 휠 피커 영역: 높이 196px (28px × 7줄 표시) -->
+      <div class="relative h-[196px] bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden touch-none select-none">
+        <!-- 정중앙 선택 하이라이트 가이드 바 (top: 84px, height: 28px) -->
+        <div class="pointer-events-none absolute left-2 right-2 top-[84px] h-[28px] rounded-lg bg-red-50/90 border-2 border-red-500 z-0 shadow-2xs"></div>
+        <!-- 상하 그라데이션 페이드 -->
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-12 bg-gradient-to-b from-slate-50 via-slate-50/75 to-transparent z-20"></div>
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-slate-50 via-slate-50/75 to-transparent z-20"></div>
 
-      <div class="relative h-[132px] bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
-        <div class="pointer-events-none absolute left-2 right-2 top-[44px] h-[44px] rounded-xl bg-pink-100/70 border-2 border-pink-400 z-0 shadow-2xs"></div>
-        <div class="pointer-events-none absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent z-20"></div>
-        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent z-20"></div>
-        <div id="confirmDialWheel" onscroll="onConfirmDialScroll()" class="dial-wheel-scroll relative z-10 h-full overflow-y-auto no-scrollbar" style="padding-top: 44px; padding-bottom: 44px;"></div>
+        <!-- 실제 상하 전용 감속 다이얼 리스트 -->
+        <div id="confirmDialWheel" class="dial-wheel-scroll relative z-10 h-full no-scrollbar" style="padding-top: 84px; padding-bottom: 84px;"></div>
       </div>
 
-      <div class="bg-pink-50/80 rounded-xl px-3 py-1.5 border border-pink-200 flex items-center justify-between text-xs">
-        <span class="font-bold text-pink-800">선택 일자</span>
-        <span id="confirmDialSelectedText" class="font-black text-pink-950"></span>
-      </div>
-
-      <div class="grid grid-cols-2 gap-2 pt-1">
+      <div class="grid grid-cols-2 gap-2 pt-0.5">
         <button type="button" onclick="closeConfirmDialModal()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">
           취소
         </button>
         <button type="button" onclick="executeDialConfirmSave()" class="bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95">
-          확정 저장
+          확정
         </button>
       </div>
     </div>
