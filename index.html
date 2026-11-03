@@ -62,6 +62,23 @@
       }
       .no-print { display: none !important; }
     }
+      body * { visibility: hidden; }
+      .print-active, .print-active * { visibility: visible; }
+      .print-active {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 100%;
+        min-height: 92vh;
+        padding: 36px 28px !important;
+        background: white;
+        box-sizing: border-box;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+      }
+      .no-print { display: none !important; }
+    }
       .print-active, .print-active * { visibility: visible; }
       .print-active { position: fixed; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
       .no-print { display: none !important; }
@@ -457,49 +474,39 @@
     </div>
   </div>
 
-    <!-- [팝업 7] A4 식단표 출력 모달 -->
+      <!-- [팝업 7] A4 식단표 출력 모달 -->
   <div id="printModal" onclick="if(event.target===this) document.getElementById('printModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl max-w-sm w-full p-3.5 shadow-2xl border border-slate-200 flex flex-col max-h-[92vh]">
-      
       <!-- 모바일 화면 안에 들어오는 A4 비율 테두리 테이블 (#print-area) -->
-      <div id="print-area" class="w-full bg-white border-4 border-double border-slate-800 rounded-xl px-4 py-5 text-center flex flex-col justify-between overflow-y-auto shadow-inner" style="min-height: 420px; max-height: 74vh;">
-        
-        <!-- 상단: tlogo.png + ttitle.png 중앙 배치 & 일자 & ----식 단 표---- -->
+      <div id="print-area" class="w-full bg-white border-4 border-double border-slate-800 rounded-xl px-5 py-5 text-center flex flex-col justify-between overflow-y-auto shadow-inner" style="min-height: 420px; max-height: 74vh;">
+        <!-- 상단: tlogo.png + ttitle.png 중앙 배치 & 일자 & 좌우 두꺼운 실선 식단표 -->
         <div>
-          <div class="flex items-center justify-center gap-2 whitespace-nowrap mb-3">
+          <div class="flex items-center justify-center gap-2 whitespace-nowrap mb-2.5">
             <div class="h-10 px-1.5 rounded-xl border border-slate-300 bg-white shadow-2xs shrink-0 flex items-center justify-center">
               <img src="tlogo.png" alt="로고" crossorigin="anonymous" class="h-8 w-auto object-contain shrink-0">
             </div>
             <img src="ttitle.png" alt="타이틀" crossorigin="anonymous" class="h-10 w-auto object-contain shrink-0">
           </div>
-
-          <p id="printDateText" class="text-sm font-extrabold text-teal-800 mt-1 mb-2 tracking-tight"></p>
-
-          <div class="py-1.5 my-2 border-y-2 border-slate-800">
-            <h1 class="text-base font-black text-slate-900 tracking-widest">---- 식 단 표 ----</h1>
+          <p id="printDateText" class="text-sm font-extrabold text-teal-800 mt-1 mb-3 tracking-tight"></p>
+          <!-- 위·아래 실선 삭제 & 식단표 폰트 크게 & 좌·우 두꺼운 실선 맞춤 -->
+          <div class="flex items-center justify-center gap-3 my-2 px-1">
+            <div class="flex-1 h-[3.5px] bg-slate-800 rounded-full"></div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-[0.25em] shrink-0 pl-[0.25em]">식단표</h1>
+            <div class="flex-1 h-[3.5px] bg-slate-800 rounded-full"></div>
           </div>
         </div>
-
         <!-- 중단: 메뉴 수직 나열 -->
         <div id="printList" class="space-y-2.5 my-4 text-lg font-extrabold text-slate-800 flex-1 flex flex-col justify-center items-center"></div>
-
         <!-- 하단: -사랑합니다, 감사합니다, 축복합니다 - -->
         <div class="pt-3 border-t border-slate-300 mt-2">
           <p class="text-xs font-extrabold text-slate-700 tracking-wide">- 사랑합니다, 감사합니다, 축복합니다 -</p>
         </div>
       </div>
-
-      <!-- 레이아웃 아래: 인쇄 / 공유(A4 PDF) / 닫기 -->
+      <!-- 테이블 하단: 인쇄 / 공유(A4 PDF) / 창닫기 -->
       <div class="grid grid-cols-3 gap-2 pt-3 mt-1 no-print shrink-0">
-        <button type="button" onclick="printA4Menu()" class="bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">
-          🖨️ 인쇄
-        </button>
-        <button type="button" id="sharePdfBtn" onclick="shareA4MenuPdf()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">
-          📤 공유
-        </button>
-        <button type="button" onclick="document.getElementById('printModal').classList.add('hidden')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 py-2.5 rounded-xl text-xs font-extrabold transition active:scale-95">
-          ✕ 닫기
-        </button>
+        <button type="button" onclick="printA4Menu()" class="bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">🖨️ 인쇄</button>
+        <button type="button" id="sharePdfBtn" onclick="shareA4MenuPdf()" class="bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-xs font-extrabold shadow-sm transition active:scale-95">📤 공유</button>
+        <button type="button" onclick="document.getElementById('printModal').classList.add('hidden')" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 py-2.5 rounded-xl text-xs font-extrabold transition active:scale-95">✕ 창닫기</button>
       </div>
     </div>
   </div>
@@ -4105,16 +4112,16 @@
     renderTray();
     renderArchiveGrid();
   
-    // ================= [패치 적용] 0번~4번 요구사항 반영 =================
+        // ================= [패치 적용 v2.1] 요구사항 완벽 반영 =================
 
-    // [0번] 처음 로그인 시 메인화면 최상단(일자선택, 식판에 모으기)이 제일 위로 오도록 스크롤 즉시 초기화
+    // [0번] 처음 로그인 시 메인화면 최상단(일자선택, 식판에 모으기)이 제일 위로 오도록 스크롤 초기화
     unlockAppAndStart = function() {
-      const loginModal = document.getElementById('loginGateModal');
-      const appContent = document.getElementById('protectedAppContent');
-      if (loginModal) loginModal.classList.add('hidden');
-      if (appContent) appContent.classList.remove('hidden');
-      const card = document.getElementById('loginGateCard');
-      if (card) card.style.transform = 'translateY(0px)';
+      const loginModal = document.getElementById("loginGateModal");
+      const appContent = document.getElementById("protectedAppContent");
+      if (loginModal) loginModal.classList.add("hidden");
+      if (appContent) appContent.classList.remove("hidden");
+      const card = document.getElementById("loginGateCard");
+      if (card) card.style.transform = "translateY(0px)";
 
       applyRoleUI();
       if (!isRealtimeStarted) {
@@ -4123,7 +4130,7 @@
       }
 
       const resetScrollToTop = () => {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
       };
@@ -4143,22 +4150,96 @@
       targetSun.setHours(0, 0, 0, 0);
 
       if (targetSun.getTime() < currentWeekSunday.getTime()) {
-        return { label: '완료', cls: 'bg-slate-600 text-white border-slate-700' };
+        return { label: "완료", cls: "bg-slate-600 text-white border-slate-700" };
       }
       if (targetSun.getTime() > currentWeekSunday.getTime()) {
-        return { label: '예정', cls: 'bg-indigo-600 text-white border-indigo-700' };
+        return { label: "예정", cls: "bg-indigo-600 text-white border-indigo-700" };
       }
-      return { label: '확정', cls: 'bg-rose-600 text-white border-rose-700' };
+      return { label: "확정", cls: "bg-rose-600 text-white border-rose-700" };
     };
 
-    // [1번 & 3번] 달력 렌더링: 2자리 날짜 숫자가 가려지지 않도록 각주를 우측 끝으로 이동 배치 & 3개월 테이블 상하 잘림 방지
+    // [2번] 달력 내 완료/확정/예정 클릭 시 해당 월의 오른쪽 공간에 식판 내용 미니 모달 표시 & 스크롤/이동 시 닫힘
+    let activePreviewDateKey = null;
+
+    function closeCalendarQuickPreview() {
+      activePreviewDateKey = null;
+      document.querySelectorAll(".cal-quick-preview-pop").forEach(el => el.remove());
+    }
+
+    function getDishesForCalendarDate(sundayStr) {
+      const cleanDate = normalizeCompactDateStr(sundayStr);
+      let dishIds = [];
+      const matchedArch = (archiveList || []).find(a => normalizeCompactDateStr(a.date) === cleanDate);
+      if (matchedArch && Array.isArray(matchedArch.dishIds) && matchedArch.dishIds.length > 0) {
+        dishIds = matchedArch.dishIds;
+      } else if (weeklyPlanMap && weeklyPlanMap[cleanDate] && Array.isArray(weeklyPlanMap[cleanDate].trayIds)) {
+        dishIds = weeklyPlanMap[cleanDate].trayIds;
+      }
+      return dishIds.map(id => {
+        const found = masterBasket.find(d => d.id === id);
+        return found ? found.name : null;
+      }).filter(Boolean);
+    }
+
+    function openCalendarQuickPreview(evt, sundayStr, statusLabel, monthOffset) {
+      if (evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+      }
+      const cleanDate = normalizeCompactDateStr(sundayStr);
+      if (activePreviewDateKey === cleanDate) {
+        closeCalendarQuickPreview();
+        return;
+      }
+      closeCalendarQuickPreview();
+      activePreviewDateKey = cleanDate;
+
+      const monthCard = document.getElementById("cal-month-offset-" + monthOffset);
+      if (!monthCard) return;
+
+      const dishes = getDishesForCalendarDate(cleanDate);
+      const badgeColor = statusLabel === "완료"
+        ? "bg-slate-700 text-white"
+        : statusLabel === "예정"
+          ? "bg-indigo-600 text-white"
+          : "bg-rose-600 text-white";
+
+      const pop = document.createElement("div");
+      pop.className = "cal-quick-preview-pop absolute right-1.5 top-6 w-[70%] bg-white/98 backdrop-blur-xs rounded-xl shadow-xl border-2 border-slate-700 p-2.5 z-30 text-left";
+      pop.onclick = function(e) {
+        e.stopPropagation();
+        closeCalendarQuickPreview();
+      };
+
+      const dishesHtml = dishes.length > 0
+        ? "<div class=\"flex flex-wrap gap-1 mt-1.5\">" +
+            dishes.map(name => "<span class=\"bg-slate-100 border border-slate-300 text-slate-800 text-[11px] font-extrabold px-1.5 py-0.5 rounded-md leading-tight\">" + name + "</span>").join("") +
+          "</div>"
+        : "<p class=\"text-[11px] text-slate-400 font-bold mt-1.5\">등록된 식판 메뉴가 없습니다.</p>";
+
+      const shortDateLabel = cleanDate.replace(/^[0-9]{4}년\s*/, "");
+      pop.innerHTML =
+        "<div class=\"flex items-center justify-between gap-1 border-b border-slate-200 pb-1\">" +
+          "<div class=\"flex items-center gap-1 min-w-0\">" +
+            "<span class=\"" + badgeColor + " text-[9.5px] font-extrabold px-1.5 py-0.5 rounded shrink-0\">" + statusLabel + "</span>" +
+            "<span class=\"text-[11px] font-black text-slate-900 truncate\">" + shortDateLabel + "</span>" +
+          "</div>" +
+          "<span class=\"text-[9px] text-slate-400 font-bold shrink-0\">닫기 ✕</span>" +
+        "</div>" +
+        dishesHtml;
+
+      monthCard.appendChild(pop);
+    }
+
+    // 달력 렌더링: 2자리 날짜 숫자가 가려지지 않도록 각주를 오른쪽 끝으로 이동 배치 & 각주 클릭 시 오른쪽 공간 미니모달 오픈
     renderCustomScrollCalendar = function() {
-      const container = document.getElementById('calendarScrollContainer');
+      const container = document.getElementById("calendarScrollContainer");
       if (!container) return;
-      container.innerHTML = '';
+      container.innerHTML = "";
+      activePreviewDateKey = null;
 
       const now = new Date(), baseYear = now.getFullYear(), baseMonth = now.getMonth();
-      const selectedDateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
+      const selectedDateStr = normalizeCompactDateStr(document.getElementById("currentDate").value || getCurrentWeekSundayString());
       const todayWeekStr = getCurrentWeekSundayString();
       const confirmedSet = getConfirmedSundaySet();
       const bounds = getCalendarMonthOffsetBounds(baseYear, baseMonth);
@@ -4167,20 +4248,20 @@
         const monthDate = new Date(baseYear, baseMonth + offset, 1);
         const y = monthDate.getFullYear(), m = monthDate.getMonth();
         const firstDayOfWeek = new Date(y, m, 1).getDay(), lastDate = new Date(y, m + 1, 0).getDate();
-        const monthCard = document.createElement('div');
-        monthCard.id = 'cal-month-offset-' + offset;
+        const monthCard = document.createElement("div");
+        monthCard.id = "cal-month-offset-" + offset;
         monthCard.className = (offset === 0)
-          ? "px-2 py-1 rounded-xl border-2 border-pink-400 bg-pink-100/80 shadow-2xs"
-          : "px-2 py-1 rounded-xl border border-slate-200 bg-white";
+          ? "relative px-2 py-1 rounded-xl border-2 border-pink-400 bg-pink-100/80 shadow-2xs"
+          : "relative px-2 py-1 rounded-xl border border-slate-200 bg-white";
 
-        let tagLabel = '';
-        if (offset === bounds.startOffset && offset < -1) tagLabel = '<span class="text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-extrabold">최초확정월</span>';
-        else if (offset === -1) tagLabel = '<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold">전월</span>';
-        else if (offset === 0) tagLabel = '<span class="text-[9px] bg-pink-100 text-pink-800 px-1.5 py-0.2 rounded font-extrabold">현재월</span>';
-        else if (offset === 1) tagLabel = '<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold">다음월</span>';
+        let tagLabel = "";
+        if (offset === bounds.startOffset && offset < -1) tagLabel = "<span class=\"text-[9px] bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded font-extrabold\">최초확정월</span>";
+        else if (offset === -1) tagLabel = "<span class=\"text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold\">전월</span>";
+        else if (offset === 0) tagLabel = "<span class=\"text-[9px] bg-pink-100 text-pink-800 px-1.5 py-0.2 rounded font-extrabold\">현재월</span>";
+        else if (offset === 1) tagLabel = "<span class=\"text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold\">다음월</span>";
 
-        let cellsHtml = '';
-        for (let b = 0; b < firstDayOfWeek; b++) cellsHtml += '<div class="h-[20px]"></div>';
+        let cellsHtml = "";
+        for (let b = 0; b < firstDayOfWeek; b++) cellsHtml += "<div class=\"h-[20px]\"></div>";
 
         for (let d = 1; d <= lastDate; d++) {
           const curObj = new Date(y, m, d), dow = curObj.getDay();
@@ -4190,7 +4271,8 @@
           if (dow === 0) {
             const thisSundayStr = formatWeekOptionString(curObj);
             const isSelected = (thisSundayStr === selectedDateStr), isTodaySunday = (thisSundayStr === todayWeekStr);
-            const footnote = getSundayStatusFootnote(curObj, confirmedSet.has(thisSundayStr));
+            const hasPlanOrArch = confirmedSet.has(thisSundayStr) || Boolean(weeklyPlanMap && weeklyPlanMap[thisSundayStr] && (weeklyPlanMap[thisSundayStr].trayIds || []).length > 0);
+            const footnote = getSundayStatusFootnote(curObj, hasPlanOrArch);
             const boxStyle = isSelected
               ? "border-2 border-rose-600 bg-rose-100 text-rose-950 font-black shadow-2xs"
               : isTodaySunday
@@ -4198,45 +4280,44 @@
                 : "border-[1.5px] border-rose-300 bg-rose-50/40 text-rose-700 font-extrabold hover:bg-rose-100/60";
 
             const footnoteHtml = footnote
-              ? '<span class="absolute right-[1px] top-1/2 -translate-y-1/2 ' + footnote.cls + ' text-[6px] leading-none font-extrabold px-[1.5px] py-[1px] rounded-[2px] border whitespace-nowrap z-10 tracking-tighter">' + footnote.label + '</span>'
-              : '';
-            const numLayoutCls = footnote ? 'w-full text-left pl-[3px] text-[11.5px] tracking-tighter' : 'text-[12px] tracking-tight';
+              ? "<span onclick=\"openCalendarQuickPreview(event, '" + thisSundayStr + "', '" + footnote.label + "', " + offset + ")\" title=\"식판 메뉴 미리보기\" class=\"absolute right-[1px] top-1/2 -translate-y-1/2 " + footnote.cls + " text-[6.5px] leading-none font-extrabold px-[2px] py-[2px] rounded-[3px] border whitespace-nowrap z-10 tracking-tighter cursor-pointer active:scale-90\">" + footnote.label + "</span>"
+              : "";
+            const numLayoutCls = footnote ? "w-full text-left pl-[2.5px] text-[11px] tracking-tighter" : "text-[12px] tracking-tight";
 
-            cellsHtml += '<button type="button" onclick="selectCalendarWeekDate(\'' + thisSundayStr + '\')" class="relative h-[20px] rounded-md flex items-center justify-center overflow-hidden transition active:scale-95 ' + boxStyle + '"><span class="leading-none ' + numLayoutCls + '">' + d + '</span>' + footnoteHtml + '</button>';
+            cellsHtml += "<button type=\"button\" onclick=\"selectCalendarWeekDate('" + thisSundayStr + "')\" class=\"relative h-[20px] rounded-md flex items-center justify-center overflow-hidden transition active:scale-95 " + boxStyle + "\"><span class=\"leading-none " + numLayoutCls + "\">" + d + "</span>" + footnoteHtml + "</button>";
           } else {
-            const textColor = (dow === 6) ? 'text-sky-600' : 'text-slate-700';
-            cellsHtml += '<button type="button" onclick="selectCalendarWeekDate(\'' + sundayStr + '\')" class="h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold leading-none ' + textColor + ' hover:bg-slate-100 transition">' + d + '</button>';
+            const textColor = (dow === 6) ? "text-sky-600" : "text-slate-700";
+            cellsHtml += "<button type=\"button\" onclick=\"selectCalendarWeekDate('" + sundayStr + "')\" class=\"h-[20px] rounded-md flex items-center justify-center text-[12px] font-bold leading-none " + textColor + " hover:bg-slate-100 transition\">" + d + "</button>";
           }
         }
 
         monthCard.innerHTML =
-          '<div class="flex items-center justify-between mb-0.5 px-0.5">' +
-            '<span class="text-[13px] font-black text-slate-900 tracking-tight leading-none">' + y + '년 ' + (m + 1) + '월</span>' +
+          "<div class=\"flex items-center justify-between mb-0.5 px-0.5\">" +
+            "<span class=\"text-[13px] font-black text-slate-900 tracking-tight leading-none\">" + y + "년 " + (m + 1) + "월</span>" +
             tagLabel +
-          '</div>' +
-          '<div class="grid grid-cols-7 gap-y-[1px] gap-x-0.5 text-center">' +
+          "</div>" +
+          "<div class=\"grid grid-cols-7 gap-y-[1px] gap-x-0.5 text-center\">" +
             cellsHtml +
-          '</div>';
+          "</div>";
         container.appendChild(monthCard);
       }
     };
 
-    // [3번] 달력 모달 열 때 전월~다음월(3개월) 테이블 전체가 상하 잘림 없이 한 화면에 맞춰지도록 높이 및 스크롤 자동 조율
     openCustomCalendarModal = function() {
-      const modal = document.getElementById('customCalendarModal');
+      const modal = document.getElementById("customCalendarModal");
       if (!modal) return;
       renderCustomScrollCalendar();
-      modal.classList.remove('hidden');
+      modal.classList.remove("hidden");
 
       requestAnimationFrame(() => {
-        const container = document.getElementById('calendarScrollContainer');
-        const prevMonthEl = document.getElementById('cal-month-offset--1');
-        const curMonthEl = document.getElementById('cal-month-offset-0');
-        const nextMonthEl = document.getElementById('cal-month-offset-1');
+        const container = document.getElementById("calendarScrollContainer");
+        const prevMonthEl = document.getElementById("cal-month-offset--1");
+        const curMonthEl = document.getElementById("cal-month-offset-0");
+        const nextMonthEl = document.getElementById("cal-month-offset-1");
 
         if (container && prevMonthEl && curMonthEl && nextMonthEl) {
           const threeMonthsHeight = (nextMonthEl.offsetTop + nextMonthEl.offsetHeight) - prevMonthEl.offsetTop;
-          container.style.height = (threeMonthsHeight + 10) + 'px';
+          container.style.height = (threeMonthsHeight + 10) + "px";
           container.scrollTop = Math.max(0, prevMonthEl.offsetTop - container.offsetTop - 2);
         } else if (container && prevMonthEl) {
           container.scrollTop = Math.max(0, prevMonthEl.offsetTop - container.offsetTop - 2);
@@ -4244,56 +4325,55 @@
       });
     };
 
-    // [4번] A4 식단표 미리보기 오픈 및 A4 사이즈 PDF 공유 기능
+    // [1번] A4 식단표 미리보기 오픈 및 A4 사이즈 PDF 공유 기능
     openPrintModal = function() {
-      const dateStr = document.getElementById('currentDate').value || getCurrentWeekSundayString();
-      document.getElementById('printDateText').innerText = dateStr;
-      const list = document.getElementById('printList');
+      const dateStr = document.getElementById("currentDate").value || getCurrentWeekSundayString();
+      document.getElementById("printDateText").innerText = dateStr;
+      const list = document.getElementById("printList");
       const itemsHtml = currentTrayIds.map(id => {
         const d = masterBasket.find(x => x.id === id);
-        return d ? '<p class="leading-snug break-keep">' + d.name + '</p>' : '';
-      }).filter(Boolean).join('');
+        return d ? "<p class=\"leading-snug break-keep\">" + d.name + "</p>" : "";
+      }).filter(Boolean).join("");
 
-      list.innerHTML = itemsHtml || '<p class="text-sm text-slate-400 font-medium">식판에 담긴 메뉴가 없습니다.</p>';
-      document.getElementById('printModal').classList.remove('hidden');
+      list.innerHTML = itemsHtml || "<p class=\"text-sm text-slate-400 font-medium\">식판에 담긴 메뉴가 없습니다.</p>";
+      document.getElementById("printModal").classList.remove("hidden");
     };
 
     async function shareA4MenuPdf() {
-      const printArea = document.getElementById('print-area');
-      const shareBtn = document.getElementById('sharePdfBtn');
+      const printArea = document.getElementById("print-area");
+      const shareBtn = document.getElementById("sharePdfBtn");
       if (!printArea) return;
 
-      const origText = shareBtn ? shareBtn.innerText : '📤 공유';
+      const origText = shareBtn ? shareBtn.innerText : "📤 공유";
       if (shareBtn) {
-        shareBtn.innerText = '⏳ 생성중...';
+        shareBtn.innerText = "⏳ 생성중...";
         shareBtn.disabled = true;
       }
 
       try {
         if (!window.html2canvas || !window.jspdf) {
-          await showCustomAlert('PDF 생성 도구를 불러오는 중입니다. 잠시 후 다시 시도해주세요.', '⏳');
+          await showCustomAlert("PDF 생성 도구를 불러오는 중입니다. 잠시 후 다시 시도해주세요.", "⏳");
           return;
         }
 
-        // 캡처 시 스크롤 잘림 없이 전체 영역을 고해상도로 렌더링
         const origMaxH = printArea.style.maxHeight;
         const origOverflow = printArea.style.overflow;
-        printArea.style.maxHeight = 'none';
-        printArea.style.overflow = 'visible';
+        printArea.style.maxHeight = "none";
+        printArea.style.overflow = "visible";
 
         const canvas = await window.html2canvas(printArea, {
           scale: 2.5,
           useCORS: true,
           allowTaint: true,
-          backgroundColor: '#ffffff'
+          backgroundColor: "#ffffff"
         });
 
         printArea.style.maxHeight = origMaxH;
         printArea.style.overflow = origOverflow;
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
         const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
         const pageW = 210, pageH = 297, margin = 14;
         const maxW = pageW - margin * 2;
@@ -4308,27 +4388,27 @@
         const offsetX = (pageW - renderW) / 2;
         const offsetY = (pageH - renderH) / 2;
 
-        pdf.addImage(imgData, 'JPEG', offsetX, offsetY, renderW, renderH);
+        pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderW, renderH);
 
-        const rawDate = (document.getElementById('currentDate').value || '식단표').replace(/[^0-9가-힣a-zA-Z_-]/g, '_');
-        const fileName = '세종꿈의교회_식단표_' + rawDate + '.pdf';
-        const pdfBlob = pdf.output('blob');
-        const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+        const rawDate = (document.getElementById("currentDate").value || "식단표").replace(/[^0-9가-힣a-zA-Z_-]/g, "_");
+        const fileName = "세종꿈의교회_식단표_" + rawDate + ".pdf";
+        const pdfBlob = pdf.output("blob");
+        const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
 
         if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
           await navigator.share({
-            title: '세종꿈의교회 주간 식단표',
-            text: (document.getElementById('currentDate').value || '') + ' 식단표입니다.',
+            title: "세종꿈의교회 주간 식단표",
+            text: (document.getElementById("currentDate").value || "") + " 식단표입니다.",
             files: [pdfFile]
           });
         } else {
           pdf.save(fileName);
-          await showCustomAlert('A4 사이즈 PDF 파일이 기기에 저장(다운로드)되었습니다!', '📥');
+          await showCustomAlert("A4 사이즈 PDF 파일이 기기에 저장(다운로드)되었습니다!", "📥");
         }
       } catch (err) {
-        if (err && err.name !== 'AbortError') {
+        if (err && err.name !== "AbortError") {
           console.error(err);
-          await showCustomAlert('PDF 공유 중 오류가 발생했습니다.', '⚠️');
+          await showCustomAlert("PDF 공유 중 오류가 발생했습니다.", "⚠️");
         }
       } finally {
         if (shareBtn) {
@@ -4337,16 +4417,15 @@
         }
       }
     }
-
   </script>
 
   <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 -->
   <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2">
-    <div class="bg-white rounded-2xl max-w-sm w-full px-2.5 py-2 shadow-2xl border border-slate-200 flex flex-col max-h-[96vh]">
+    <div class="bg-white rounded-2xl max-w-sm w-full px-2.5 py-2 shadow-2xl border border-slate-200 flex flex-col max-h-[96vh]" onclick="closeCalendarQuickPreview()">
       <div class="flex justify-between items-center pb-1 border-b border-slate-100 shrink-0 px-0.5">
         <div class="flex items-center gap-1">
           <h3 class="text-xs font-extrabold text-slate-800">📅 일자 선택</h3>
-          <span class="text-[10px] text-slate-400 font-semibold">(최초확정월~1년앞)</span>
+          <span class="text-[10px] text-slate-400 font-semibold">(완료·확정·예정 터치시 식판확인)</span>
         </div>
         <div class="flex items-center gap-1">
           <button type="button" onclick="selectTodayWeekInCalendar()" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 text-[10px] font-extrabold px-2 py-0.5 rounded">이번주</button>
@@ -4356,7 +4435,7 @@
       <div class="grid grid-cols-7 text-center text-sm font-black py-1 border-b-2 border-slate-200 bg-slate-100/90 rounded-t mt-1 shrink-0 tracking-tight">
         <span class="text-rose-600">일</span><span class="text-slate-800">월</span><span class="text-slate-800">화</span><span class="text-slate-800">수</span><span class="text-slate-800">목</span><span class="text-slate-800">금</span><span class="text-sky-600">토</span>
       </div>
-      <div id="calendarScrollContainer" class="overflow-y-auto space-y-1 py-1 px-0.5" style="max-height: calc(94vh - 76px); -webkit-overflow-scrolling: touch;"></div>
+      <div id="calendarScrollContainer" onscroll="closeCalendarQuickPreview()" class="relative overflow-y-auto space-y-1 py-1 px-0.5" style="max-height: calc(94vh - 76px); -webkit-overflow-scrolling: touch;"></div>
     </div>
   </div>
 
