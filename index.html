@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-  <style>
+    <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     body { 
       font-family: 'Pretendard', sans-serif; 
@@ -60,44 +60,6 @@
         flex-direction: column !important;
         justify-content: space-between !important;
       }
-      .no-print { display: none !important; }
-    }
-      body * { visibility: hidden; }
-      .print-active, .print-active * { visibility: visible; }
-      .print-active {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        min-height: 92vh;
-        padding: 36px 28px !important;
-        background: white;
-        box-sizing: border-box;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-      }
-      .no-print { display: none !important; }
-    }
-      body * { visibility: hidden; }
-      .print-active, .print-active * { visibility: visible; }
-      .print-active {
-        position: fixed;
-        left: 0;
-        top: 0;
-        width: 100%;
-        min-height: 92vh;
-        padding: 36px 28px !important;
-        background: white;
-        box-sizing: border-box;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-      }
-      .no-print { display: none !important; }
-    }
-      .print-active, .print-active * { visibility: visible; }
-      .print-active { position: fixed; left: 0; top: 0; width: 100%; padding: 20px; background: white; }
       .no-print { display: none !important; }
     }
   </style>
@@ -491,7 +453,7 @@
     </div>
   </div>
 
-        <!-- [팝업 7] A4 식단표 출력 모달 -->
+          <!-- [팝업 7] A4 식단표 출력 모달 -->
   <div id="printModal" onclick="if(event.target===this) document.getElementById('printModal').classList.add('hidden')" class="fixed inset-0 bg-slate-900/60 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl max-w-sm w-full p-3.5 shadow-2xl border border-slate-200 flex flex-col max-h-[92vh]">
       
@@ -4132,11 +4094,10 @@
       reader.readAsArrayBuffer(file);
     };
 
-    populateDateDropdownOptions(getCurrentWeekSundayString());
+        populateDateDropdownOptions(getCurrentWeekSundayString());
     renderTray();
     renderArchiveGrid();
-  
-        
+
     // ================= [패치 적용] 요구사항 완벽 반영 =================
 
     // [0번] 처음 로그인 시 메인화면 최상단(일자선택, 식판에 모으기)이 제일 위로 오도록 스크롤 초기화
@@ -4282,7 +4243,7 @@
       monthCard.appendChild(pop);
     }
 
-    // 달력 렌더링 (DOM 직접 생성 방식으로 따옴표 오류 0%)
+    // 달력 렌더링
     renderCustomScrollCalendar = function() {
       const container = document.getElementById('calendarScrollContainer');
       if (!container) return;
@@ -4521,12 +4482,6 @@
         }
       }
     }
-
-    // 이미 세션이 있는 경우에도 새 패치 함수가 즉시 적용되도록 재호출
-    if (sessionStorage.getItem('sejong_user')) {
-      unlockAppAndStart();
-    }
-
   </script>
 
   <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 -->
