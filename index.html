@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-      <style>
+        <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
     body { 
       font-family: 'Pretendard', sans-serif; 
@@ -23,16 +23,22 @@
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
     
+    /* 환한 배경 크롭틀 & 노란 두꺼운 점선 사각틀 */
     .crop-yellow-box {
       border: 4px dashed #facc15;
-      box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.65);
+      box-shadow: 0 0 0 9999px rgba(255, 255, 255, 0.62);
+       box-sizing: border-box;
     }
     .corner-dot {
-      width: 12px;
-      height: 12px;
+      width: 22px;
+      height: 22px;
       background-color: #facc15;
-      border: 2px solid #ffffff;
+      border: 3px solid #ffffff;
+      border-radius: 5px;
       position: absolute;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      touch-action: none;
+      z-index: 20;
     }
 
     /* 반쯤 열린 문 회색 톤 스타일 */
@@ -47,6 +53,20 @@
     .cal-sunday-wide-grid {
       display: grid;
       grid-template-columns: 2.5fr repeat(6, minmax(0, 1fr));
+    }
+
+    /* 다이얼 슬라이드 휠 스크롤 스냅 */
+    .dial-wheel-scroll {
+      scroll-snap-type: y mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    .dial-wheel-item {
+      scroll-snap-align: center;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
     }
 
     @media print {
@@ -260,60 +280,61 @@
 
   <!-- ================= 팝업 모달창들 ================= -->
 
-  <!-- [팝업 2] 📸 사진올리기 -->
-  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-4 shadow-2xl border border-amber-100">
-      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100">
-        <h3 class="text-sm font-extrabold text-slate-800">📸 식판/메뉴 사진 올리기</h3>
-        <button onclick="closePhotoUploadModal()" class="text-slate-400 font-bold">✕</button>
+    <!-- [팝업 2] 📸 사진올리기 -->
+  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none">
+    <div class="bg-white rounded-2xl w-[92vw] max-w-sm p-3.5 shadow-2xl border-2 border-slate-200 flex flex-col overflow-hidden box-border">
+      <div class="flex justify-between items-center pb-2 border-b border-slate-100 shrink-0 whitespace-nowrap">
+        <h3 class="text-sm font-extrabold text-slate-800">📸 식판 사진 올리기 (최대 5장)</h3>
+        <button type="button" onclick="closePhotoUploadModal()" class="text-slate-400 hover:text-slate-600 font-bold px-1">✕</button>
       </div>
 
-      <div class="grid grid-cols-2 gap-2 my-3">
-        <input type="file" id="inputGallery" accept="image/*" class="hidden" onchange="startCropProcess(event)">
-        <button onclick="document.getElementById('inputGallery').click()" class="bg-sky-100 hover:bg-sky-200 text-sky-950 border border-sky-200 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
-          🖼️ 사진 불러오기
+      <div class="grid grid-cols-2 gap-2 my-2.5 shrink-0">
+        <input type="file" id="inputGallery" accept="image/*" multiple class="hidden" onchange="startCropProcess(event)">
+        <button type="button" onclick="document.getElementById('inputGallery').value=''; document.getElementById('inputGallery').click();" class="bg-sky-100 hover:bg-sky-200 text-sky-950 border border-sky-200 font-extrabold py-2 rounded-xl text-xs shadow-2xs active:scale-95 transition">
+          🖼️ 사진 불러오기(5장)
         </button>
         <input type="file" id="inputCamera" accept="image/*" capture="environment" class="hidden" onchange="startCropProcess(event)">
-        <button onclick="document.getElementById('inputCamera').click()" class="bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-200 font-extrabold py-2.5 rounded-xl text-xs shadow-sm">
+        <button type="button" onclick="document.getElementById('inputCamera').value=''; document.getElementById('inputCamera').click();" class="bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-200 font-extrabold py-2 rounded-xl text-xs shadow-2xs active:scale-95 transition">
           📷 사진 찍어넣기
         </button>
       </div>
 
-      <div id="cropStageArea" class="hidden space-y-2.5 my-2">
-        <div class="flex justify-between items-center text-[11px]">
-          <span class="font-extrabold text-amber-700">👆 노란 점선 사각틀 안에서 위치를 조율하세요</span>
-        </div>
-        <div id="cropViewport" class="relative w-full h-52 bg-slate-900 rounded-xl overflow-hidden flex items-center justify-center cursor-move touch-none">
-          <img id="cropTargetImg" src="" class="max-w-none select-none pointer-events-none" style="transform: translate(0px, 0px) scale(1);">
-          <div id="yellowCropBox" class="crop-yellow-box relative w-64 h-40 pointer-events-none">
-            <div class="corner-dot -top-2 -left-2"></div>
-            <div class="corner-dot -top-2 -right-2"></div>
-            <div class="corner-dot -bottom-2 -left-2"></div>
-            <div class="corner-dot -bottom-2 -right-2"></div>
+      <!-- 다중 선택 사진 전환 탭 (2장 이상 선택 시 표시) -->
+      <div id="multiPhotoQueueTabs" class="hidden flex items-center gap-1 overflow-x-auto no-scrollbar pb-1.5 shrink-0"></div>
+
+      <!-- 환한 배경 크롭 스테이지 + 노란 두꺼운 점선 4개 꼭짓점 이동 + 사진 확대/축소/이동 -->
+      <div id="cropStageArea" class="hidden flex flex-col space-y-2.5 mt-0.5">
+        <div class="flex justify-between items-center text-[10.5px] px-0.5 whitespace-nowrap">
+          <span class="font-extrabold text-amber-700">👆 사진 이동/확대 · 노란 모서리점으로 틀 조절</span>
+          <div class="flex items-center gap-1">
+            <button type="button" onclick="stepPhotoZoom(-0.12)" class="bg-slate-100 border border-slate-300 text-slate-700 font-black px-2 py-0.5 rounded text-[11px]">－축소</button>
+            <button type="button" onclick="stepPhotoZoom(0.12)" class="bg-slate-100 border border-slate-300 text-slate-700 font-black px-2 py-0.5 rounded text-[11px]">＋확대</button>
           </div>
         </div>
-        <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
-          <span class="text-[11px] font-bold text-slate-600 whitespace-nowrap">🔍 크기:</span>
-          <input id="zoomSlider" type="range" min="0.3" max="2.5" step="0.05" value="1" oninput="updateCropTransform()" class="w-full accent-amber-500">
-          <button onclick="confirmCropToFrame()" class="bg-amber-300 hover:bg-amber-400 text-amber-950 font-extrabold px-3 py-1 rounded-lg text-xs whitespace-nowrap shadow-sm">
-            ✂️ 확정
+
+        <div id="cropViewport" class="relative w-full h-56 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center touch-none select-none border-2 border-slate-300 shadow-inner">
+          <img id="cropTargetImg" src="" class="max-w-none select-none pointer-events-none" style="transform: translate(0px, 0px) scale(1); transform-origin: center center;">
+          <div id="yellowCropBox" class="crop-yellow-box absolute pointer-events-none" style="left: 24px; top: 24px; width: 240px; height: 160px;">
+            <div data-handle="nw" class="corner-dot -top-3 -left-3 cursor-nwse-resize pointer-events-auto"></div>
+            <div data-handle="ne" class="corner-dot -top-3 -right-3 cursor-nesw-resize pointer-events-auto"></div>
+            <div data-handle="sw" class="corner-dot -bottom-3 -left-3 cursor-nesw-resize pointer-events-auto"></div>
+            <div data-handle="se" class="corner-dot -bottom-3 -right-3 cursor-nwse-resize pointer-events-auto"></div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 pt-1 shrink-0">
+          <button type="button" onclick="closePhotoUploadModal()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">
+            설정 취소
+          </button>
+          <button type="button" id="savePhotoDbBtn" onclick="savePhotoToDb()" class="bg-pink-500 hover:bg-pink-600 border border-pink-400 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95">
+            설정 바로저장
           </button>
         </div>
       </div>
 
-      <div id="croppedResultArea" class="hidden space-y-2.5 pt-2 border-t border-slate-100">
-        <div class="bg-teal-50/70 p-2.5 rounded-xl border border-teal-200 flex items-center gap-3">
-          <img id="finalCroppedFrame" src="" class="w-24 h-16 object-cover rounded-lg border-2 border-teal-400 shadow-sm shrink-0">
-          <div class="text-[11px] space-y-0.5">
-            <p class="font-extrabold text-teal-950">🖼️ 사진틀 조율 완료!</p>
-            <p id="compressionInfo" class="text-[10px] text-teal-700 font-semibold"></p>
-          </div>
-        </div>
-        <div class="flex justify-end gap-1.5">
-          <button onclick="closePhotoUploadModal()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold px-3.5 py-1.5 rounded-lg text-xs">취소</button>
-          <button id="savePhotoDbBtn" onclick="savePhotoToDb()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-4 py-1.5 rounded-lg text-xs">사진 저장</button>
-        </div>
-      </div>
+      <!-- 호환용 숨김 요소 -->
+      <input id="zoomSlider" type="hidden" value="1">
+      <div id="croppedResultArea" class="hidden"><img id="finalCroppedFrame" src=""><span id="compressionInfo"></span></div>
     </div>
   </div>
 
@@ -414,7 +435,7 @@
     </div>
   </div>
 
-    <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
+      <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
   <div id="archiveModal" onclick="if(event.target===this) closeArchiveModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-2xl w-[92vw] max-w-sm max-h-[88vh] flex flex-col overflow-hidden shadow-2xl border-2 border-slate-300 box-border">
       <div class="relative h-36 bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border-b border-slate-200">
@@ -4125,13 +4146,13 @@
       reader.readAsArrayBuffer(file);
     };
 
-            populateDateDropdownOptions(getCurrentWeekSundayString());
+                populateDateDropdownOptions(getCurrentWeekSundayString());
     renderTray();
     renderArchiveGrid();
 
-    // ================= [패치 적용 v3] 모든 요구사항 순서대로 완벽 반영 =================
+    // ================= [패치 적용 v4] 모든 요구사항 순서대로 완벽 반영 =================
 
-    // [1번] 식판에 모으기 & 반찬 바구니 테두리를 더 진하고 두껍게 강화
+    // [1번 & 4번] 식판에 모으기 / 반찬바구니 테두리 강화 & 식단확정 버튼 색상/테두리 통일
     applySeasonalTrayBorder = function(dateStr) {
       const trayBox = document.getElementById('trayCardBox');
       if (trayBox) {
@@ -4140,6 +4161,10 @@
       const basketBox = document.querySelector('#basketSection > div');
       if (basketBox) {
         basketBox.className = 'bg-white p-2 rounded-xl border-[9px] border-emerald-400 shadow-sm';
+      }
+      const confirmBtn = document.querySelector('#adminActionBtns button[onclick*="confirmMenuToGrid"]');
+      if (confirmBtn) {
+        confirmBtn.className = 'bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold px-2.5 py-1 rounded-lg text-[12px] shadow-2xs transition active:scale-95 whitespace-nowrap';
       }
     };
     applySeasonalTrayBorder();
@@ -4170,8 +4195,10 @@
       setTimeout(resetScrollToTop, 60);
     };
 
-    // [2-3번] 식판 사진 최대 5장 관리 배열 (문구 없이 왼쪽부터 5장 나열 + 주소 분리 고속 저장 + 압축 0.6)
+    // ================= [2번 & 3번] 사진 최대 5장 다중 선택 + 환한 배경 + 노란 점선 4꼭짓점 드래그 조절 + 바로저장 =================
     let currentSavedPhotoIds = [];
+    let multiUploadQueue = []; // [{ src, imgW, imgH, cropX, cropY, cropScale, boxLeft, boxTop, boxW, boxH }]
+    let activeQueueIdx = 0;
 
     function syncPhotoArrayFromLegacy() {
       const dateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
@@ -4199,7 +4226,6 @@
         return;
       }
 
-      // 다른 문구 없이 왼쪽부터 사진만 최대 5장 나열
       box.className = 'mt-1.5 pt-1.5 border-t border-dashed border-slate-200 flex items-center justify-start gap-1.5 overflow-x-auto no-scrollbar py-0.5';
       box.innerHTML = '';
 
@@ -4235,70 +4261,395 @@
       await syncCurrentStateToDb();
     }
 
-    // 압축률 0.6 적용
-    confirmCropToFrame = function() {
-      const img = document.getElementById('cropTargetImg');
-      const canvas = document.createElement('canvas');
-      const outW = 600, outH = 375;
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, outW, outH);
-
-      const ratio = outW / 256;
-      ctx.save();
-      ctx.translate(outW / 2 + cropX * ratio, outH / 2 + cropY * ratio);
-      ctx.scale(cropScale * ratio, cropScale * ratio);
-      ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
-      ctx.restore();
-
-      tempCompressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
-      const approxKb = Math.round((tempCompressedDataUrl.length * 3 / 4) / 1024);
-      document.getElementById('finalCroppedFrame').src = tempCompressedDataUrl;
-      document.getElementById('compressionInfo').innerText = '압축률 0.6 적용 · 약 ' + approxKb + 'KB (고속저장)';
-      document.getElementById('croppedResultArea').classList.remove('hidden');
+    openPhotoUploadModal = async function() {
+      if (!isLeader) {
+        await showCustomAlert('사진 올리기는 관리자(팀장)만 가능합니다.', '🔒');
+        return;
+      }
+      if (currentSavedPhotoIds.length >= 5) {
+        await showCustomAlert('이미 식판에 사진 5장이 모두 저장되어 있습니다.\n기존 사진을 ✕ 버튼으로 지운 뒤 추가해주세요.', '📸');
+        return;
+      }
+      multiUploadQueue = [];
+      activeQueueIdx = 0;
+      const tabs = document.getElementById('multiPhotoQueueTabs');
+      if (tabs) { tabs.classList.add('hidden'); tabs.innerHTML = ''; }
+      document.getElementById('cropStageArea').classList.add('hidden');
+      document.getElementById('photoUploadModal').classList.remove('hidden');
     };
 
-    // 주소 분리 고속 저장 (최대 5장)
+    closePhotoUploadModal = function() {
+      multiUploadQueue = [];
+      activeQueueIdx = 0;
+      document.getElementById('photoUploadModal').classList.add('hidden');
+    };
+
+    // 폰에서 한 번에 최대 5장까지 다중 선택 처리
+    startCropProcess = async function(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+
+      const remainSlots = Math.max(0, 5 - currentSavedPhotoIds.length);
+      if (remainSlots <= 0) {
+        await showCustomAlert('식판 사진은 최대 5장까지만 저장할 수 있습니다.', '📸');
+        return;
+      }
+
+      const selectedFiles = files.slice(0, remainSlots);
+      if (files.length > remainSlots) {
+        await showCustomAlert('최대 5장 제한으로 앞의 ' + remainSlots + '장만 불러왔습니다.', 'ℹ️');
+      }
+
+      multiUploadQueue = [];
+      activeQueueIdx = 0;
+
+      const loadFilePromise = function(file) {
+        return new Promise(function(resolve) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const tempImg = new Image();
+            tempImg.onload = function() {
+              const vpW = 288, vpH = 224;
+              const initBoxW = 220, initBoxH = 148;
+              const initLeft = Math.round((vpW - initBoxW) / 2);
+              const initTop = Math.round((vpH - initBoxH) / 2);
+              const baseScale = Math.max(initBoxW / tempImg.naturalWidth, initBoxH / tempImg.naturalHeight);
+              resolve({
+                src: e.target.result,
+                imgW: tempImg.naturalWidth,
+                imgH: tempImg.naturalHeight,
+                cropX: 0,
+                cropY: 0,
+                cropScale: Number(baseScale.toFixed(3)),
+                boxLeft: initLeft,
+                boxTop: initTop,
+                boxW: initBoxW,
+                boxH: initBoxH
+              });
+            };
+            tempImg.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const item = await loadFilePromise(selectedFiles[i]);
+        multiUploadQueue.push(item);
+      }
+
+      document.getElementById('cropStageArea').classList.remove('hidden');
+      renderMultiPhotoTabs();
+      loadQueueItemToStage(0);
+    };
+
+    function renderMultiPhotoTabs() {
+      const tabs = document.getElementById('multiPhotoQueueTabs');
+      if (!tabs) return;
+      if (multiUploadQueue.length <= 1) {
+        tabs.classList.add('hidden');
+        tabs.innerHTML = '';
+        return;
+      }
+      tabs.classList.remove('hidden');
+      tabs.innerHTML = '';
+      multiUploadQueue.forEach(function(q, idx) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = (idx === activeQueueIdx)
+          ? 'px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-pink-500 text-white border border-pink-400 shrink-0 shadow-2xs'
+          : 'px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 text-slate-600 border border-slate-200 shrink-0';
+        btn.textContent = '사진 ' + (idx + 1);
+        btn.onclick = function() {
+          saveCurrentStageToQueueItem();
+          loadQueueItemToStage(idx);
+          renderMultiPhotoTabs();
+        };
+        tabs.appendChild(btn);
+      });
+    }
+
+    function saveCurrentStageToQueueItem() {
+      const q = multiUploadQueue[activeQueueIdx];
+      if (!q) return;
+      q.cropX = cropX;
+      q.cropY = cropY;
+      q.cropScale = cropScale;
+      const box = document.getElementById('yellowCropBox');
+      if (box) {
+        q.boxLeft = parseFloat(box.style.left) || 24;
+        q.boxTop = parseFloat(box.style.top) || 24;
+        q.boxW = parseFloat(box.style.width) || 220;
+        q.boxH = parseFloat(box.style.height) || 148;
+      }
+    }
+
+    function loadQueueItemToStage(idx) {
+      activeQueueIdx = idx;
+      const q = multiUploadQueue[idx];
+      if (!q) return;
+
+      const img = document.getElementById('cropTargetImg');
+      img.src = q.src;
+      cropX = q.cropX;
+      cropY = q.cropY;
+      cropScale = q.cropScale;
+
+      const vp = document.getElementById('cropViewport');
+      const box = document.getElementById('yellowCropBox');
+      if (vp && box) {
+        const vpW = vp.clientWidth || 288;
+        const vpH = vp.clientHeight || 224;
+        if (!q.centeredOnce && vpW > 0 && vpH > 0) {
+          q.boxLeft = Math.round((vpW - q.boxW) / 2);
+          q.boxTop = Math.round((vpH - q.boxH) / 2);
+          q.centeredOnce = true;
+        }
+        box.style.left = q.boxLeft + 'px';
+        box.style.top = q.boxTop + 'px';
+        box.style.width = q.boxW + 'px';
+        box.style.height = q.boxH + 'px';
+      }
+      applyImageTransformDirect();
+    }
+
+    function applyImageTransformDirect() {
+      const img = document.getElementById('cropTargetImg');
+      if (img) {
+        img.style.transform = 'translate(' + cropX + 'px, ' + cropY + 'px) scale(' + cropScale + ')';
+      }
+      saveCurrentStageToQueueItem();
+    }
+
+    function stepPhotoZoom(delta) {
+      cropScale = Math.max(0.15, Math.min(4.0, Number((cropScale + delta).toFixed(3))));
+      applyImageTransformDirect();
+    }
+
+    // 크롭 뷰포트: 사진 이동/핀치줌 + 노란 점선 4꼭짓점 핸들 드래그로 사각틀 크기 조절
+    (function setupAdvancedCropViewport() {
+      const vp = document.getElementById('cropViewport');
+      const box = document.getElementById('yellowCropBox');
+      if (!vp || !box) return;
+
+      let mode = null; // 'pan' | 'corner'
+      let activeCorner = null;
+      let startPX = 0, startPY = 0;
+      let origCropX = 0, origCropY = 0;
+      let origBox = { left: 24, top: 24, w: 220, h: 148 };
+      let activePointers = {};
+      let initialPinchDist = null;
+      let initialPinchScale = 1;
+
+      function getPinchDistance() {
+        const keys = Object.keys(activePointers);
+        if (keys.length < 2) return null;
+        const p1 = activePointers[keys[0]];
+        const p2 = activePointers[keys[1]];
+        return Math.hypot(p2.x - p1.x, p2.y - p1.y);
+      }
+
+      vp.onpointerdown = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        vp.setPointerCapture(e.pointerId);
+        activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+
+        const pointerCount = Object.keys(activePointers).length;
+        if (pointerCount >= 2) {
+          mode = 'pinch';
+          initialPinchDist = getPinchDistance();
+          initialPinchScale = cropScale;
+          return;
+        }
+
+        const handleAttr = e.target && e.target.getAttribute ? e.target.getAttribute('data-handle') : null;
+        startPX = e.clientX;
+        startPY = e.clientY;
+
+        if (handleAttr) {
+          mode = 'corner';
+          activeCorner = handleAttr;
+          origBox = {
+            left: parseFloat(box.style.left) || 24,
+            top: parseFloat(box.style.top) || 24,
+            w: parseFloat(box.style.width) || 220,
+            h: parseFloat(box.style.height) || 148
+          };
+        } else {
+          mode = 'pan';
+          origCropX = cropX;
+          origCropY = cropY;
+        }
+      };
+
+      vp.onpointermove = function(e) {
+        if (!activePointers[e.pointerId]) return;
+        e.preventDefault();
+        e.stopPropagation();
+        activePointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+
+        if (mode === 'pinch') {
+          const dist = getPinchDistance();
+          if (dist && initialPinchDist > 10) {
+            const ratio = dist / initialPinchDist;
+            cropScale = Math.max(0.15, Math.min(4.0, Number((initialPinchScale * ratio).toFixed(3))));
+            applyImageTransformDirect();
+          }
+          return;
+        }
+
+        const dx = e.clientX - startPX;
+        const dy = e.clientY - startPY;
+
+        if (mode === 'pan') {
+          cropX = origCropX + dx;
+          cropY = origCropY + dy;
+          applyImageTransformDirect();
+        } else if (mode === 'corner' && activeCorner) {
+          const vpW = vp.clientWidth || 288;
+          const vpH = vp.clientHeight || 224;
+          const minW = 70, minH = 60;
+          let newL = origBox.left;
+          let newT = origBox.top;
+          let newW = origBox.w;
+          let newH = origBox.h;
+
+          if (activeCorner.indexOf('e') >= 0) {
+            newW = Math.min(vpW - newL - 6, Math.max(minW, origBox.w + dx));
+          }
+          if (activeCorner.indexOf('s') >= 0) {
+            newH = Math.min(vpH - newT - 6, Math.max(minH, origBox.h + dy));
+          }
+          if (activeCorner.indexOf('w') >= 0) {
+            const maxLeft = origBox.left + origBox.w - minW;
+            newL = Math.max(6, Math.min(maxLeft, origBox.left + dx));
+            newW = origBox.w + (origBox.left - newL);
+          }
+          if (activeCorner.indexOf('n') >= 0) {
+            const maxTop = origBox.top + origBox.h - minH;
+            newT = Math.max(6, Math.min(maxTop, origBox.top + dy));
+            newH = origBox.h + (origBox.top - newT);
+          }
+
+          box.style.left = Math.round(newL) + 'px';
+          box.style.top = Math.round(newT) + 'px';
+          box.style.width = Math.round(newW) + 'px';
+          box.style.height = Math.round(newH) + 'px';
+          saveCurrentStageToQueueItem();
+        }
+      };
+
+      const endPointer = function(e) {
+        delete activePointers[e.pointerId];
+        if (Object.keys(activePointers).length === 0) {
+          mode = null;
+          activeCorner = null;
+          initialPinchDist = null;
+        }
+      };
+      vp.onpointerup = endPointer;
+      vp.onpointercancel = endPointer;
+
+      vp.onwheel = function(e) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.08 : -0.08;
+        stepPhotoZoom(delta);
+      };
+    })();
+
+    // 큐 아이템 1장을 노란 점선 박스 영역 기준으로 정확히 크롭 & 0.6 압축하여 DataURL 반환
+    function renderQueueItemToCompressedDataUrl(q) {
+      return new Promise(function(resolve) {
+        const tempImg = new Image();
+        tempImg.onload = function() {
+          const vp = document.getElementById('cropViewport');
+          const vpW = (vp && vp.clientWidth) ? vp.clientWidth : 288;
+          const vpH = (vp && vp.clientHeight) ? vp.clientHeight : 224;
+
+          const boxCenterX = q.boxLeft + q.boxW / 2;
+          const boxCenterY = q.boxTop + q.boxH / 2;
+          const imgCenterX = vpW / 2 + q.cropX;
+          const imgCenterY = vpH / 2 + q.cropY;
+
+          const outW = 600;
+          const outH = Math.max(300, Math.round(outW * (q.boxH / q.boxW)));
+          const canvas = document.createElement('canvas');
+          canvas.width = outW;
+          canvas.height = outH;
+
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, outW, outH);
+
+          const ratio = outW / q.boxW;
+          ctx.save();
+          ctx.translate(outW / 2 + (imgCenterX - boxCenterX) * ratio, outH / 2 + (imgCenterY - boxCenterY) * ratio);
+          ctx.scale(q.cropScale * ratio, q.cropScale * ratio);
+          ctx.drawImage(tempImg, -tempImg.naturalWidth / 2, -tempImg.naturalHeight / 2);
+          ctx.restore();
+
+          resolve(canvas.toDataURL('image/jpeg', 0.6));
+        };
+        tempImg.src = q.src;
+      });
+    }
+
+    // [설정 바로저장] 클릭 시 선택된 사진(1~5장)을 즉시 0.6 압축 및 주소 분리 병렬 고속 저장
     savePhotoToDb = async function() {
-      if (!tempCompressedDataUrl) return;
-      if (currentSavedPhotoIds.length >= 5) {
-        await showCustomAlert('식판 사진은 최대 5장까지 저장할 수 있습니다.', '📸');
+      saveCurrentStageToQueueItem();
+      if (!multiUploadQueue || multiUploadQueue.length === 0) {
+        await showCustomAlert('먼저 사진을 불러오거나 촬영해주세요.', '📸');
         return;
       }
 
       const btn = document.getElementById('savePhotoDbBtn');
-      if (btn) btn.innerText = '⏳ 고속 저장중...';
+      if (btn) {
+        btn.innerText = '⏳ 저장중...';
+        btn.disabled = true;
+      }
 
-      const newPhotoId = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5);
-      dbPhotoStore[newPhotoId] = tempCompressedDataUrl;
-      currentSavedPhotoIds.push(newPhotoId);
-      currentSavedPhotoIds = currentSavedPhotoIds.slice(0, 5);
-      currentSavedPhotoId = currentSavedPhotoIds[0] || newPhotoId;
+      try {
+        const dbPromises = [];
+        for (let i = 0; i < multiUploadQueue.length; i++) {
+          if (currentSavedPhotoIds.length >= 5) break;
+          const compressedUrl = await renderQueueItemToCompressedDataUrl(multiUploadQueue[i]);
+          const newPhotoId = 'photo_' + Date.now() + '_' + i + '_' + Math.random().toString(36).slice(2, 5);
+          dbPhotoStore[newPhotoId] = compressedUrl;
+          currentSavedPhotoIds.push(newPhotoId);
 
-      // UI 즉시 반영 후 백그라운드 병렬 고속 저장
-      renderTrayPhotosStrip();
-      if (btn) btn.innerText = '사진 저장';
-      closePhotoUploadModal();
-
-      if (db) {
-        setCloudStatusLamp('saving');
-        try {
-          await Promise.all([
-            db.collection('photos').doc(newPhotoId).set({
-              dataUrl: tempCompressedDataUrl,
-              createdAt: Date.now()
-            }),
-            syncCurrentStateToDb()
-          ]);
-          setCloudStatusLamp('connected');
-        } catch (e) {
-          console.error(e);
-          setCloudStatusLamp('disconnected');
+          if (db) {
+            dbPromises.push(
+              db.collection('photos').doc(newPhotoId).set({
+                dataUrl: compressedUrl,
+                createdAt: Date.now() + i
+              })
+            );
+          }
         }
-      } else {
-        await syncCurrentStateToDb();
+
+        currentSavedPhotoIds = currentSavedPhotoIds.slice(0, 5);
+        currentSavedPhotoId = currentSavedPhotoIds[0] || 'default_4';
+
+        renderTrayPhotosStrip();
+        closePhotoUploadModal();
+
+        if (db) {
+          setCloudStatusLamp('saving');
+          dbPromises.push(syncCurrentStateToDb());
+          await Promise.all(dbPromises);
+          setCloudStatusLamp('connected');
+        } else {
+          await syncCurrentStateToDb();
+        }
+      } catch (err) {
+        console.error(err);
+        setCloudStatusLamp('disconnected');
+      } finally {
+        if (btn) {
+          btn.innerText = '설정 바로저장';
+          btn.disabled = false;
+        }
       }
     };
 
@@ -4381,7 +4732,31 @@
       renderTrayPhotosStrip();
     };
 
-    // 식단 확정 시 첫 번째 사진(photoIds[0])이 지난 식단 기록 대표 사진으로 등록되도록 연동
+    // ================= [4번] 식단확정 버튼 터치 시 다이얼 슬라이드(전·후 일자 스크롤) 모달 오픈 및 즉시 확정 저장 =================
+    let dialSundaysList = [];
+    let dialSelectedDateStr = '';
+    let dialScrollTimer = null;
+
+    function parseSundayStringToDateObj(str) {
+      if (!str) return null;
+      const m = String(str).match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+      if (!m) return null;
+      return new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    }
+
+    function buildDialSundayOptions(centerDateStr) {
+      const baseObj = parseSundayStringToDateObj(centerDateStr) || new Date();
+      const dow = baseObj.getDay();
+      const centerSun = new Date(baseObj.getFullYear(), baseObj.getMonth(), baseObj.getDate() + (dow === 0 ? 0 : (7 - dow)));
+
+      const list = [];
+      for (let w = -12; w <= 24; w++) {
+        const d = new Date(centerSun.getFullYear(), centerSun.getMonth(), centerSun.getDate() + w * 7);
+        list.push(formatWeekOptionString(d));
+      }
+      return list;
+    }
+
     confirmMenuToGrid = async function() {
       if (!isLeader) {
         await showCustomAlert('식단 확정은 관리자(팀장)만 가능합니다.', '🔒');
@@ -4391,9 +4766,95 @@
         await showCustomAlert('식판에 메뉴를 담아주세요.', '🍱');
         return;
       }
-      const dateStr = normalizeCompactDateStr(document.getElementById('currentDate').value);
-      const firstMain = masterBasket.find(function(d) { return currentTrayIds.includes(d.id) && d.cat === '메인반찬'; }) || masterBasket.find(function(d) { return d.id === currentTrayIds[0]; });
 
+      const curDateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
+      dialSundaysList = buildDialSundayOptions(curDateStr);
+      dialSelectedDateStr = curDateStr;
+
+      const wheel = document.getElementById('confirmDialWheel');
+      if (!wheel) return;
+      wheel.innerHTML = '';
+
+      let targetIdx = 12;
+      dialSundaysList.forEach(function(dStr, idx) {
+        if (dStr === curDateStr) targetIdx = idx;
+        const item = document.createElement('div');
+        item.className = 'dial-wheel-item cursor-pointer select-none text-xs font-bold text-slate-400';
+        item.setAttribute('data-idx', String(idx));
+        item.textContent = dStr;
+        item.onclick = function() {
+          wheel.scrollTo({ top: idx * 44, behavior: 'smooth' });
+        };
+        wheel.appendChild(item);
+      });
+
+      document.getElementById('confirmMenuDialModal').classList.remove('hidden');
+      requestAnimationFrame(function() {
+        wheel.scrollTop = targetIdx * 44;
+        highlightDialActiveItem(targetIdx);
+      });
+    };
+
+    function highlightDialActiveItem(activeIdx) {
+      const clampedIdx = Math.max(0, Math.min(dialSundaysList.length - 1, activeIdx));
+      dialSelectedDateStr = dialSundaysList[clampedIdx] || getCurrentWeekSundayString();
+      const txtEl = document.getElementById('confirmDialSelectedText');
+      if (txtEl) txtEl.textContent = dialSelectedDateStr;
+
+      const wheel = document.getElementById('confirmDialWheel');
+      if (!wheel) return;
+      const children = wheel.children;
+      for (let i = 0; i < children.length; i++) {
+        const diff = Math.abs(i - clampedIdx);
+        if (diff === 0) {
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-sm font-black text-pink-950 scale-105';
+        } else if (diff === 1) {
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-xs font-bold text-slate-500 opacity-80';
+        } else {
+          children[i].className = 'dial-wheel-item cursor-pointer select-none text-[11px] font-semibold text-slate-400 opacity-45';
+        }
+      }
+    }
+
+    function onConfirmDialScroll() {
+      const wheel = document.getElementById('confirmDialWheel');
+      if (!wheel) return;
+      const idx = Math.round(wheel.scrollTop / 44);
+      highlightDialActiveItem(idx);
+
+      if (dialScrollTimer) clearTimeout(dialScrollTimer);
+      dialScrollTimer = setTimeout(function() {
+        const snapIdx = Math.round(wheel.scrollTop / 44);
+        wheel.scrollTo({ top: snapIdx * 44, behavior: 'smooth' });
+      }, 120);
+    }
+
+    function closeConfirmDialModal() {
+      const modal = document.getElementById('confirmMenuDialModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function inferSeasonFromDateStr(dateStr) {
+      const m = String(dateStr).match(/(\d{1,2})월/);
+      if (!m) return '가을';
+      const month = parseInt(m[1], 10);
+      if (month >= 3 && month <= 5) return '봄';
+      if (month >= 6 && month <= 8) return '여름';
+      if (month >= 9 && month <= 11) return '가을';
+      return '겨울';
+    }
+
+    // 다이얼에서 선택한 일자로 모든 관련 부분(식판 일자, 주간 계획, 지난 식단 기록, 달력 각주) 즉시 확정 저장
+    async function executeDialConfirmSave() {
+      const dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
+      closeConfirmDialModal();
+
+      // 1) 상단 선택 일자 및 주간 계획 동기화
+      const curDateInput = document.getElementById('currentDate');
+      if (curDateInput) curDateInput.value = dateStr;
+      populateDateDropdownOptions(dateStr);
+
+      const firstMain = masterBasket.find(function(d) { return currentTrayIds.includes(d.id) && d.cat === '메인반찬'; }) || masterBasket.find(function(d) { return d.id === currentTrayIds[0]; });
       const firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || 'default_4');
       const existingIdx = archiveList.findIndex(function(a) { return normalizeCompactDateStr(a.date) === dateStr; });
       const newArchId = existingIdx >= 0 ? String(archiveList[existingIdx].id) : String(Date.now());
@@ -4402,7 +4863,7 @@
         id: newArchId,
         date: dateStr,
         title: (firstMain ? firstMain.name.replace('(👶)', '') : '공동체') + ' 식단',
-        season: existingIdx >= 0 ? (archiveList[existingIdx].season || '가을') : '가을',
+        season: existingIdx >= 0 ? (archiveList[existingIdx].season || inferSeasonFromDateStr(dateStr)) : inferSeasonFromDateStr(dateStr),
         menuType: existingIdx >= 0 ? (archiveList[existingIdx].menuType || '육류') : '육류',
         dishIds: [...currentTrayIds],
         headcount: existingIdx >= 0 ? (archiveList[existingIdx].headcount || '300명(기준)') : '300명(기준)',
@@ -4421,17 +4882,29 @@
         archiveList.unshift(newArchive);
       }
 
+      renderTray();
       renderArchiveGrid();
+
       if (db) {
         setCloudStatusLamp('saving');
-        await db.collection('archives').doc(newArchId).set(newArchive)
-          .then(function() { setCloudStatusLamp('connected'); })
-          .catch(function() { setCloudStatusLamp('disconnected'); });
+        try {
+          await Promise.all([
+            db.collection('archives').doc(newArchId).set(newArchive),
+            syncCurrentStateToDb()
+          ]);
+          setCloudStatusLamp('connected');
+        } catch (e) {
+          console.error(e);
+          setCloudStatusLamp('disconnected');
+        }
+      } else {
+        await syncCurrentStateToDb();
       }
-      await showCustomAlert('이번 주 식단이 확정되어 지난 식단 기록에 저장되었습니다!', '✅');
-    };
 
-    // [2-1 & 2-2번] 달력 주일 가로 2.5배 ("일 | 예정,확정,완료") & 터치 분리 & 미니 모달 투명도 50%
+      await showCustomAlert('[' + dateStr + ']\n식단이 확정되어 모든 기록과 달력에 즉시 저장되었습니다!', '✅');
+    }
+
+    // ================= [1번] 달력 렌더링 및 상하 테두리 화면 내 안정화 =================
     getSundayStatusFootnote = function(sundayDateObj, isConfirmed) {
       if (!isConfirmed) return null;
       const now = new Date(), dayOfWeek = now.getDay();
@@ -4495,7 +4968,6 @@
           ? 'bg-indigo-600 text-white'
           : 'bg-rose-600 text-white';
 
-      // [2-2번] 모달창 투명도 50% (rgba(255,255,255,0.5))
       const pop = document.createElement('div');
       pop.className = 'cal-quick-preview-pop absolute right-1.5 top-6 w-[66%] rounded-xl shadow-xl border-2 border-slate-700/80 p-2.5 z-30 text-left backdrop-blur-[2px]';
       pop.style.backgroundColor = 'rgba(255, 255, 255, 0.50)';
@@ -4569,11 +5041,11 @@
         const monthCard = document.createElement('div');
         monthCard.id = 'cal-month-offset-' + offset;
         monthCard.className = (offset === 0)
-          ? 'relative px-2 py-1 rounded-xl border-2 border-pink-400 bg-pink-100/80 shadow-2xs'
-          : 'relative px-2 py-1 rounded-xl border border-slate-200 bg-white';
+          ? 'relative px-2 py-1.5 rounded-xl border-2 border-pink-400 bg-pink-100/80 shadow-2xs'
+          : 'relative px-2 py-1.5 rounded-xl border border-slate-200 bg-white';
 
         const topBar = document.createElement('div');
-        topBar.className = 'flex items-center justify-between mb-0.5 px-0.5';
+        topBar.className = 'flex items-center justify-between mb-1 px-0.5';
 
         const titleSpan = document.createElement('span');
         titleSpan.className = 'text-[13px] font-black text-slate-900 tracking-tight leading-none';
@@ -4599,7 +5071,6 @@
         }
         monthCard.appendChild(topBar);
 
-        // 주일 2.5배 + 월~토 균등 분할 그리드
         const gridDiv = document.createElement('div');
         gridDiv.className = 'cal-sunday-wide-grid gap-y-[2px] gap-x-0.5 text-center items-center';
 
@@ -4626,7 +5097,6 @@
                 ? 'border-2 border-pink-400'
                 : 'border border-slate-300';
 
-            // 가로 2.5배 주일 셀: 좌측 "일자(연한 회색 배경)" | 우측 "예정·확정·완료" 완전 분리
             const sunWrap = document.createElement('div');
             sunWrap.className = 'h-[22px] rounded-md overflow-hidden flex items-stretch bg-white ' + borderCls;
 
@@ -4681,6 +5151,7 @@
       }
     };
 
+    // [1번] 달력 오픈 시 상하 테두리가 잘리지 않도록 고정된 높이 내에서만 스크롤 위치 이동
     openCustomCalendarModal = function() {
       const modal = document.getElementById('customCalendarModal');
       if (!modal) return;
@@ -4689,21 +5160,19 @@
 
       requestAnimationFrame(function() {
         const container = document.getElementById('calendarScrollContainer');
-        const prevMonthEl = document.getElementById('cal-month-offset--1');
         const curMonthEl = document.getElementById('cal-month-offset-0');
-        const nextMonthEl = document.getElementById('cal-month-offset-1');
+        const prevMonthEl = document.getElementById('cal-month-offset--1');
 
-        if (container && prevMonthEl && curMonthEl && nextMonthEl) {
-          const threeMonthsHeight = (nextMonthEl.offsetTop + nextMonthEl.offsetHeight) - prevMonthEl.offsetTop;
-          container.style.height = (threeMonthsHeight + 10) + 'px';
-          container.scrollTop = Math.max(0, prevMonthEl.offsetTop - container.offsetTop - 2);
+        if (container && curMonthEl) {
+          const targetTop = curMonthEl.offsetTop - container.offsetTop - Math.max(8, (container.clientHeight - curMonthEl.offsetHeight) / 2);
+          container.scrollTop = Math.max(0, targetTop);
         } else if (container && prevMonthEl) {
-          container.scrollTop = Math.max(0, prevMonthEl.offsetTop - container.offsetTop - 2);
+          container.scrollTop = Math.max(0, prevMonthEl.offsetTop - container.offsetTop - 4);
         }
       });
     };
 
-    // [2-4 & 2-5번] 지난 식단 기록: 첫장 사진 표시 + 주메뉴 문자 오버랩(투명도 80%) + 3번 터치 시 오픈
+    // 지난 식단 기록: 첫장 사진 표시 + 주메뉴 문자 오버랩(투명도 80%) + 3번 터치 시 오픈
     function getFirstPhotoSrcForArchive(item) {
       if (!item) return null;
       if (Array.isArray(item.photoIds) && item.photoIds.length > 0) {
@@ -4767,7 +5236,6 @@
           ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold">👥 ' + item.headcount + '</span>'
           : '';
 
-        // 첫장 사진이 있으면 사진 위에 주메뉴 문자 오버랩(투명도 80%), 사진이 없으면 기존 플레이스홀더
         const mediaAreaHtml = firstPhotoSrc
           ? '<img src="' + firstPhotoSrc + '" class="w-full h-full object-cover">' +
             '<div class="absolute inset-0 flex items-center justify-center p-2 text-center pointer-events-none">' +
@@ -4797,7 +5265,6 @@
       });
     };
 
-    // [2-5번] 지난 식단 상세 모달 오픈 & 하단 [수정 / 삭제 / 식판에 올리기]
     openArchiveModal = function(id) {
       selectedArchiveId = String(id);
       const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
@@ -4853,7 +5320,6 @@
       document.getElementById('archiveModal').classList.remove('hidden');
     };
 
-    // 하단 1: [수정] 기능
     async function saveArchiveEditsOnly() {
       const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
       if (!item) return;
@@ -4879,7 +5345,6 @@
       await showCustomAlert('식단 기록이 수정되었습니다.', '✏️');
     }
 
-    // 하단 2: [삭제] 기능
     async function deleteSelectedArchive() {
       if (!isLeader) {
         await showCustomAlert('지난 식단 기록 삭제는 관리자(팀장)만 가능합니다.', '🔒');
@@ -4905,7 +5370,6 @@
       await showCustomAlert('해당 식단 기록이 삭제되었습니다.', '🗑️');
     }
 
-    // 하단 3: [식판에 올리기] 기능
     loadArchiveToCurrentTray = async function() {
       const item = archiveList.find(function(a) { return String(a.id) === selectedArchiveId; });
       if (!item) return;
@@ -4940,7 +5404,6 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
-    // A4 식단표 미리보기 오픈 및 A4 사이즈 PDF 공유 기능
     openPrintModal = function() {
       const dateStr = document.getElementById('currentDate').value || getCurrentWeekSundayString();
       document.getElementById('printDateText').innerText = dateStr;
@@ -5052,23 +5515,58 @@
     renderArchiveGrid();
   </script>
 
-  <!-- [팝업 10] 📅 커스텀 3개월 초밀착 상하 스크롤 달력 모달 -->
-  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2">
-    <div class="bg-white rounded-2xl max-w-sm w-full px-2.5 py-2 shadow-2xl border border-slate-200 flex flex-col max-h-[96vh]" onclick="closeCalendarQuickPreview()">
-      <div class="flex justify-between items-center pb-1 border-b border-slate-100 shrink-0 px-0.5">
-        <div class="flex items-center gap-1">
-          <h3 class="text-xs font-extrabold text-slate-800">📅 일자 선택</h3>
-          <span class="text-[10px] text-slate-400 font-semibold">(일:식판이동 | 예정·확정·완료:식판확인)</span>
-        </div>
-        <div class="flex items-center gap-1">
-          <button type="button" onclick="selectTodayWeekInCalendar()" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 text-[10px] font-extrabold px-2 py-0.5 rounded">이번주</button>
-          <button type="button" onclick="closeCustomCalendarModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-0.5 rounded text-xs font-bold leading-none">✕</button>
+  <!-- [팝업 10] 📅 커스텀 상하 스크롤 달력 모달 (상하 테두리 완벽 고정 & 상단 1열 깔끔 표시) -->
+  <div id="customCalendarModal" onclick="if(event.target===this) closeCustomCalendarModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-[92vw] max-w-sm px-3 py-2.5 shadow-2xl border-2 border-slate-300 flex flex-col max-h-[80vh] box-border" onclick="closeCalendarQuickPreview()">
+      <div class="flex justify-between items-center pb-1.5 border-b border-slate-200 shrink-0 px-0.5 whitespace-nowrap">
+        <h3 class="text-sm font-black text-slate-800 whitespace-nowrap">📅 일자 선택</h3>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="selectTodayWeekInCalendar()" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-300 text-xs font-extrabold px-2.5 py-0.5 rounded-lg">이번주</button>
+          <button type="button" onclick="closeCustomCalendarModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-0.5 rounded-lg text-xs font-bold leading-none">✕</button>
         </div>
       </div>
       <div class="cal-sunday-wide-grid gap-x-0.5 text-center text-sm font-black py-1 border-b-2 border-slate-200 bg-slate-100/90 rounded-t mt-1 shrink-0 tracking-tight">
         <span class="text-rose-600">일</span><span class="text-slate-800">월</span><span class="text-slate-800">화</span><span class="text-slate-800">수</span><span class="text-slate-800">목</span><span class="text-slate-800">금</span><span class="text-sky-600">토</span>
       </div>
-      <div id="calendarScrollContainer" onscroll="closeCalendarQuickPreview()" class="relative overflow-y-auto space-y-1 py-1 px-0.5" style="max-height: calc(94vh - 76px); -webkit-overflow-scrolling: touch;"></div>
+      <div id="calendarScrollContainer" onscroll="closeCalendarQuickPreview()" class="relative overflow-y-auto space-y-1.5 py-1.5 px-0.5" style="height: 54vh; max-height: 56vh; -webkit-overflow-scrolling: touch;"></div>
+    </div>
+  </div>
+
+  <!-- [팝업 10-B] 🎯 식단확정 일자 다이얼 슬라이드 모달 -->
+  <div id="confirmMenuDialModal" onclick="if(event.target===this) closeConfirmDialModal()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl w-[90vw] max-w-xs p-4 shadow-2xl border-[5px] border-pink-400 flex flex-col space-y-3 text-center box-border">
+      <div class="flex justify-between items-center border-b border-pink-100 pb-2">
+        <span class="text-sm font-black text-pink-950">🍱 식단확정 일자 선택</span>
+        <button type="button" onclick="closeConfirmDialModal()" class="text-slate-400 hover:text-slate-600 font-bold px-1">✕</button>
+      </div>
+
+      <p class="text-[11px] font-bold text-slate-500">다이얼을 위·아래로 스크롤하여 확정할 주일을 맞추세요</p>
+
+      <!-- 다이얼 휠 피커 영역 -->
+      <div class="relative h-[132px] bg-slate-50 rounded-2xl border border-slate-200 overflow-hidden">
+        <!-- 중앙 선택 하이라이트 가이드 바 -->
+        <div class="pointer-events-none absolute left-2 right-2 top-[44px] h-[44px] rounded-xl bg-pink-100/70 border-2 border-pink-400 z-0 shadow-2xs"></div>
+        <!-- 상하 그라데이션 페이드 -->
+        <div class="pointer-events-none absolute inset-x-0 top-0 h-9 bg-gradient-to-b from-slate-50 via-slate-50/80 to-transparent z-20"></div>
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 h-9 bg-gradient-to-t from-slate-50 via-slate-50/80 to-transparent z-20"></div>
+
+        <!-- 실제 스크롤 리스트 -->
+        <div id="confirmDialWheel" onscroll="onConfirmDialScroll()" class="dial-wheel-scroll relative z-10 h-full overflow-y-auto no-scrollbar" style="padding-top: 44px; padding-bottom: 44px;"></div>
+      </div>
+
+      <div class="bg-pink-50/80 rounded-xl px-3 py-1.5 border border-pink-200 flex items-center justify-between text-xs">
+        <span class="font-bold text-pink-800">선택 일자</span>
+        <span id="confirmDialSelectedText" class="font-black text-pink-950"></span>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2 pt-1">
+        <button type="button" onclick="closeConfirmDialModal()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">
+          취소
+        </button>
+        <button type="button" onclick="executeDialConfirmSave()" class="bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95">
+          확정 저장
+        </button>
+      </div>
     </div>
   </div>
 
