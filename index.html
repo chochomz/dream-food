@@ -5183,4 +5183,418 @@
       </div>
     </div>
   </div>
+
+<!-- ================= [패치 v8.1 START] ================= -->
+<style>
+  /* 3) 지난 식단 상세창 상하 크기 확대 & 폰트 2열 줄바꿈 방지 & 텍스트 복사 원천 차단 */
+  #archiveModal > div {
+    max-height: 95dvh !important;
+    min-height: 80dvh !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+  #archiveModal, #archiveModal * {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+  #archiveModal label {
+    white-space: nowrap !important;
+    font-size: 11px !important;
+    letter-spacing: -0.03em !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  #archiveModal input, #archiveModal textarea {
+    font-size: 11.5px !important;
+  }
+  #archiveModal input {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  #archModalDishes {
+    max-height: 82px !important;
+  }
+  #archModalDishes span {
+    white-space: nowrap !important;
+    font-size: 11px !important;
+  }
+  .arch-season-btn, .arch-type-btn {
+    white-space: nowrap !important;
+    font-size: 11px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+  }
+</style>
+<script>
+  // ================= [패치 v8.1] 크롭 고정 / 회전 1개 통합 / 사진 삭제 연동 / 상세창 확대 및 복사 차단 =================
+  (function applyPatchV81() {
+    // 1) 회전 버튼 1개로 통일 ("↻ 회전") 및 크롭창 중복 이벤트 제거(노란 꼭짓점 조절 시 사진 움직임 완벽 해결)
+    const stageArea = document.getElementById('cropStageArea');
+    if (stageArea) {
+      const controlBar = stageArea.querySelector('.flex.justify-between.items-center');
+      if (controlBar) {
+        controlBar.innerHTML =
+          '<div class="flex items-center gap-1">' +
+            '<button type="button" onclick="rotatePhotoCrop(90)" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-extrabold px-3 py-1 rounded shadow-2xs active:scale-95">↻ 회전</button>' +
+          '</div>' +
+          '<div class="flex items-center gap-1">' +
+            '<button type="button" onclick="stepPhotoZoom(-0.1)" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-black px-2.5 py-1 rounded shadow-2xs active:scale-95">－축소</button>' +
+            '<button type="button" onclick="stepPhotoZoom(0.1)" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-black px-2.5 py-1 rounded shadow-2xs active:scale-95">＋확대</button>' +
+          '</div>';
+      }
+    }
+
+    // 기존 #cropViewport에 중복 걸려있던 pointerdown/move 이벤트를 100% 초기화하기 위해 복제 교체
+    const oldVp = document.getElementById('cropViewport');
+    if (oldVp && oldVp.parentNode) {
+      const newVp = oldVp.cloneNode(true);
+      oldVp.parentNode.replaceChild(newVp, oldVp);
+
+      newVp.onclick = function(e) {
+        if (e.target && e.target.getAttribute && e.target.getAttribute('data-handle')) return;
+        if (!window.multiUploadQueue || window.multiUploadQueue.length === 0) {
+          const g = document.getElementById('inputGallery');
+          if (g) { g.value = ''; g.click(); }
+        }
+      };
+
+      let dragMode = null; // 'corner' | 'pan' | 'pinch'
+      let activeCornerHandle = null;
+      let startPointerX = 0, startPointerY = 0;
+      let startImgX = 0, startImgY = 0;
+      let startBoxRect = { left: 24, top: 24, w: 220, h: 148 };
+      let activeTouchMap = {};
+      let startPinchDist = null;
+      let startPinchScale = 1;
+
+      function calcPinchDist() {
+        const keys = Object.keys(activeTouchMap);
+        if (keys.length < 2) return null;
+        const a = activeTouchMap[keys[0]];
+        const b = activeTouchMap[keys[1]];
+        return Math.hypot(b.x - a.x, b.y - a.y);
+      }
+
+      newVp.addEventListener('pointerdown', function(e) {
+        if (!multiUploadQueue || multiUploadQueue.length === 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        try { newVp.setPointerCapture(e.pointerId); } catch (err) {}
+
+        activeTouchMap[e.pointerId] = { x: e.clientX, y: e.clientY };
+        const touchCount = Object.keys(activeTouchMap).length;
+        const box = document.getElementById('yellowCropBox');
+
+        if (touchCount >= 2) {
+          dragMode = 'pinch';
+          activeCornerHandle = null;
+          startPinchDist = calcPinchDist();
+          startPinchScale = cropScale;
+          return;
+        }
+
+        const handle = (e.target && e.target.getAttribute) ? e.target.getAttribute('data-handle') : null;
+        startPointerX = e.clientX;
+        startPointerY = e.clientY;
+
+        if (handle && box) {
+          // 노란 꼭짓점 터치 시: 오직 노란 사각틀만 조절되고 배경 사진은 절대 움직이지 않음
+          dragMode = 'corner';
+          activeCornerHandle = handle;
+          startBoxRect = {
+            left: parseFloat(box.style.left) || 24,
+            top: parseFloat(box.style.top) || 24,
+            w: parseFloat(box.style.width) || 220,
+            h: parseFloat(box.style.height) || 148
+          };
+        } else {
+          // 사진 바탕 드래그 시: 사진만 이동
+          dragMode = 'pan';
+          activeCornerHandle = null;
+          startImgX = cropX;
+          startImgY = cropY;
+        }
+      });
+
+      newVp.addEventListener('pointermove', function(e) {
+        if (!activeTouchMap[e.pointerId]) return;
+        e.preventDefault();
+        e.stopPropagation();
+        activeTouchMap[e.pointerId] = { x: e.clientX, y: e.clientY };
+
+        const box = document.getElementById('yellowCropBox');
+
+        if (dragMode === 'pinch') {
+          const dist = calcPinchDist();
+          if (dist && startPinchDist > 10) {
+            const ratio = dist / startPinchDist;
+            cropScale = Math.max(0.1, Math.min(3.5, Number((startPinchScale * ratio).toFixed(3))));
+            applyImageTransformDirect();
+          }
+          return;
+        }
+
+        const dx = e.clientX - startPointerX;
+        const dy = e.clientY - startPointerY;
+
+        if (dragMode === 'corner' && activeCornerHandle && box) {
+          const vpW = newVp.clientWidth || 288;
+          const vpH = newVp.clientHeight || 224;
+          const minW = 64, minH = 54;
+          let nL = startBoxRect.left;
+          let nT = startBoxRect.top;
+          let nW = startBoxRect.w;
+          let nH = startBoxRect.h;
+
+          if (activeCornerHandle.indexOf('e') >= 0) {
+            nW = Math.min(vpW - nL - 4, Math.max(minW, startBoxRect.w + dx));
+          }
+          if (activeCornerHandle.indexOf('s') >= 0) {
+            nH = Math.min(vpH - nT - 4, Math.max(minH, startBoxRect.h + dy));
+          }
+          if (activeCornerHandle.indexOf('w') >= 0) {
+            const maxL = startBoxRect.left + startBoxRect.w - minW;
+            nL = Math.max(4, Math.min(maxL, startBoxRect.left + dx));
+            nW = startBoxRect.w + (startBoxRect.left - nL);
+          }
+          if (activeCornerHandle.indexOf('n') >= 0) {
+            const maxT = startBoxRect.top + startBoxRect.h - minH;
+            nT = Math.max(4, Math.min(maxT, startBoxRect.top + dy));
+            nH = startBoxRect.h + (startBoxRect.top - nT);
+          }
+
+          box.style.left = Math.round(nL) + 'px';
+          box.style.top = Math.round(nT) + 'px';
+          box.style.width = Math.round(nW) + 'px';
+          box.style.height = Math.round(nH) + 'px';
+          saveCurrentStageToQueueItem();
+        } else if (dragMode === 'pan') {
+          cropX = Math.round(startImgX + dx);
+          cropY = Math.round(startImgY + dy);
+          applyImageTransformDirect();
+        }
+      });
+
+      function endPointerTrack(e) {
+        delete activeTouchMap[e.pointerId];
+        if (Object.keys(activeTouchMap).length < 2 && dragMode === 'pinch') {
+          dragMode = null;
+          startPinchDist = null;
+        }
+        if (Object.keys(activeTouchMap).length === 0) {
+          dragMode = null;
+          activeCornerHandle = null;
+          startPinchDist = null;
+        }
+      }
+
+      newVp.addEventListener('pointerup', endPointerTrack);
+      newVp.addEventListener('pointercancel', endPointerTrack);
+      newVp.addEventListener('wheel', function(e) {
+        if (!multiUploadQueue || multiUploadQueue.length === 0) return;
+        e.preventDefault();
+        stepPhotoZoom(e.deltaY < 0 ? 0.08 : -0.08);
+      }, { passive: false });
+    }
+
+    // 사진을 불러올 때 제멋대로 과도하게 확대되지 않고 크롭창 안에 사진 전체가 안정적으로 맞춰지도록 수정
+    startCropProcess = async function(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+      const file = files[0];
+      cropRotation = 0;
+
+      const vp = document.getElementById('cropViewport');
+      const vpW = (vp && vp.clientWidth) ? vp.clientWidth : 288;
+      const vpH = (vp && vp.clientHeight) ? vp.clientHeight : 224;
+      const initBoxW = Math.min(220, vpW - 32);
+      const initBoxH = Math.min(148, vpH - 32);
+
+      const item = await new Promise(function(resolve) {
+        const r = new FileReader();
+        r.onload = function(ev) {
+          const tImg = new Image();
+          tImg.onload = function() {
+            const fitScale = Math.min((vpW * 0.88) / tImg.naturalWidth, (vpH * 0.88) / tImg.naturalHeight);
+            resolve({
+              src: ev.target.result,
+              imgW: tImg.naturalWidth,
+              imgH: tImg.naturalHeight,
+              cropX: 0,
+              cropY: 0,
+              cropScale: Number(fitScale.toFixed(3)),
+              rotation: 0,
+              boxLeft: Math.round((vpW - initBoxW) / 2),
+              boxTop: Math.round((vpH - initBoxH) / 2),
+              boxW: initBoxW,
+              boxH: initBoxH,
+              centeredOnce: true
+            });
+          };
+          tImg.src = ev.target.result;
+        };
+        r.readAsDataURL(file);
+      });
+
+      multiUploadQueue = [item];
+      activeQueueIdx = 0;
+      document.getElementById('cropStageArea').classList.remove('hidden');
+      loadQueueItemToStage(0);
+    };
+
+    applyImageTransformDirect = function() {
+      const img = document.getElementById('cropTargetImg');
+      if (img) {
+        img.style.maxWidth = 'none';
+        img.style.maxHeight = 'none';
+        img.style.transformOrigin = 'center center';
+        img.style.transform = 'translate(' + cropX + 'px, ' + cropY + 'px) rotate(' + (cropRotation || 0) + 'deg) scale(' + cropScale + ')';
+      }
+      saveCurrentStageToQueueItem();
+    };
+
+    // 2) 식판에 올라온 사진을 누르면 식판 + "지난식단기록"에서도 자동으로 함께 지워지도록 연동
+    renderTrayPhotosStrip = function() {
+      const box = document.getElementById('attachedPreview');
+      if (!box) return;
+
+      const validIds = (currentSavedPhotoIds || []).filter(function(id) {
+        return id && !String(id).startsWith('default_') && dbPhotoStore[id];
+      }).slice(0, 5);
+
+      if (validIds.length === 0) {
+        box.className = 'hidden';
+        box.innerHTML = '';
+        return;
+      }
+
+      box.className = 'mt-1.5 pt-1.5 border-t border-dashed border-slate-200 flex items-center justify-start gap-2 overflow-x-auto no-scrollbar py-0.5';
+      box.innerHTML = '';
+
+      validIds.forEach(function(pid, idx) {
+        const wrap = document.createElement('div');
+        wrap.className = 'relative shrink-0 w-14 h-11 rounded-lg overflow-hidden border border-slate-300 shadow-2xs bg-slate-100 cursor-pointer active:scale-95 transition';
+        wrap.title = '터치하면 식판과 지난 식단 기록에서 사진이 함께 삭제됩니다';
+
+        const img = document.createElement('img');
+        img.src = dbPhotoStore[pid];
+        img.className = 'w-full h-full object-cover pointer-events-none';
+        wrap.appendChild(img);
+
+        if (isLeader) {
+          wrap.onclick = function(e) {
+            e.stopPropagation();
+            removePhotoFromTrayStrip(idx);
+          };
+          const delBadge = document.createElement('span');
+          delBadge.className = 'pointer-events-none absolute top-0.5 right-0.5 bg-slate-900/75 text-white text-[9px] leading-none w-4 h-4 rounded-full flex items-center justify-center font-bold';
+          delBadge.textContent = '✕';
+          wrap.appendChild(delBadge);
+        }
+
+        box.appendChild(wrap);
+      });
+    };
+
+    removePhotoFromTrayStrip = async function(index) {
+      if (!isLeader) return;
+      const ok = await showCustomConfirm('이 사진을 삭제할까요?\n(식판과 지난 식단 기록에서 모두 지워집니다)', '🗑️');
+      if (!ok) return;
+
+      const removedPhotoId = currentSavedPhotoIds[index];
+      currentSavedPhotoIds.splice(index, 1);
+      currentSavedPhotoId = currentSavedPhotoIds[0] || 'default_4';
+
+      if (removedPhotoId && dbPhotoStore[removedPhotoId]) {
+        delete dbPhotoStore[removedPhotoId];
+      }
+
+      const selDateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
+      const updatedArchives = [];
+
+      if (Array.isArray(archiveList)) {
+        archiveList.forEach(function(arch) {
+          if (!arch) return;
+          const isSameDate = (normalizeCompactDateStr(arch.date) === selDateStr);
+          const hasRemovedPhoto = (arch.photoId === removedPhotoId) || (Array.isArray(arch.photoIds) && arch.photoIds.includes(removedPhotoId));
+
+          if (isSameDate || hasRemovedPhoto) {
+            if (Array.isArray(arch.photoIds)) {
+              arch.photoIds = arch.photoIds.filter(function(id) { return id !== removedPhotoId && !String(id).startsWith('default_'); });
+            } else {
+              arch.photoIds = [];
+            }
+            if (isSameDate) {
+              arch.photoIds = [...currentSavedPhotoIds];
+            }
+            arch.photoId = (arch.photoIds && arch.photoIds.length > 0) ? arch.photoIds[0] : 'default_4';
+            updatedArchives.push(arch);
+          }
+        });
+      }
+
+      renderTrayPhotosStrip();
+      renderArchiveGrid();
+
+      if (db) {
+        setCloudStatusLamp('saving');
+        try {
+          const promises = [syncCurrentStateToDb()];
+          if (removedPhotoId && !String(removedPhotoId).startsWith('default_')) {
+            promises.push(db.collection('photos').doc(String(removedPhotoId)).delete().catch(function() {}));
+          }
+          updatedArchives.forEach(function(arch) {
+            promises.push(db.collection('archives').doc(String(arch.id)).set(arch, { merge: true }));
+          });
+          await Promise.all(promises);
+          setCloudStatusLamp('connected');
+        } catch (err) {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
+        }
+      } else {
+        await syncCurrentStateToDb();
+      }
+    };
+
+    // 3) 지난 식단 길게 누른 창(#archiveModal)에서 텍스트 복사/선택 메뉴가 절대 뜨지 않도록 잠금
+    const archModal = document.getElementById('archiveModal');
+    if (archModal) {
+      ['contextmenu', 'selectstart', 'dragstart', 'copy', 'cut'].forEach(function(evtName) {
+        archModal.addEventListener(evtName, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }, { capture: true });
+      });
+
+      const inputs = archModal.querySelectorAll('input, textarea');
+      inputs.forEach(function(inp) {
+        inp.setAttribute('autocomplete', 'off');
+        inp.setAttribute('autocorrect', 'off');
+        inp.setAttribute('autocapitalize', 'off');
+        inp.setAttribute('spellcheck', 'false');
+
+        let touchStartTime = 0;
+        inp.addEventListener('touchstart', function() {
+          touchStartTime = Date.now();
+        }, { passive: true });
+
+        inp.addEventListener('touchend', function(e) {
+          if (Date.now() - touchStartTime > 320) {
+            e.preventDefault();
+            inp.blur();
+          }
+        });
+      });
+    }
+
+    renderTrayPhotosStrip();
+    renderArchiveGrid();
+  })();
+</script>
+<!-- ================= [패치 v8.1 END] ================= -->
 </body></html>
