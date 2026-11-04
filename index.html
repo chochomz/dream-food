@@ -101,7 +101,9 @@
       }
       .no-print { display: none !important; }
     }
-  </style>
+  .no-longpress-copy, .no-longpress-copy * { -webkit-touch-callout: none !important; -webkit-user-select: none !important; user-select: none !important; }
+    #archiveModal input, #archiveModal textarea { -webkit-touch-callout: none !important; }
+    </style>
 </head>
 <body class="max-w-md mx-auto bg-white min-h-screen shadow-xl relative border-x border-slate-100">
 
@@ -298,59 +300,48 @@
   <!-- ================= 팝업 모달창들 ================= -->
 
         <!-- [팝업 2] 📸 사진올리기 -->
-  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none overscroll-none">
-    <div class="bg-white rounded-2xl w-[92vw] max-w-sm p-3.5 shadow-2xl border-2 border-slate-200 flex flex-col overflow-hidden box-border">
-      <div class="flex justify-between items-center pb-2 border-b border-slate-100 shrink-0 whitespace-nowrap">
-        <h3 class="text-sm font-extrabold text-slate-800">📸 식판 사진 올리기 (최대 5장)</h3>
+  <div id="photoUploadModal" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-3 touch-none select-none overscroll-none">
+  <div class="bg-white rounded-2xl w-[92vw] max-w-sm p-3.5 shadow-2xl border-2 border-pink-300 flex flex-col overflow-hidden box-border">
+    <div class="flex justify-between items-center pb-2 border-b border-slate-100 shrink-0 whitespace-nowrap">
+      <h3 class="text-sm font-black text-slate-800">📸 식판 사진 올리기</h3>
+      <div class="flex items-center gap-1.5">
+        <button type="button" onclick="document.getElementById('inputGallery').value=''; document.getElementById('inputGallery').click();" class="bg-pink-50 hover:bg-pink-100 text-pink-800 border border-pink-200 font-extrabold px-2 py-0.5 rounded-lg text-[11px]">🔄 사진변경</button>
         <button type="button" onclick="closePhotoUploadModal()" class="text-slate-400 hover:text-slate-600 font-bold px-1">✕</button>
       </div>
-
-      <div class="grid grid-cols-2 gap-2 my-2.5 shrink-0">
-        <input type="file" id="inputGallery" accept="image/*" multiple class="hidden" onchange="startCropProcess(event)">
-        <button type="button" onclick="document.getElementById('inputGallery').value=''; document.getElementById('inputGallery').click();" class="bg-sky-100 hover:bg-sky-200 text-sky-950 border border-sky-200 font-extrabold py-2 rounded-xl text-xs shadow-2xs active:scale-95 transition">
-          🖼️ 사진 불러오기(5장)
-        </button>
-        <input type="file" id="inputCamera" accept="image/*" capture="environment" class="hidden" onchange="startCropProcess(event)">
-        <button type="button" onclick="document.getElementById('inputCamera').value=''; document.getElementById('inputCamera').click();" class="bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-200 font-extrabold py-2 rounded-xl text-xs shadow-2xs active:scale-95 transition">
-          📷 사진 찍어넣기
-        </button>
-      </div>
-
-      <div id="multiPhotoQueueTabs" class="hidden flex items-center gap-1 overflow-x-auto no-scrollbar pb-1.5 shrink-0"></div>
-
-      <div id="cropStageArea" class="hidden flex flex-col space-y-2.5 mt-0.5">
-        <div class="flex justify-between items-center text-[10.5px] px-0.5 whitespace-nowrap">
-          <span class="font-extrabold text-amber-700">👆 사진 이동/확대 · 노란 모서리점으로 틀 조절</span>
-          <div class="flex items-center gap-1">
-            <button type="button" onclick="stepPhotoZoom(-0.12)" class="bg-slate-100 border border-slate-300 text-slate-700 font-black px-2 py-0.5 rounded text-[11px]">－축소</button>
-            <button type="button" onclick="stepPhotoZoom(0.12)" class="bg-slate-100 border border-slate-300 text-slate-700 font-black px-2 py-0.5 rounded text-[11px]">＋확대</button>
-          </div>
-        </div>
-
-        <div id="cropViewport" class="relative w-full h-56 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center touch-none select-none border-2 border-slate-300 shadow-inner">
-          <img id="cropTargetImg" src="" class="max-w-none select-none pointer-events-none" style="transform: translate(0px, 0px) scale(1); transform-origin: center center;">
-          <div id="yellowCropBox" class="crop-yellow-box absolute pointer-events-none" style="left: 24px; top: 24px; width: 240px; height: 160px;">
-            <div data-handle="nw" class="corner-dot -top-3 -left-3 cursor-nwse-resize pointer-events-auto"></div>
-            <div data-handle="ne" class="corner-dot -top-3 -right-3 cursor-nesw-resize pointer-events-auto"></div>
-            <div data-handle="sw" class="corner-dot -bottom-3 -left-3 cursor-nesw-resize pointer-events-auto"></div>
-            <div data-handle="se" class="corner-dot -bottom-3 -right-3 cursor-nwse-resize pointer-events-auto"></div>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-2 pt-1 shrink-0">
-          <button type="button" onclick="closePhotoUploadModal()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">
-            설정 취소
-          </button>
-          <button type="button" id="savePhotoDbBtn" onclick="savePhotoToDb()" class="bg-pink-500 hover:bg-pink-600 border border-pink-400 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95">
-            설정 바로저장
-          </button>
-        </div>
-      </div>
-
-      <input id="zoomSlider" type="hidden" value="1">
-      <div id="croppedResultArea" class="hidden"><img id="finalCroppedFrame" src=""><span id="compressionInfo"></span></div>
     </div>
+    <input type="file" id="inputGallery" accept="image/*" class="hidden" onchange="startCropProcess(event)">
+    <input type="file" id="inputCamera" accept="image/*" capture="environment" class="hidden" onchange="startCropProcess(event)">
+    <div id="multiPhotoQueueTabs" class="hidden"></div>
+    <div id="cropStageArea" class="flex flex-col space-y-2 mt-2">
+      <div class="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-lg border border-slate-200 text-[11px] whitespace-nowrap">
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="rotatePhotoCrop(-90)" class="bg-white border border-slate-300 text-slate-800 font-extrabold px-2 py-0.5 rounded shadow-2xs active:scale-95">↺ 좌회전</button>
+          <button type="button" onclick="rotatePhotoCrop(90)" class="bg-white border border-slate-300 text-slate-800 font-extrabold px-2 py-0.5 rounded shadow-2xs active:scale-95">↻ 우회전</button>
+        </div>
+        <div class="flex items-center gap-1">
+          <button type="button" onclick="stepPhotoZoom(-0.12)" class="bg-white border border-slate-300 text-slate-800 font-black px-2 py-0.5 rounded shadow-2xs active:scale-95">－축소</button>
+          <button type="button" onclick="stepPhotoZoom(0.12)" class="bg-white border border-slate-300 text-slate-800 font-black px-2 py-0.5 rounded shadow-2xs active:scale-95">＋확대</button>
+        </div>
+      </div>
+      <p class="text-[10.5px] font-extrabold text-amber-700 text-center whitespace-nowrap">👆 두손가락 확대·이동 / 노란 모서리점으로 크롭틀 조절</p>
+      <div id="cropViewport" onclick="if(!multiUploadQueue || multiUploadQueue.length===0){document.getElementById('inputGallery').value=''; document.getElementById('inputGallery').click();}" class="relative w-full h-56 bg-slate-100 rounded-xl overflow-hidden flex items-center justify-center touch-none select-none border-2 border-slate-300 shadow-inner">
+        <img id="cropTargetImg" src="" class="max-w-none select-none pointer-events-none" style="transform: translate(0px, 0px) rotate(0deg) scale(1); transform-origin: center center;">
+        <div id="yellowCropBox" class="crop-yellow-box absolute pointer-events-none" style="left: 24px; top: 24px; width: 240px; height: 160px;">
+          <div data-handle="nw" class="corner-dot -top-3 -left-3 cursor-nwse-resize pointer-events-auto"></div>
+          <div data-handle="ne" class="corner-dot -top-3 -right-3 cursor-nesw-resize pointer-events-auto"></div>
+          <div data-handle="sw" class="corner-dot -bottom-3 -left-3 cursor-nesw-resize pointer-events-auto"></div>
+          <div data-handle="se" class="corner-dot -bottom-3 -right-3 cursor-nwse-resize pointer-events-auto"></div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-1 shrink-0">
+        <button type="button" onclick="closePhotoUploadModal()" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-700 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">설정 취소</button>
+        <button type="button" id="savePhotoDbBtn" onclick="savePhotoToDb()" class="bg-pink-500 hover:bg-pink-600 border border-pink-400 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95">설정 바로저장</button>
+      </div>
+    </div>
+    <input id="zoomSlider" type="hidden" value="1">
+    <div id="croppedResultArea" class="hidden"><img id="finalCroppedFrame" src=""><span id="compressionInfo"></span></div>
   </div>
+</div>
 
   <!-- [팝업 3] 식판 메뉴 세부사항 설정 -->
   <div id="dishDetailModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
@@ -451,7 +442,7 @@
 
           <!-- [팝업 6] 지난 식단 확인/수정 및 식판으로 불러오기 -->
   <div id="archiveModal" onclick="if(event.target===this) closeArchiveModal()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2.5 overscroll-none">
-    <div class="bg-white rounded-2xl w-[92vw] max-w-sm max-h-[82dvh] flex flex-col overflow-hidden shadow-2xl border-[4px] border-teal-400 box-border">
+    <div class="bg-white rounded-2xl w-[92vw] max-w-sm max-h-[90dvh] flex flex-col overflow-hidden shadow-2xl border-[4px] border-teal-400 box-border">
       <div class="relative h-16 bg-slate-100 flex items-center justify-center overflow-hidden shrink-0 border-b border-slate-200">
         <img id="archModalImg" src="" class="w-full h-full object-cover">
         <div id="archModalNoPhotoText" class="hidden inset-0 flex items-center justify-center p-2 text-center select-none"><span class="text-slate-300 font-black text-base tracking-tight leading-snug break-keep"></span></div>
@@ -486,7 +477,7 @@
 
         <div id="archModalDishes" class="flex flex-wrap gap-1 max-h-12 overflow-y-auto py-0.5"></div>
 
-        <div id="archExtraFieldsBox" class="space-y-1 pt-1 border-t border-slate-100 text-[10px]">
+        <div id="archExtraFieldsBox" class="space-y-2 pt-1.5 border-t border-slate-100 text-[11.5px]">
           <div class="grid grid-cols-2 gap-1">
             <div>
               <label class="font-bold text-slate-600 block mb-0.5">식수인원</label>
@@ -499,11 +490,11 @@
           </div>
           <div>
             <label class="font-bold text-slate-600 block mb-0.5">주간 장보기 재료 목록</label>
-            <textarea id="archEditRawIng" rows="2" class="w-full border border-slate-200 rounded-lg px-2 py-1 text-slate-700 bg-slate-50/60 leading-tight focus:outline-none focus:border-teal-500"></textarea>
+            <textarea id="archEditRawIng" rows="3" class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 font-semibold text-[12px] text-slate-800 bg-slate-50/60 leading-snug focus:outline-none focus:border-teal-500"></textarea>
           </div>
           <div>
             <label class="font-bold text-slate-600 block mb-0.5">양념 및 소모품/비품</label>
-            <input id="archEditSupplies" type="text" class="w-full border border-slate-200 rounded-lg px-2 py-0.5 text-slate-700 bg-slate-50/60 focus:outline-none focus:border-teal-500">
+            <input id="archEditSupplies" type="text" class="w-full border border-slate-200 rounded-lg px-2.5 py-1 font-semibold text-[12px] text-slate-800 bg-slate-50/60 focus:outline-none focus:border-teal-500">
           </div>
         </div>
       </div>
@@ -778,1197 +769,11 @@
       }
     };
 
-    const defaultBasketSeed = [
-  {
-    "id": "b01",
-    "cat": "밥/국",
-    "name": "쌀밥(백미/검정쌀)",
-    "kg": "쌀 기본취사",
-    "recipe": "쌀, 검정쌀 혼합 또는 백미 취사",
-    "note": "주간 기본 주식"
-  },
-  {
-    "id": "b02",
-    "cat": "밥/국",
-    "name": "돼지고기김치찌개",
-    "kg": "돼지고기 6kg, 두부 2~3판",
-    "recipe": "돼지고기(찌개용/앞다리살) 6kg, 두부 2~3판, 대파 1단, 양파 1망, 간마늘 1봉지",
-    "note": "싱싱정육점 구매"
-  },
-  {
-    "id": "b03",
-    "cat": "밥/국",
-    "name": "콩나물국(👶)",
-    "kg": "콩나물 2~3박스",
-    "recipe": "콩나물 2~3박스, 대파 1단, 양파(대) 1망, 간마늘 1봉지",
-    "note": "맑은국/기본국"
-  },
-  {
-    "id": "b04",
-    "cat": "밥/국",
-    "name": "황태김치콩나물국",
-    "kg": "황태 1kg, 콩나물 1박스",
-    "recipe": "황태 1kg 1봉지, 콩나물 1박스, 대파 1봉지, 간마늘 1봉지",
-    "note": "시원한 해장국풍"
-  },
-  {
-    "id": "b05",
-    "cat": "밥/국",
-    "name": "카레라이스(👶)",
-    "kg": "카레용돈육 7~8kg, 카레 5~6봉",
-    "recipe": "오뚜기카레(1kg) 순한맛4~5+약간매운맛1, 감자 10~15kg, 단호박 1박스, 당근 10~13개, 양파 1망, 우유 2L, 버터 1개",
-    "note": "싱싱정육점 카레용 고기"
-  },
-  {
-    "id": "b06",
-    "cat": "밥/국",
-    "name": "미소된장국(👶)",
-    "kg": "미소된장 3kg, 두부/유부",
-    "recipe": "미소된장 3kg(3개), 유부 1봉지, 두부 2판, 흙쪽파 1단, 국물멸치, 국간장",
-    "note": "카레/비빔밥/볶음밥 짝꿍국"
-  },
-  {
-    "id": "b07",
-    "cat": "밥/국",
-    "name": "근대된장국",
-    "kg": "근대 2박스, 된장 1개",
-    "recipe": "근대 2박스, 된장 1개, 대파 1봉지",
-    "note": "봄철 된장국"
-  },
-  {
-    "id": "b08",
-    "cat": "밥/국",
-    "name": "소고기미역국(👶)",
-    "kg": "소고기 7~8kg, 미역 1~2봉",
-    "recipe": "소고기(국거리) 7~8kg, 미역 1~2봉지, 간마늘 1봉지",
-    "note": "싱싱정육점 국거리"
-  },
-  {
-    "id": "b09",
-    "cat": "밥/국",
-    "name": "비빔밥",
-    "kg": "돈육/우육민스 8~10kg, 나물류",
-    "recipe": "당근 40~50개, 애호박(상) 3박스, 콩나물 5박스, 상추 1박스, 민스 8~10kg, 계란 7~10판, 김가루 1kg, 고추장 1통",
-    "note": "인기 일품식단"
-  },
-  {
-    "id": "b10",
-    "cat": "밥/국",
-    "name": "육개장",
-    "kg": "소고기 8kg, 고사리 5kg",
-    "recipe": "소고기국거리 8kg, 고사리(1kg) 5봉, 숙주 1박스, 느타리 2박스, 대파 2관, 무 1개",
-    "note": "부활절 특식 국"
-  },
-  {
-    "id": "b11",
-    "cat": "밥/국",
-    "name": "짜장밥(👶)",
-    "kg": "짜장돈육 7~9kg, 짜장 4~6봉",
-    "recipe": "짜장가루(1kg) 4~6봉, 춘장 2개, 짜장용고기 7~9kg, 감자 10~20kg, 양배추 2망, 애호박 2박스, 양파 1망",
-    "note": "싱싱정육점 뒷다리살"
-  },
-  {
-    "id": "b12",
-    "cat": "밥/국",
-    "name": "계란국(👶)",
-    "kg": "계란 4~18판, 팽이버섯 15개",
-    "recipe": "계란, 팽이버섯 15개, 대파 작은묶음 1봉지, 간마늘",
-    "note": "짜장밥/덮밥 짝꿍국"
-  },
-  {
-    "id": "b13",
-    "cat": "밥/국",
-    "name": "순두부찌개",
-    "kg": "순두부 60~100개, 돈민스 5~6kg",
-    "recipe": "순두부 60~100개, 돼지고기민스 5~6kg, 대파 1단, 양파 1망, 고춧가루, 국물멸치, 새우젓",
-    "note": "얼큰 찌개"
-  },
-  {
-    "id": "b14",
-    "cat": "밥/국",
-    "name": "볶음밥(👶)",
-    "kg": "햄 2개, 당근 15개, 양파 1망",
-    "recipe": "햄 2개, 당근 15개, 양파 1망, 흙쪽파 2단, 쌀",
-    "note": "어린이 선호 메뉴"
-  },
-  {
-    "id": "b15",
-    "cat": "밥/국",
-    "name": "소고기무국(👶)",
-    "kg": "소고기 8kg, 무 10kg",
-    "recipe": "소고기국거리 8kg(어린이용 별도시 2kg), 무 10kg(또는 2개), 대파 1단, 간마늘",
-    "note": "어린이 겸용 맑은국"
-  },
-  {
-    "id": "b16",
-    "cat": "밥/국",
-    "name": "김치콩나물국",
-    "kg": "콩나물 1박스, 김치",
-    "recipe": "콩나물 1박스, 대파 1단, 신김치",
-    "note": "깔끔한 국"
-  },
-  {
-    "id": "b17",
-    "cat": "밥/국",
-    "name": "오이미역냉국",
-    "kg": "미역 1봉, 오이 1박스, 육수 12개",
-    "recipe": "미역 1봉지, 백오이(상) 1박스, 동치미육수 12개, 얼음 3봉지, 물(2L) 18~24개, 2배식초",
-    "note": "여름철 시원한 냉국"
-  },
-  {
-    "id": "b18",
-    "cat": "밥/국",
-    "name": "마늘쫑돼지고기덮밥",
-    "kg": "돼지다짐육 35kg, 마늘쫑 10kg",
-    "recipe": "돼지고기다짐육 35kg, 마늘쫑 10kg, 대파 1단, 간장 1병, 매실 1병, 간마늘 1봉지",
-    "note": "싱싱정육점+하나로마트"
-  },
-  {
-    "id": "b19",
-    "cat": "밥/국",
-    "name": "꽃게된장찌개",
-    "kg": "꽃게, 애호박 1박스, 무 2개",
-    "recipe": "꽃게(싱싱정육점 제공), 애호박(상) 1박스, 무 큰거 2개, 표고버섯 1봉, 두부, 대파 1단",
-    "note": "가을 별미 찌개"
-  },
-  {
-    "id": "b20",
-    "cat": "밥/국",
-    "name": "두부미소장국(👶)",
-    "kg": "미소된장 3개, 두부 3판",
-    "recipe": "미소된장 3개, 두부 3판, 흙쪽파 작은묶음 1단",
-    "note": "부드러운 장국"
-  },
-  {
-    "id": "b21",
-    "cat": "밥/국",
-    "name": "아욱된장국",
-    "kg": "아욱 2박스, 두부 2판, 된장 1통",
-    "recipe": "아욱 2박스, 두부 2판, 된장 1통, 대파 1단",
-    "note": "가을 구수한 된장국"
-  },
-  {
-    "id": "m01",
-    "cat": "메인반찬",
-    "name": "참치김치전",
-    "kg": "참치캔 2통, 부침5+튀김5봉",
-    "recipe": "참치캔 2통, 부침가루 5봉, 튀김가루 5봉, 김치, 양파(대) 1망, 물 2L 6개",
-    "note": "바삭한 김치전"
-  },
-  {
-    "id": "m02",
-    "cat": "메인반찬",
-    "name": "어묵볶음(👶)",
-    "kg": "어묵 4~6봉지(2.8kg규격)",
-    "recipe": "어묵 4~6봉지, 양파 1망, 대파 1단, 간마늘 1봉지, 식용유, 물엿, 굴소스",
-    "note": "인기 반찬"
-  },
-  {
-    "id": "m03",
-    "cat": "메인반찬",
-    "name": "돈까스샐러드(👶)",
-    "kg": "한입돈까스 15봉, 양배추/치커리",
-    "recipe": "한입돈까스 15봉지, 양배추 1망, 적양배추 2통, 치커리 1kg, 방울토마토 5kg 1박스, 올리브유, 사과식초, 매실청",
-    "note": "부활절 특식 메인"
-  },
-  {
-    "id": "m04",
-    "cat": "메인반찬",
-    "name": "토마토스파게티(👶)",
-    "kg": "스파게티면 25개, 소스 5통",
-    "recipe": "소고기민스 3kg, 토마토소스 5통, 스파게티면 25개, 양파, 마늘",
-    "note": "어린이주일 특식"
-  },
-  {
-    "id": "m05",
-    "cat": "메인반찬",
-    "name": "너비아니구이샐러드(👶)",
-    "kg": "너비아니 10봉, 양배추/치커리",
-    "recipe": "너비아니 10봉지, 양배추 1망, 치커리 반박스, 매실액 1병",
-    "note": "어린이주일 특식"
-  },
-  {
-    "id": "m06",
-    "cat": "메인반찬",
-    "name": "잡채",
-    "kg": "당면(1kg) 6봉, 잡채돈육 3kg",
-    "recipe": "당면(1kg) 6봉지, 잡채용돼지고기 3kg, 시금치(4kg) 1박스, 목이버섯 500g 1봉, 당근 10개, 양파 1망",
-    "note": "잔치 메인요리"
-  },
-  {
-    "id": "m07",
-    "cat": "메인반찬",
-    "name": "탕평채",
-    "kg": "청포묵(3kg) 10판, 계란 2판",
-    "recipe": "청포묵(3kg) 10판, 계란 2판, 당근 5개, 국내산 표고버섯 1봉, 부추 1단, 김",
-    "note": "정갈한 전통 메뉴"
-  },
-  {
-    "id": "m08",
-    "cat": "메인반찬",
-    "name": "제육볶음",
-    "kg": "돼지고기 40kg, 불고기양념",
-    "recipe": "돼지고기 40kg, 돼지불고기양념 1병, 갈아먹는배(1.5L) 2병, 양파 1망, 대파 1단, 간마늘 2봉",
-    "note": "성도님 정육점 제공"
-  },
-  {
-    "id": "m09",
-    "cat": "메인반찬",
-    "name": "두부김치",
-    "kg": "두부(3kg) 10판, 볶음김치",
-    "recipe": "두부(3kg) 10판, 대파 1단, 햇양파(대) 1망, 간마늘 1봉지",
-    "note": "담백한 메인"
-  },
-  {
-    "id": "m10",
-    "cat": "메인반찬",
-    "name": "돼지등뼈김치찜",
-    "kg": "돼지등뼈 80kg, 묵은지",
-    "recipe": "돼지등뼈 80kg, 대파 1단, 양파 1망, 간마늘 2봉, 미림, 올리고당, 설탕, 참치액젓",
-    "note": "싱싱정육점 제공"
-  },
-  {
-    "id": "m11",
-    "cat": "메인반찬",
-    "name": "두부구이(고추장아찌간장)",
-    "kg": "두부(3kg) 12판",
-    "recipe": "두부(3kg) 12판 노릇하게 부침, 고추장아찌간장 양념장 곁들임",
-    "note": "고소한 두부요리"
-  },
-  {
-    "id": "k01",
-    "cat": "어린이반찬",
-    "name": "계란말이(👶)",
-    "kg": "계란 14~16판(7~8묶음)",
-    "recipe": "계란 2판짜리 7~8묶음(14~16판), 쪽파 1묶음, 당근 5개, 대파",
-    "note": "어린이·어른 모두 인기"
-  },
-  {
-    "id": "k02",
-    "cat": "어린이반찬",
-    "name": "수제동그랑땡(👶)",
-    "kg": "동그랑땡 28봉지",
-    "recipe": "동그랑땡 28봉지 노릇하게 구움, 케챂 곁들임",
-    "note": "어린이 필수 반찬"
-  },
-  {
-    "id": "k03",
-    "cat": "어린이반찬",
-    "name": "비엔나야채볶음(👶)",
-    "kg": "칼집비엔나 12~15봉, 피망 15개",
-    "recipe": "칼집비엔나 12~15봉, 피망 15개(또는 브로콜리), 양파 1망, 케챂 2통, 돈까스소스(470g) 1~2개",
-    "note": "케첩+돈까스소스 황금비율"
-  },
-  {
-    "id": "k04",
-    "cat": "어린이반찬",
-    "name": "메추리알장조림(👶)",
-    "kg": "메추리알 15봉, 새송이/감자",
-    "recipe": "메추리알 15개(봉), 콩알새송이버섯 3봉(또는 감자), 꽈리고추 2봉, 흑설탕 500g 1봉, 간장",
-    "note": "단짠 장조림"
-  },
-  {
-    "id": "k05",
-    "cat": "어린이반찬",
-    "name": "햄감자채볶음(👶)",
-    "kg": "감자 20kg, 햄(1kg) 2개",
-    "recipe": "감자 20kg, 햄(1kg) 2개, 당근 2개, 양파(대) 1망, 맛소금",
-    "note": "고소한 감자볶음"
-  },
-  {
-    "id": "k06",
-    "cat": "어린이반찬",
-    "name": "조미김(어린이용)(👶)",
-    "kg": "김 여유분 상비",
-    "recipe": "어린이 및 전교인 배식용 김",
-    "note": "매주 기본 상비"
-  },
-  {
-    "id": "n01",
-    "cat": "일반/김치",
-    "name": "배추김치",
-    "kg": "기본 배식량",
-    "recipe": "주간 기본 배추김치",
-    "note": "매주 필수 제공"
-  },
-  {
-    "id": "n02",
-    "cat": "일반/김치",
-    "name": "시금치나물",
-    "kg": "남해초(벌크) 11~12kg",
-    "recipe": "남해시금치(벌크) 1박스(8kg)+3~4kg 추가(총 11~12kg), 간마늘, 참기름, 통깨",
-    "note": "남해초 벌크 구매"
-  },
-  {
-    "id": "n03",
-    "cat": "일반/김치",
-    "name": "취나물무침",
-    "kg": "취나물 3박스",
-    "recipe": "취나물 3박스 삶아 양념 무침 (참치액젓, 간마늘)",
-    "note": "향긋한 봄나물"
-  },
-  {
-    "id": "n04",
-    "cat": "일반/김치",
-    "name": "세발나물무침",
-    "kg": "세발나물(4kg) 2박스",
-    "recipe": "세발나물 4kg짜리 2박스 상큼하게 무침",
-    "note": "제철 나물"
-  },
-  {
-    "id": "n05",
-    "cat": "일반/김치",
-    "name": "사과봄동샐러드",
-    "kg": "봄동(10kg) 1박스, 사과 1봉",
-    "recipe": "봄동 1박스(10kg), 사과 1봉지, 매실청 1병",
-    "note": "350명 식수시 봄동 추가필요"
-  },
-  {
-    "id": "n06",
-    "cat": "일반/김치",
-    "name": "부추오이무침",
-    "kg": "백오이(상) 2.5~3박스, 부추 2단",
-    "recipe": "백오이(상) 2.5~3박스, 부추 2단, 양파, 고춧가루, 2배식초, 간마늘",
-    "note": "아삭한 무침"
-  },
-  {
-    "id": "n07",
-    "cat": "일반/김치",
-    "name": "깻잎장아찌/깻잎순나물",
-    "kg": "깻잎순(4kg) 3~4박스",
-    "recipe": "깻잎순(4kg) 3~4박스, 들깨가루 1봉지, 대파, 간마늘 (또는 예비반찬 깻잎장아찌)",
-    "note": "고소한 들깨 나물"
-  },
-  {
-    "id": "n08",
-    "cat": "일반/김치",
-    "name": "콩나물무침",
-    "kg": "콩나물 4~5박스",
-    "recipe": "콩나물 4~5박스, 당근 2~10개, 대파 1단, 간마늘, 고춧가루, 맛소금",
-    "note": "단골 기본 나물"
-  },
-  {
-    "id": "n09",
-    "cat": "일반/김치",
-    "name": "단무지",
-    "kg": "단무지 4개(봉)",
-    "recipe": "짜장밥 배식용 단무지 4개",
-    "note": "짜장밥 필수 반찬"
-  },
-  {
-    "id": "n10",
-    "cat": "일반/김치",
-    "name": "미역줄기볶음",
-    "kg": "미역줄기 3박스",
-    "recipe": "미역줄기 3박스, 양파 1망, 당근 3개, 간마늘",
-    "note": "깔끔한 해초 반찬"
-  },
-  {
-    "id": "n11",
-    "cat": "일반/김치",
-    "name": "양배추샐러드",
-    "kg": "양배추 1망, 적양배추 1개, 치커리",
-    "recipe": "양배추 1망, 적양배추 1개, 치커리 1박스, 마요네즈(식당용) 1개, 매실 1병",
-    "note": "상큼한 샐러드"
-  },
-  {
-    "id": "n12",
-    "cat": "일반/김치",
-    "name": "열무된장무침",
-    "kg": "열무(4kg) 5박스, 된장 1통",
-    "recipe": "열무(4kg) 5박스, 된장(900g) 1통, 간마늘 1봉지",
-    "note": "여름 별미 나물"
-  },
-  {
-    "id": "n13",
-    "cat": "일반/김치",
-    "name": "무우생채",
-    "kg": "무우 1박스",
-    "recipe": "무우 1박스 채썰어 고춧가루 1봉지, 대파, 간마늘 무침",
-    "note": "가을 무생채"
-  },
-  {
-    "id": "n14",
-    "cat": "일반/김치",
-    "name": "들기름김치볶음",
-    "kg": "배추김치, 들기름",
-    "recipe": "잘 익은 김치에 들기름과 설탕 약간 넣어 볶음",
-    "note": "감칠맛 반찬"
-  },
-  {
-    "id": "s01",
-    "cat": "사이드메뉴",
-    "name": "상추쌈",
-    "kg": "상추(4kg) 1박스",
-    "recipe": "상추(4kg) 1박스 깨끗이 세척 (제육볶음 쌈채소)",
-    "note": "제육볶음과 세트"
-  },
-  {
-    "id": "s02",
-    "cat": "사이드메뉴",
-    "name": "샤인머스켓(디저트)(👶)",
-    "kg": "샤인머스켓 적당량",
-    "recipe": "알알이 세척하여 후식 배식",
-    "note": "9월 계절 과일 디저트"
-  }
-];
-
-    const defaultArchiveSeed = [
-  {
-    "id": "261108",
-    "date": "2026년 11월8일(2주)",
-    "title": "짜장밥 & 계란국",
-    "season": "가을",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b11",
-      "b12",
-      "n09",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "짜장가루(1kg) 5봉지 / 춘장 2개 / 짜장용고기 7키로(싱싱정육점구매) / 감자 15키로 / 양파 1망 / 애호박(상) 2박스 / 양배추 2망 / 대파작은묶음 1봉지 / 계란 16판 / 팽이버섯 15개 / 단무지 4개 / 간마늘 1봉지 / 쌀",
-    "supplies": "춘장, 간마늘",
-    "likes": 9,
-    "photoId": "default_4",
-    "createdAt": 20261108
-  },
-  {
-    "id": "261101",
-    "date": "2026년 11월1일(1주)",
-    "title": "콩나물국 & 비엔나야채볶음",
-    "season": "가을",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b03",
-      "k03",
-      "n14",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "콩나물 3박스 / 대파 1단 / 양파(대) 1망 / 칼집낸비엔나 13봉지 / 피망 15개 / 김 / 쌀",
-    "supplies": "케챂(1kg) 2통 / 돈가스소스(470g) 2병",
-    "likes": 8,
-    "photoId": "default_1",
-    "createdAt": 20261101
-  },
-  {
-    "id": "261025",
-    "date": "2026년 10월25일(4주)",
-    "title": "아욱된장국 & 동그랑땡",
-    "season": "가을",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b21",
-      "k02",
-      "n13",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "아욱 2박스 / 두부 2판 / 된장 1통 / 동그랑땡 28봉지 / 대파 1단 / 무우 1박스 / 김 / 쌀",
-    "supplies": "고춧가루 1봉지 / 식용유 / 니트릴장갑(M)",
-    "likes": 8,
-    "photoId": "default_2",
-    "createdAt": 20261025
-  },
-  {
-    "id": "261018",
-    "date": "2026년 10월18일(3주)",
-    "title": "비빔밥 & 두부미소장국",
-    "season": "가을",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b09",
-      "b20",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "미소된장 3개 / 두부 3판 / 흙쪽파 작은묶음 1단 / 당근 40개 / 애호박(상) 3박스 / 콩나물 5박스 / 상추 1박스 / 소고기민스 10kg(싱싱정육점 제공) / 계란 10판 / 쌀",
-    "supplies": "고추장(6.5kg) 1통 / 양조간장 1병 / 물엿 1병",
-    "likes": 10,
-    "photoId": "default_3",
-    "createdAt": 20261018
-  },
-  {
-    "id": "261011",
-    "date": "2026년 10월11일(2주)",
-    "title": "카레라이스 & 양배추샐러드",
-    "season": "가을",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b05",
-      "b06",
-      "n11",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "돼지고기 카레용 7kg(싱싱정육점구매) / 오뚜기카레가루(1kg) 순한맛 5봉지 / 감자 15키로 / 단호박 1박스 / 당근 10개 / 양파 1망 / 유부 1봉지 / 우유 2리터 / 버터 1개 / 양배추 1망 / 미소된장 3kg / 흙쪽파(작은묶음) 1단 / 쌀",
-    "supplies": "고무장갑(L)",
-    "likes": 9,
-    "photoId": "default_4",
-    "createdAt": 20261011
-  },
-  {
-    "id": "261004",
-    "date": "2026년 10월4일(1주)",
-    "title": "돼지고기김치찌개 & 계란말이",
-    "season": "가을",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b02",
-      "k01",
-      "n08",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "돼지고기 6키로(싱싱정육점구매) / 두부 3판 / 계란 16판 / 대파 1단 / 양파(대) 1망 / 쪽파 1묶음 / 당근 5개 / 콩나물 5박스 / 김 / 쌀 / 검정쌀",
-    "supplies": "기본 양념",
-    "likes": 9,
-    "photoId": "default_1",
-    "createdAt": 20261004
-  },
-  {
-    "id": "260920",
-    "date": "2026년 9월20일(3주)",
-    "title": "소고기미역국 & 두부구이",
-    "season": "가을",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b08",
-      "m11",
-      "n11",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "미역 큰거 한봉지 / 소고기(싱싱정육점 제공) / 두부(3kg) 12판 / 양배추 1망 / 적양배추 1개 / 치커리 1박스 / 마요네즈 1개 / 김 / 쌀",
-    "supplies": "고무장갑 / 냅킨",
-    "likes": 9,
-    "photoId": "default_2",
-    "createdAt": 20260920
-  },
-  {
-    "id": "260913",
-    "date": "2026년 9월13일(2주)",
-    "title": "순두부찌개 & 브로콜리비엔나볶음",
-    "season": "가을",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b13",
-      "k03",
-      "n11",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "순두부 100개 / 돼지고기민스 5키로(싱싱정육점구매) / 양파(대) 1망 / 대파작은묶음 1봉지 / 비엔나 12봉지 / 브로콜리(따로구매) / 양배추 1망 / 적양배추 1개 / 치커리 1박스 / 김 / 쌀",
-    "supplies": "마요네즈(식당용) 1개 / 간마늘 1봉지 / 고춧가루 1봉지 / 국물멸치 / 새우젓 / 미림",
-    "likes": 8,
-    "photoId": "default_3",
-    "createdAt": 20260913
-  },
-  {
-    "id": "260906",
-    "date": "2026년 9월6일(1주)",
-    "title": "짜장밥 & 샤인머스켓 디저트",
-    "season": "가을",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b11",
-      "b12",
-      "n09",
-      "n01",
-      "s02"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "디저트 샤인머스켓 제공",
-    "rawIngredients": "짜장가루 4봉지 / 춘장 2개 / 짜장용고기 8키로(싱싱정육점구매) / 감자 20키로 / 양파 1망 / 애호박(상) 2박스 / 양배추 2망 / 대파작은묶음 1봉지 / 계란 16판 / 팽이버섯 15개 / 단무지 4개 / 쌀 / 샤인머스켓",
-    "supplies": "춘장",
-    "likes": 10,
-    "photoId": "default_4",
-    "createdAt": 20260906
-  },
-  {
-    "id": "260830",
-    "date": "2026년 8월30일(5주)",
-    "title": "꽃게된장찌개 & 메추리알감자조림",
-    "season": "여름",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b19",
-      "k04",
-      "n08",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "꽃게(싱싱정육점제공) / 애호박(상) 1박스 / 무우 큰거 2개 / 국산 표고버섯 1봉지 / 콩나물 4박스 / 대파 1단 / 양파(대) 1망 / 당근 1개 / 메추리알 15봉지 / 꽈리고추 2봉지 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "헤어캡",
-    "likes": 9,
-    "photoId": "default_1",
-    "createdAt": 20260830
-  },
-  {
-    "id": "260823",
-    "date": "2026년 8월23일(4주)",
-    "title": "돼지고기김치찌개 & 어묵볶음",
-    "season": "여름",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b02",
-      "m02",
-      "n07",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "돼지고기앞다리살 6kg(싱싱정육점구매) / 두부 3판 / 어묵(2.8kg) 4봉지 / 깻잎순(4kg) 4박스 / 대파 1단 / 양파 1망 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "기본 양념",
-    "likes": 8,
-    "photoId": "default_2",
-    "createdAt": 20260823
-  },
-  {
-    "id": "260719",
-    "date": "2026년 7월19일(3주)",
-    "title": "카레라이스 & 미소장국",
-    "season": "여름",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b05",
-      "b06",
-      "n11",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "오뚜기카레가루(1kg) 순한맛 5봉지 / 감자 15키로 / 단호박 1박스 / 양파 1망 / 돼지고기 카레용 7kg(싱싱정육점구매) / 유부 1봉지 / 양배추 1망 / 적양배추 1개 / 우유 2리터 / 버터 1개 / 미소된장 3kg / 쌀",
-    "supplies": "우유 / 버터",
-    "likes": 9,
-    "photoId": "default_3",
-    "createdAt": 20260719
-  },
-  {
-    "id": "260712",
-    "date": "2026년 7월12일(2주)",
-    "title": "미역오이냉국 & 비엔나볶음",
-    "season": "여름",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b01",
-      "b17",
-      "k03",
-      "n07",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "미역 1봉지 / 오이(상) 1박스 / 동치미육수 12개 / 물(2L) 24개 / 얼음 3봉지 / 칼집비엔나소시지 13봉지 / 깻잎순(4kg) 3박스 / 들깨가루 1봉지 / 대파 1봉지 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "식당용케챂 1개 / 돈가스소스 1개 / 마스크(대형) / 동원 참치액 / 물엿 / 2배식초",
-    "likes": 8,
-    "photoId": "default_4",
-    "createdAt": 20260712
-  },
-  {
-    "id": "260705",
-    "date": "2026년 7월5일(1주)",
-    "title": "미역국 & 햄감자채볶음",
-    "season": "여름",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b08",
-      "k05",
-      "n06",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "소고기국거리 7키로(싱싱정육점구매) / 미역 1봉지 / 햄(1kg) 2개 / 감자 20키로 / 당근 2개 / 양파(대) 1망 / 대파 작은묶음 1봉지 / 부추 2단 / 오이(상) 2박스 / 김 / 쌀",
-    "supplies": "고춧가루 / 물엿",
-    "likes": 8,
-    "photoId": "default_1",
-    "createdAt": 20260705
-  },
-  {
-    "id": "260628",
-    "date": "2026년 6월28일(4주)",
-    "title": "짜장밥 & 계란국",
-    "season": "여름",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b11",
-      "b12",
-      "n09",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "짜장가루 6봉지 / 춘장 2개 / 돼지고기짜장용 8키로(싱싱정육점구입) / 감자 20키로 / 양배추 2망 / 양파 1망 / 애호박(상) 2박스 / 계란 18판 / 대파작은묶음 1봉지 / 팽이버섯 15개 / 간마늘 1봉지 / 단무지 4개 / 쌀",
-    "supplies": "식기세척기세제(가루)",
-    "likes": 9,
-    "photoId": "default_2",
-    "createdAt": 20260628
-  },
-  {
-    "id": "260621",
-    "date": "2026년 6월21일(3주)",
-    "title": "돼지등뼈김치찜 & 소고기무국",
-    "season": "여름",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "m10",
-      "b15",
-      "n08",
-      "n11",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "어린이용 소고기무국 별도 준비",
-    "rawIngredients": "돼지등뼈(80kg 싱싱정육점 제공) / 소고기국거리 2kg / 무우 2개 / 양배추 1망 / 적양배추 1개 / 대파 1단 / 양파 1망 / 콩나물 5박스 / 간마늘 2봉지",
-    "supplies": "미림 / 올리고당 / 설탕 / 참치액젓 / 마요네즈 / 식기세척기세제 / Vix / Pb 바닥세척제",
-    "likes": 10,
-    "photoId": "default_3",
-    "createdAt": 20260621
-  },
-  {
-    "id": "260614",
-    "date": "2026년 6월14일(2주)",
-    "title": "콩나물국 & 두부김치 & 열무된장무침",
-    "season": "여름",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b03",
-      "m09",
-      "n12",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "콩나물 2박스 / 두부(3kg) 10판 / 열무(4kg) 5박스 / 대파 1단 / 햇양파(대) 1망 / 간마늘 1봉지 / 된장(900g) 1통 / 김 / 쌀",
-    "supplies": "된장(900g) 1통",
-    "likes": 8,
-    "photoId": "default_4",
-    "createdAt": 20260614
-  },
-  {
-    "id": "260607",
-    "date": "2026년 6월7일(1주)",
-    "title": "마늘쫑돼지고기덮밥 & 계란국",
-    "season": "여름",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b18",
-      "b12",
-      "n11",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "돼지고기다짐육 35kg(싱싱정육점구매) / 마늘쫑 10kg(하나로마트구매) / 대파 1단 / 계란 4판 / 팽이버섯 15개 / 양배추 1망 / 적양배추 1개 / 김 / 쌀",
-    "supplies": "마요네즈 1개 / 매실 1병 / 간장 1병 / 간마늘 1봉지",
-    "likes": 9,
-    "photoId": "default_1",
-    "createdAt": 20260607
-  },
-  {
-    "id": "260531",
-    "date": "2026년 5월31일(5주)",
-    "title": "제육볶음 & 오이미역냉국 & 상추쌈",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b17",
-      "m08",
-      "s01",
-      "n08",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "돼지고기 40kg 성도님 제공",
-    "rawIngredients": "돼지고기 40kg(정육점 성도님 제공) / 상추(4kg) 1박스 / 미역 1봉지 / 백오이(상) 1박스 / 동치미육수 12개 / 얼음 3봉지 / 물(2L) 18개 / 양파 1망 / 대파 1단 / 콩나물 5박스 / 당근 10개 / 간마늘 2봉지 / 김 / 쌀",
-    "supplies": "돼지불고기양념 1병 / 갈아먹는배(1.5L) 2병 / 맛소금",
-    "likes": 10,
-    "photoId": "default_2",
-    "createdAt": 20260531
-  },
-  {
-    "id": "260524",
-    "date": "2026년 5월24일(4주)",
-    "title": "김치콩나물국 & 탕평채 & 동그랑땡",
-    "season": "봄",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b16",
-      "m07",
-      "k02",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "콩나물 1박스 / 청포묵(3kg) 10판 / 계란 2판 / 당근 5개 / 표고버섯(국내산) 1봉지 / 부추 1단 / 동그랑땡 28봉지 / 양배추 1망 / 적양배추 1개 / 대파 1단 / 김(여유분있음) / 쌀",
-    "supplies": "올리고당 / 매실 / 냅킨 / 고무장갑(L) 오른쪽만 10개",
-    "likes": 8,
-    "photoId": "default_3",
-    "createdAt": 20260524
-  },
-  {
-    "id": "260517",
-    "date": "2026년 5월17일(3주)",
-    "title": "카레라이스 & 미소장국",
-    "season": "봄",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b05",
-      "b06",
-      "n11",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "오뚜기카레가루(1kg) 약간매운맛1+순한맛5 / 감자 10키로 1박스 / 단호박 1박스 / 양파 1망 / 돼지고기 카레용 8키로 / 유부 1봉지 / 흙쪽파 1단 / 양배추 1망 / 우유 2리터 / 버터 1개 / 미소된장 3키로 / 쌀",
-    "supplies": "우유 2L / 버터 1개",
-    "likes": 9,
-    "photoId": "default_4",
-    "createdAt": 20260517
-  },
-  {
-    "id": "260510",
-    "date": "2026년 5월10일(2주)",
-    "title": "소고기무국 & 잡채 & 오이부추무침",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b15",
-      "m06",
-      "n06",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "김 여유분 있음",
-    "rawIngredients": "소고기국거리 8키로 / 무우 10키로 / 대파 1단 / 당면(1kg) 6봉지 / 당근 10개 / 양파 1망 / 시금치(4kg) 1박스 / 잡채용돼지고기 3키로 / 목이버섯(500g) 1봉지 / 부추 2단 / 백오이(상) 2.5박스 / 간마늘 1봉지 / 쌀 / 김",
-    "supplies": "고춧가루 / 2배식초 1병",
-    "likes": 10,
-    "photoId": "default_1",
-    "createdAt": 20260510
-  },
-  {
-    "id": "260503",
-    "date": "2026년 5월3일(1주)",
-    "title": "볶음밥 & 토마토스파게티 & 너비아니",
-    "season": "봄",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b14",
-      "b06",
-      "m04",
-      "m05",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "어린이주일 특식 구성",
-    "rawIngredients": "미소된장 3개 / 유부 1봉지 / 햄 2개 / 당근 15개 / 양파 1망 / 흙쪽파 2단 / 양배추 1망 / 치커리 반박스 / 소고기민스 3키로 / 토마토소스 5통 / 스파게티면 25개 / 너비아니 10봉지 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "매실액 1병 / 토마토소스 5통",
-    "likes": 10,
-    "photoId": "default_2",
-    "createdAt": 20260503
-  },
-  {
-    "id": "260426",
-    "date": "2026년 4월26일(4주)",
-    "title": "순두부찌개 & 메추리알장조림",
-    "season": "봄",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b13",
-      "k04",
-      "n10",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "순두부 60개 / 돼지고기민스 6키로 / 대파 1단 / 메추리알 15개 / 콩알새송이버섯 3봉지 / 꽈리고추 2봉지 / 미역줄기 3박스 / 양파 1망 / 당근 3개 / 양배추 1망 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "흑설탕(500g) 1봉지",
-    "likes": 8,
-    "photoId": "default_3",
-    "createdAt": 20260426
-  },
-  {
-    "id": "260419",
-    "date": "2026년 4월19일(3주)",
-    "title": "짜장밥 & 계란국 & 단무지",
-    "season": "봄",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b11",
-      "b12",
-      "n09",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "짜장가루(1kg) 6봉지 / 춘장 2개 / 양배추 2망 / 양파 1망 / 애호박(상) 2박스 / 감자(10kg) 1박스 / 돼지고기뒷다리살(짜장용) 9kg / 단무지 4개 / 계란 2묶음짜리 9묶음 / 팽이버섯 15개 / 대파 작은거 1봉지 / 김 / 쌀 / 간마늘 1봉지",
-    "supplies": "매실액 1병",
-    "likes": 9,
-    "photoId": "default_4",
-    "createdAt": 20260419
-  },
-  {
-    "id": "260412",
-    "date": "2026년 4월12일(2주)",
-    "title": "돼지고기김치찌개 & 비엔나볶음",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b02",
-      "k03",
-      "n08",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "돼지고기(찌개용) 6키로 / 두부 3판 / 비엔나 15봉지 / 양파 1망 / 피망 15개 / 콩나물 5박스 / 당근 2개 / 대파 1단 / 쌀",
-    "supplies": "케챂 2통 / 돈까스소스(470g) 1개 / 고춧가루 / 맛소금 / 냅킨 / 철수세미",
-    "likes": 8,
-    "photoId": "default_1",
-    "createdAt": 20260412
-  },
-  {
-    "id": "260405",
-    "date": "2026년 4월5일(1주)",
-    "title": "[부활절] 육개장 & 돈까스샐러드",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b10",
-      "m03",
-      "n07",
-      "k06",
-      "n01"
-    ],
-    "headcount": "350명(부활절)",
-    "leftoverNote": "부활절 특식",
-    "rawIngredients": "소고기국거리 8키로 / 고사리(1kg) 5봉지 / 숙주 1박스 / 느타리버섯 2박스 / 대파 2관 / 무우 1개 / 한입돈까스 15봉지 / 양배추 1망 / 적양배추 2통 / 치커리 1키로 / 방울토마토(5kg) 1박스 / 깻잎장아찌 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "올리브유(엑스트라버진) 1병 / 사과식초 1병 / 매실청 1병 / 미림 / 라텍스장갑(S) / 마스크",
-    "likes": 10,
-    "photoId": "default_2",
-    "createdAt": 20260405
-  },
-  {
-    "id": "260329",
-    "date": "2026년 3월29일(5주)",
-    "title": "비빔밥 & 미소장국",
-    "season": "봄",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b09",
-      "b06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "특이사항 없음",
-    "rawIngredients": "미소된장 3개 / 유부 1봉지 / 흙쪽파 1단 / 당근 50개 / 애호박(상) 3박스 / 콩나물 5박스 / 상추 1박스 / 돼지고기 민스 8키로 / 김가루(1kg) 1봉지 / 계란 2묶음짜리 7묶음 / 간마늘 1봉지 / 쌀",
-    "supplies": "고추장 1통",
-    "likes": 9,
-    "photoId": "default_3",
-    "createdAt": 20260329
-  },
-  {
-    "id": "260322",
-    "date": "2026년 3월22일(4주)",
-    "title": "미역국 & 어묵볶음 & 부추오이무침",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b08",
-      "m02",
-      "n06",
-      "n07",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "예비반찬 깻잎장아찌 준비",
-    "rawIngredients": "소고기(국거리) 8키로 / 미역 2봉지 / 어묵 6봉지 / 백오이(상) 3박스 / 부추 2단 / 양파 1망 / 간마늘 1봉지 / 김 / 쌀 / 예비반찬 깻잎장아찌",
-    "supplies": "식용유 1통 / 물엿 / 굴소스",
-    "likes": 8,
-    "photoId": "default_4",
-    "createdAt": 20260322
-  },
-  {
-    "id": "260315",
-    "date": "2026년 3월15일(3주)",
-    "title": "돼지고기김치찌개 & 계란말이 & 시금치",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b02",
-      "k01",
-      "n02",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "시금치 1kg 증량(총12kg)",
-    "rawIngredients": "돼지고기찌개용(앞다리살) 6키로 / 두부 2판 / 계란 2묶음짜리 8묶음 / 남해초(벌크) 1박스+4키로 추가(총 12키로) / 대파 1관 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "냅킨 / 라텍스장갑(소)",
-    "likes": 9,
-    "photoId": "default_1",
-    "createdAt": 20260315
-  },
-  {
-    "id": "260308",
-    "date": "2026년 3월8일(2주)",
-    "title": "근대된장국 & 사과봄동샐러드 & 비엔나",
-    "season": "봄",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b07",
-      "n05",
-      "k03",
-      "k06",
-      "n01"
-    ],
-    "headcount": "350명",
-    "leftoverNote": "봄동 부족 (다음엔 10kg 이상 준비 요망)",
-    "rawIngredients": "근대 2박스 / 사과 1봉지 / 봄동 1박스(10키로) / 칼집낸비엔나 13봉지 / 양파 1망 / 피망 15개 / 대파 1봉지 / 된장 1개 / 김 / 쌀 / 검정쌀",
-    "supplies": "케챂 2봉지 / 돈까스소스(470g) 1개 / 매실청 1병",
-    "likes": 8,
-    "photoId": "default_2",
-    "createdAt": 20260308
-  },
-  {
-    "id": "260301",
-    "date": "2026년 3월1일(1주)",
-    "title": "카레라이스 & 미소된장국",
-    "season": "봄",
-    "menuType": "일품/간편",
-    "dishIds": [
-      "b05",
-      "b06",
-      "k06",
-      "n01"
-    ],
-    "headcount": "300명",
-    "leftoverNote": "카레 10인분정도 남음",
-    "rawIngredients": "오뚜기카레가루 1키로짜리(약간매운맛1 순한맛4) / 감자(10키로) 1박스 / 단호박 1박스 / 당근 13개 / 양파 1망 / 대파 1봉지 / 돼지고기 카레용 8키로 / 우유 2리터 / 버터 1개 / 미소된장 3키로 / 두부 2판 / 쌀",
-    "supplies": "국물멸치 / 국간장 / 라텍스장갑(M)",
-    "likes": 9,
-    "photoId": "default_3",
-    "createdAt": 20260301
-  },
-  {
-    "id": "260222",
-    "date": "2026년 2월22일(4주)",
-    "title": "황태김치콩나물국 & 동그랑땡 & 세발나물",
-    "season": "겨울",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b04",
-      "k02",
-      "n04",
-      "k06",
-      "n01"
-    ],
-    "headcount": "290명",
-    "leftoverNote": "동그랑땡 2봉지 남음, 세발나물 남음",
-    "rawIngredients": "황태 1키로 한봉지 / 콩나물 1박스 / 동그랑땡 28봉지 / 세발나물 4키로짜리 2박스 / 대파 1봉지 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "기본 양념",
-    "likes": 8,
-    "photoId": "default_4",
-    "createdAt": 20260222
-  },
-  {
-    "id": "260208",
-    "date": "2026년 2월8일(2주)",
-    "title": "콩나물국 & 참치김치전 & 취나물",
-    "season": "겨울",
-    "menuType": "해물/두부",
-    "dishIds": [
-      "b01",
-      "b03",
-      "m01",
-      "n03",
-      "k06",
-      "n01"
-    ],
-    "headcount": "280명",
-    "leftoverNote": "취나물 30인분 남음, 김치전 30인분 남음",
-    "rawIngredients": "콩나물 2박스 / 참치캔 2통 / 부침가루 5봉지 / 튀김가루 5봉지 / 양파(대) 1망 / 대파 1관 / 간마늘 1봉지 / 취나물 3박스 / 김 / 쌀 / 물 2리터짜리 6개",
-    "supplies": "양념(참치액젓 미림) / 티슈 / 마스크 / 종이컵(커피용) / 고무장갑(L) / 니트릴장갑(S) / 부탄가스",
-    "likes": 8,
-    "photoId": "default_1",
-    "createdAt": 20260208
-  },
-  {
-    "id": "260201",
-    "date": "2026년 2월1일(1주)",
-    "title": "돼지고기김치찌개 & 계란말이 & 시금치",
-    "season": "겨울",
-    "menuType": "육류",
-    "dishIds": [
-      "b01",
-      "b02",
-      "k01",
-      "n02",
-      "k06",
-      "n01"
-    ],
-    "headcount": "325명",
-    "leftoverNote": "계란말이 6말이, 시금치 10명분, 김치찌개 10명분 남음",
-    "rawIngredients": "돼지고기찌개용 6키로 / 두부 2판 / 계란 2판짜리 7묶음 / 남해시금치(벌크) 1박스(8키로)+3키로 추가(총 11키로) / 대파 1관 / 양파(중) 1망 / 간마늘 1봉지 / 김 / 쌀",
-    "supplies": "기본 양념",
-    "likes": 9,
-    "photoId": "default_2",
-    "createdAt": 20260201
-  }
-];
+    const defaultBasketSeed = [];
+    const defaultArchiveSeed = [];
 
     let masterBasket = [...defaultBasketSeed];
-    let currentTrayIds = ['b11', 'b12', 'n09', 'n01'];
+    let currentTrayIds = [];
     let archiveList = [...defaultArchiveSeed];
 
     let cachedGateAuth = {
@@ -6107,6 +4912,188 @@
     renderBasket();
     renderArchiveGrid();
 
+  
+    // ================= [패치 v8.0] 요청사항 4가지 완벽 적용 =================
+    let cropRotation = 0;
+
+    // 1) 식판에 모으기 메뉴 폰트 +1pt 확대(13.5px) 및 상하 여백 슬림화
+    const _baseRenderTrayV8 = renderTray;
+    renderTray = function() {
+      _baseRenderTrayV8();
+      const tray = document.getElementById('currentTray');
+      if (tray) {
+        tray.className = 'flex flex-wrap gap-x-1 gap-y-[3px] min-h-[30px] items-center py-0';
+        Array.from(tray.children).forEach(function(chip) {
+          if (chip.tagName === 'DIV') {
+            chip.className = chip.className.replace('px-2', 'px-1.5').replace('py-0.5', 'py-[1px]').replace('text-xs', 'text-[13.5px] leading-tight font-extrabold');
+            const sp = chip.querySelector('button span');
+            if (sp) sp.className = 'text-[11px] font-semibold opacity-75 ml-0.5';
+          }
+        });
+      }
+    };
+
+    // 2) 사진올리기 터치 시 즉시 크롭창 오픈 & 1장 사진 선택 직행 + 좌/우 회전 + 지난식단기록 즉시 저장
+    openPhotoUploadModal = async function() {
+      if (!isLeader) return await showCustomAlert('사진 올리기는 관리자(팀장)만 가능합니다.', '🔒');
+      cropRotation = 0;
+      multiUploadQueue = [];
+      activeQueueIdx = 0;
+      document.getElementById('cropStageArea').classList.remove('hidden');
+      document.getElementById('photoUploadModal').classList.remove('hidden');
+      const gInput = document.getElementById('inputGallery');
+      if (gInput) { gInput.value = ''; gInput.click(); }
+    };
+
+    startCropProcess = async function(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+      const file = files[0];
+      cropRotation = 0;
+      const item = await new Promise(function(resolve) {
+        const r = new FileReader();
+        r.onload = function(ev) {
+          const tImg = new Image();
+          tImg.onload = function() {
+            const vpW = 288, vpH = 224, initBoxW = 220, initBoxH = 148;
+            const baseScale = Math.max(initBoxW / tImg.naturalWidth, initBoxH / tImg.naturalHeight);
+            resolve({
+              src: ev.target.result, imgW: tImg.naturalWidth, imgH: tImg.naturalHeight,
+              cropX: 0, cropY: 0, cropScale: Number(baseScale.toFixed(3)), rotation: 0,
+              boxLeft: Math.round((vpW - initBoxW) / 2), boxTop: Math.round((vpH - initBoxH) / 2),
+              boxW: initBoxW, boxH: initBoxH
+            });
+          };
+          tImg.src = ev.target.result;
+        };
+        r.readAsDataURL(file);
+      });
+      multiUploadQueue = [item];
+      activeQueueIdx = 0;
+      document.getElementById('cropStageArea').classList.remove('hidden');
+      loadQueueItemToStage(0);
+    };
+
+    window.rotatePhotoCrop = function(deg) {
+      if (!multiUploadQueue || multiUploadQueue.length === 0) return;
+      cropRotation = (cropRotation + deg) % 360;
+      multiUploadQueue[0].rotation = cropRotation;
+      applyImageTransformDirect();
+    };
+
+    applyImageTransformDirect = function() {
+      const img = document.getElementById('cropTargetImg');
+      if (img) img.style.transform = 'translate(' + cropX + 'px, ' + cropY + 'px) rotate(' + cropRotation + 'deg) scale(' + cropScale + ')';
+      saveCurrentStageToQueueItem();
+    };
+
+    renderQueueItemToCompressedDataUrl = function(q) {
+      return new Promise(function(resolve) {
+        const tempImg = new Image();
+        tempImg.onload = function() {
+          const vp = document.getElementById('cropViewport');
+          const vpW = (vp && vp.clientWidth) ? vp.clientWidth : 288;
+          const vpH = (vp && vp.clientHeight) ? vp.clientHeight : 224;
+          const boxCenterX = q.boxLeft + q.boxW / 2, boxCenterY = q.boxTop + q.boxH / 2;
+          const imgCenterX = vpW / 2 + q.cropX, imgCenterY = vpH / 2 + q.cropY;
+          const outW = 640, outH = Math.max(300, Math.round(outW * (q.boxH / q.boxW)));
+          const canvas = document.createElement('canvas'); canvas.width = outW; canvas.height = outH;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, outW, outH);
+          const ratio = outW / q.boxW, rotRad = ((cropRotation || 0) * Math.PI) / 180;
+          ctx.save();
+          ctx.translate(outW / 2 + (imgCenterX - boxCenterX) * ratio, outH / 2 + (imgCenterY - boxCenterY) * ratio);
+          ctx.rotate(rotRad);
+          ctx.scale(q.cropScale * ratio, q.cropScale * ratio);
+          ctx.drawImage(tempImg, -tempImg.naturalWidth / 2, -tempImg.naturalHeight / 2);
+          ctx.restore();
+          resolve(canvas.toDataURL('image/jpeg', 0.65));
+        };
+        tempImg.src = q.src;
+      });
+    };
+
+    savePhotoToDb = async function() {
+      saveCurrentStageToQueueItem();
+      if (!multiUploadQueue || multiUploadQueue.length === 0) {
+        const gInput = document.getElementById('inputGallery');
+        if (gInput) { gInput.value = ''; gInput.click(); }
+        return;
+      }
+      const btn = document.getElementById('savePhotoDbBtn');
+      if (btn) { btn.innerText = '⏳ 저장중...'; btn.disabled = true; }
+      try {
+        const compressedUrl = await renderQueueItemToCompressedDataUrl(multiUploadQueue[0]);
+        const newPhotoId = 'photo_' + Date.now() + '_' + Math.random().toString(36).slice(2, 5);
+        dbPhotoStore[newPhotoId] = compressedUrl;
+        currentSavedPhotoIds = [newPhotoId];
+        currentSavedPhotoId = newPhotoId;
+
+        const selDateStr = normalizeCompactDateStr(document.getElementById('currentDate').value || getCurrentWeekSundayString());
+        if (deletedDatesSet && deletedDatesSet.has(selDateStr)) {
+          deletedDatesSet.delete(selDateStr);
+          saveDeletedDatesToLocal();
+        }
+        const existingIdx = archiveList.findIndex(function(a) { return normalizeCompactDateStr(a.date) === selDateStr; });
+        let targetArchive = null;
+        if (existingIdx >= 0) {
+          targetArchive = archiveList[existingIdx];
+          targetArchive.photoId = newPhotoId;
+          targetArchive.photoIds = [newPhotoId];
+          if (currentTrayIds && currentTrayIds.length > 0) targetArchive.dishIds = [...currentTrayIds];
+          archiveList[existingIdx] = targetArchive;
+        } else {
+          const firstMain = masterBasket.find(function(d) { return currentTrayIds.includes(d.id) && d.cat === '메인반찬'; }) || masterBasket.find(function(d) { return d.id === currentTrayIds[0]; });
+          targetArchive = {
+            id: String(Date.now()), date: selDateStr,
+            title: (firstMain ? firstMain.name.replace('(👶)', '') : '공동체') + ' 식단',
+            season: inferSeasonFromDateStr(selDateStr), menuType: '육류',
+            dishIds: [...currentTrayIds], headcount: '300명', leftoverNote: '', rawIngredients: '', supplies: '',
+            likes: 9, photoId: newPhotoId, photoIds: [newPhotoId], createdAt: Date.now()
+          };
+          archiveList.unshift(targetArchive);
+        }
+
+        renderTrayPhotosStrip();
+        renderArchiveGrid();
+        closePhotoUploadModal();
+
+        if (db) {
+          setCloudStatusLamp('saving');
+          await Promise.all([
+            db.collection('photos').doc(newPhotoId).set({ dataUrl: compressedUrl, createdAt: Date.now() }),
+            db.collection('archives').doc(String(targetArchive.id)).set(targetArchive, { merge: true }),
+            syncCurrentStateToDb()
+          ]);
+          setCloudStatusLamp('connected');
+        } else {
+          await syncCurrentStateToDb();
+        }
+        await showCustomAlert('식판 사진이 [' + selDateStr + '] 지난 식단 기록에 즉시 저장되었습니다!', '📸');
+      } catch (err) {
+        setCloudStatusLamp('disconnected');
+      } finally {
+        if (btn) { btn.innerText = '설정 바로저장'; btn.disabled = false; }
+      }
+    };
+
+    // 3) 지난 식단 기록 길게 누를 때 텍스트 복사/선택 메뉴 완전 차단
+    (function blockLongPressTextSelection() {
+      const archGrid = document.getElementById('archiveGrid');
+      const archModal = document.getElementById('archiveModal');
+      [archGrid, archModal].forEach(function(el) {
+        if (!el) return;
+        el.classList.add('no-longpress-copy');
+        el.addEventListener('contextmenu', function(ev) { ev.preventDefault(); return false; });
+        el.addEventListener('selectstart', function(ev) {
+          if (ev.target && (ev.target.tagName === 'INPUT' || ev.target.tagName === 'TEXTAREA')) return;
+          ev.preventDefault(); return false;
+        });
+      });
+    })();
+
+    renderTray();
+    renderArchiveGrid();
   </script>
 
   <!-- [팝업 10] 📅 커스텀 상하 스크롤 달력 모달 -->
