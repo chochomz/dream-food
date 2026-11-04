@@ -5186,7 +5186,15 @@
 
 
 
-<!-- ================= [패치 v8.2 START] ================= -->
+
+
+<!-- ================= [패치 v8.3 START] ================= -->
+<link rel="apple-touch-icon" href="hlogo.png">
+<link rel="icon" type="image/png" href="hlogo.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="식단관리">
+<meta name="mobile-web-app-capable" content="yes">
+
 <style>
   /* 지난 식단 상세창 상하 크기 확대 & 폰트 2열 줄바꿈 방지 & 텍스트 복사 원천 차단 */
   #archiveModal > div {
@@ -5230,12 +5238,116 @@
     padding-bottom: 4px !important;
   }
 </style>
+
+<!-- [신규 모달] 📲 모바일 홈 화면에 추가하는 법 안내 모달 -->
+<div id="addToHomeGuideModal" onclick="if(event.target===this) closeAddToHomeModal()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4 touch-none select-none overscroll-none">
+  <div class="bg-white rounded-3xl w-[90vw] max-w-xs p-4 shadow-2xl border-2 border-indigo-200 flex flex-col space-y-3 text-left box-border">
+    <!-- 상단 헤더: hlogo.png + 타이틀 -->
+    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+      <div class="flex items-center gap-2">
+        <img src="hlogo.png" alt="홈아이콘" class="h-8 w-auto object-contain shrink-0">
+        <div>
+          <h3 class="text-xs font-black text-slate-800 leading-tight">모바일 홈 화면에 추가</h3>
+          <p class="text-[10px] text-slate-500 font-semibold">바탕화면에 앱처럼 바로가기를 만듭니다</p>
+        </div>
+      </div>
+      <button type="button" onclick="closeAddToHomeModal()" class="text-slate-400 hover:text-slate-600 font-bold px-1.5 py-0.5 text-sm">✕</button>
+    </div>
+
+    <!-- 브라우저 원터치 설치 지원 시 노출되는 즉시 설치 버튼 -->
+    <button type="button" id="directInstallPwaBtn" onclick="triggerDirectPwaInstall()" class="hidden w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95 text-center">
+      📲 원터치로 홈 화면에 바로 추가하기
+    </button>
+
+    <!-- 기종별 간략 안내 -->
+    <div class="space-y-2 text-[11px] leading-snug">
+      <!-- 갤럭시 / 안드로이드 -->
+      <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 space-y-1">
+        <p class="font-black text-slate-800 flex items-center gap-1 text-[11.5px]">
+          <span>🤖</span><span>갤럭시 (안드로이드)</span>
+        </p>
+        <p class="text-slate-600 font-semibold">
+          • <b>크롬</b>: 우측 상단 <span class="bg-white border border-slate-300 px-1 rounded font-black text-slate-800">⋮</span> 터치 ➔ <b>[홈 화면에 추가]</b>
+        </p>
+        <p class="text-slate-600 font-semibold">
+          • <b>삼성인터넷</b>: 우측 하단 <span class="bg-white border border-slate-300 px-1 rounded font-black text-slate-800">≡</span> 터치 ➔ <b>[현재 페이지 추가]</b> ➔ <b>[홈 화면]</b>
+        </p>
+      </div>
+
+      <!-- 아이폰 / 아이패드 -->
+      <div class="bg-slate-50 p-2.5 rounded-2xl border border-slate-200 space-y-1">
+        <p class="font-black text-slate-800 flex items-center gap-1 text-[11.5px]">
+          <span>🍎</span><span>아이폰 (Safari 브라우저)</span>
+        </p>
+        <p class="text-slate-600 font-semibold">
+          • 하단 중앙 공유 버튼 <span class="bg-white border border-slate-300 px-1 rounded font-black text-sky-700">[↑]</span> 터치 ➔ 메뉴를 올려서 <b>[홈 화면에 추가 ⊞]</b> 선택
+        </p>
+      </div>
+
+      <!-- 카카오톡 인앱 브라우저 안내 -->
+      <p class="text-[10px] text-amber-800 bg-amber-50/80 border border-amber-200 rounded-xl px-2.5 py-1.5 font-bold">
+        💡 <b>카카오톡</b>에서 열었을 경우: 우측 하단 <b>[⋮]</b> ➔ <b>[다른 브라우저로 열기]</b> 후 추가해 주세요.
+      </p>
+    </div>
+
+    <button type="button" onclick="closeAddToHomeModal()" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-extrabold py-2 rounded-xl text-xs transition active:scale-95">
+      확인
+    </button>
+  </div>
+</div>
+
 <script>
-  // ================= [패치 v8.2] 크롭 테두리 밀착 / 천천히 이동 & 부드러운 핀치줌 / 마법봉 자동밝기 / 바로저장 오류 해결 / 식단확정 즉시반영 =================
-  (function applyPatchV82() {
+  // ================= [패치 v8.3] hlogo.png 좌측 상단 배치 & 홈화면 추가 모달 + v8.2 전체 기능 =================
+  let deferredPwaPrompt = null;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPwaPrompt = e;
+    const btn = document.getElementById('directInstallPwaBtn');
+    if (btn) btn.classList.remove('hidden');
+  });
+
+  window.openAddToHomeModal = function() {
+    const modal = document.getElementById('addToHomeGuideModal');
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  window.closeAddToHomeModal = function() {
+    const modal = document.getElementById('addToHomeGuideModal');
+    if (modal) modal.classList.add('hidden');
+  };
+
+  window.triggerDirectPwaInstall = async function() {
+    if (!deferredPwaPrompt) return;
+    deferredPwaPrompt.prompt();
+    await deferredPwaPrompt.userChoice;
+    deferredPwaPrompt = null;
+    const btn = document.getElementById('directInstallPwaBtn');
+    if (btn) btn.classList.add('hidden');
+    closeAddToHomeModal();
+  };
+
+  (function applyPatchV83() {
+    // [신규] A4출력 버튼이 있는 상단 라인 제일 왼쪽에 테두리 없는 hlogo.png 버튼 삽입
+    const printBtn = document.querySelector('header button[onclick*="openPrintModal"]');
+    if (printBtn && printBtn.parentNode) {
+      const actionBar = printBtn.parentNode;
+      let existingHomeBtn = document.getElementById('homeAddLogoBtn');
+      if (!existingHomeBtn) {
+        const homeBtn = document.createElement('button');
+        homeBtn.type = 'button';
+        homeBtn.id = 'homeAddLogoBtn';
+        homeBtn.title = '모바일 홈 화면에 추가';
+        homeBtn.onclick = function() { openAddToHomeModal(); };
+        // 테두리 없이(border-0, bg-transparent) 제일 왼쪽(mr-auto)에 라인 높이에 맞춰 배치
+        homeBtn.className = 'mr-auto p-0 bg-transparent border-0 focus:outline-none active:scale-95 transition shrink-0 flex items-center justify-center';
+        homeBtn.innerHTML = '<img src="hlogo.png" alt="홈화면추가" class="h-6 w-auto object-contain block">';
+        actionBar.insertBefore(homeBtn, actionBar.firstChild);
+      }
+    }
+
+    // ================= [기존 v8.2 핵심 패치 기능 유지] =================
     window.cropAutoBright = false;
 
-    // [1] 크롭창 상단 바: 좌측 [↻ 회전] 1개, 우측 [-축소/+확대 삭제 -> 🪄 자동밝기] 마법봉 배치
     const stageArea = document.getElementById('cropStageArea');
     if (stageArea) {
       const controlBar = stageArea.querySelector('.flex.justify-between.items-center');
@@ -5252,7 +5364,6 @@
       }
     }
 
-    // 마법봉 자동밝기 토글 함수
     window.togglePhotoAutoBright = function() {
       window.cropAutoBright = !window.cropAutoBright;
       updateMagicBrightUI();
@@ -5278,14 +5389,13 @@
       }
     }
 
-    // 노란 점선 박스를 사진창(#cropViewport) 테두리에 딱 맞게 초기화하는 헬퍼
     function resetYellowBoxToViewportBorder() {
       const vp = document.getElementById('cropViewport');
       const box = document.getElementById('yellowCropBox');
       if (!vp || !box) return { left: 4, top: 4, w: 280, h: 216 };
       const vpW = vp.clientWidth || 288;
       const vpH = vp.clientHeight || 224;
-      const margin = 4; // 사진창 테두리에 바로 위치하도록 최소 여백(4px)
+      const margin = 4;
       const bW = Math.max(100, vpW - margin * 2);
       const bH = Math.max(100, vpH - margin * 2);
       box.style.left = margin + 'px';
@@ -5295,13 +5405,11 @@
       return { left: margin, top: margin, w: bW, h: bH };
     }
 
-    // 기존 #cropViewport의 중복 이벤트를 완전히 제거하고 정밀 터치/핀치 엔진 장착
     const oldVp = document.getElementById('cropViewport');
     if (oldVp && oldVp.parentNode) {
       const newVp = oldVp.cloneNode(true);
       oldVp.parentNode.replaceChild(newVp, oldVp);
 
-      // 사진이 아직 없을 때만 빈 화면 클릭 시 파일 선택 오픈
       newVp.onclick = function(e) {
         if (e.target && e.target.getAttribute && e.target.getAttribute('data-handle')) return;
         const img = document.getElementById('cropTargetImg');
@@ -5312,7 +5420,7 @@
         }
       };
 
-      let gestureMode = null; // 'corner' | 'pan' | 'pinch'
+      let gestureMode = null;
       let activeCorner = null;
       let lastTouchX = 0, lastTouchY = 0;
       let startBoxRect = { left: 4, top: 4, w: 280, h: 216 };
@@ -5323,7 +5431,6 @@
         return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       }
 
-      // 모바일 터치 전용 정밀 제어 (한 손가락: 천천히 이동 & 확대 절대 금지 / 두 손가락: 부드러운 핀치 확대·축소)
       newVp.addEventListener('touchstart', function(e) {
         const img = document.getElementById('cropTargetImg');
         if (!img || !img.getAttribute('src')) return;
@@ -5334,7 +5441,6 @@
         const box = document.getElementById('yellowCropBox');
 
         if (touches.length >= 2) {
-          // 두 손가락 터치 시: 오직 핀치 확대/축소 모드로 진입
           gestureMode = 'pinch';
           activeCorner = null;
           prevPinchDist = getTouchDist(touches[0], touches[1]);
@@ -5373,13 +5479,11 @@
         const touches = e.touches;
         const box = document.getElementById('yellowCropBox');
 
-        // 두 손가락으로 벌릴 때 부드럽게 펼쳐지고 축소됨
         if (touches.length >= 2) {
           gestureMode = 'pinch';
           const curDist = getTouchDist(touches[0], touches[1]);
           if (prevPinchDist && prevPinchDist > 8 && curDist > 8) {
             const rawRatio = curDist / prevPinchDist;
-            // 급격히 튀지 않도록 부드러운 보간(0.65 감도) 적용
             const smoothFactor = 1 + (rawRatio - 1) * 0.65;
             cropScale = Math.max(0.12, Math.min(4.0, Number((cropScale * smoothFactor).toFixed(4))));
             applyImageTransformDirect();
@@ -5388,7 +5492,6 @@
           return;
         }
 
-        // 한 손가락 터치 이동 시: 확대/축소는 절대 일어나지 않고 천천히 부드럽게 이동
         if (touches.length === 1) {
           const t = touches[0];
 
@@ -5426,7 +5529,6 @@
             box.style.height = Math.round(nH) + 'px';
             saveCurrentStageToQueueItem();
           } else if (gestureMode === 'pan') {
-            // 천천히 움직이도록 0.55배 감속 계수 적용
             const stepX = (t.clientX - lastTouchX) * 0.55;
             const stepY = (t.clientY - lastTouchY) * 0.55;
             lastTouchX = t.clientX;
@@ -5440,7 +5542,6 @@
 
       newVp.addEventListener('touchend', function(e) {
         if (e.touches.length === 1) {
-          // 두 손가락 핀치 후 한 손가락이 남았을 때 좌표가 튀지 않도록 현재 손가락 위치로 기준점 재설정
           gestureMode = 'pan';
           lastTouchX = e.touches[0].clientX;
           lastTouchY = e.touches[0].clientY;
@@ -5452,7 +5553,6 @@
         }
       }, { passive: false });
 
-      // PC 마우스 조작 호환 지원
       let isMouseDown = false;
       newVp.addEventListener('mousedown', function(e) {
         const img = document.getElementById('cropTargetImg');
@@ -5533,7 +5633,6 @@
       }, { passive: false });
     }
 
-    // 사진을 불러올 때 초기 노란 점선 틀을 사진창 테두리에 맞추고, 한 손 터치 시 절대 확대되지 않게 고정
     startCropProcess = async function(event) {
       const files = Array.from(event.target.files || []);
       if (files.length === 0) return;
@@ -5545,11 +5644,7 @@
       document.getElementById('cropStageArea').classList.remove('hidden');
       document.getElementById('photoUploadModal').classList.remove('hidden');
 
-      // 모달이 열린 직후 실제 뷰포트 크기를 측정하여 노란 점선을 사진창 테두리에 밀착
       await new Promise(function(r) { requestAnimationFrame(r); });
-      const vp = document.getElementById('cropViewport');
-      const vpW = (vp && vp.clientWidth) ? vp.clientWidth : 288;
-      const vpH = (vp && vp.clientHeight) ? vp.clientHeight : 224;
       const borderBox = resetYellowBoxToViewportBorder();
 
       const item = await new Promise(function(resolve) {
@@ -5557,7 +5652,6 @@
         r.onload = function(ev) {
           const tImg = new Image();
           tImg.onload = function() {
-            // 사진이 사진창 안에 깔끔하게 들어오는 초기 배율 설정
             const fitScale = Math.min(borderBox.w / tImg.naturalWidth, borderBox.h / tImg.naturalHeight);
             resolve({
               src: ev.target.result,
@@ -5599,7 +5693,6 @@
       saveCurrentStageToQueueItem();
     };
 
-    // [2] '설정 바로저장' 터치 시 파일 불러오기 창이 뜨는 버그 원천 제거 및 마법봉 자동밝기 반영 저장
     renderQueueItemToCompressedDataUrl = function(q) {
       return new Promise(function(resolve, reject) {
         const imgEl = document.getElementById('cropTargetImg');
@@ -5655,7 +5748,6 @@
       });
     };
 
-    // '설정 바로저장'을 눌렀을 때 절대로 inputGallery.click()을 호출하지 않도록 수정!
     savePhotoToDb = async function() {
       saveCurrentStageToQueueItem();
       const imgEl = document.getElementById('cropTargetImg');
@@ -5736,12 +5828,10 @@
       }
     };
 
-    // [3] 식단 확정 시 '지난 식단 기록'에 누락 없이 100% 즉시 나타나도록 수정
     executeDialConfirmSave = async function() {
       const dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
       closeConfirmDialModal();
 
-      // 과거 삭제 목록(deletedDatesSet / localStorage)에서 이 날짜를 완전히 제거하여 필터링 누락 방지
       if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet) {
         deletedDatesSet.delete(dateStr);
         saveDeletedDatesToLocal();
@@ -5754,7 +5844,6 @@
         }
       } catch (e) {}
 
-      // 하단 보기 필터가 특정 계절/메뉴로 가려져 있지 않도록 '전체보기'로 자동 전환
       const filterInput = document.getElementById('archiveFilter');
       const filterText = document.getElementById('archiveFilterTriggerText');
       if (filterInput) filterInput.value = '전체';
@@ -5817,7 +5906,6 @@
       await showCustomAlert('[' + dateStr + ']\n식단이 확정되어 아래 「지난 식단 기록」에 즉시 저장되었습니다!', '✅');
     };
 
-    // 식판 사진 삭제 시 지난 식단 기록에서도 자동 삭제 연동 유지
     renderTrayPhotosStrip = function() {
       const box = document.getElementById('attachedPreview');
       if (!box) return;
@@ -5921,7 +6009,6 @@
       }
     };
 
-    // 지난 식단 상세창 텍스트 복사 메뉴 차단 유지
     const archModal = document.getElementById('archiveModal');
     if (archModal) {
       ['contextmenu', 'selectstart', 'dragstart', 'copy', 'cut'].forEach(function(evtName) {
@@ -5957,5 +6044,5 @@
     renderArchiveGrid();
   })();
 </script>
-<!-- ================= [패치 v8.2 END] ================= -->
+<!-- ================= [패치 v8.3 END] ================= -->
 </body></html>
