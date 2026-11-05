@@ -7058,4 +7058,182 @@
 </script>
 <!-- ================= [패치 v9.0 END] ================= -->
 
+
+<!-- ================= [패치 v9.1 START] ================= -->
+<style>
+  /* 1. 클라우드 연동 램프: 테두리 및 포커스 라인 완전 제거 */
+  #cloudStatusLamp {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    cursor: pointer !important;
+    padding: 0 4px !important;
+    position: relative !important;
+  }
+  /* 2. 로그인한 이름(로그아웃 버튼): 테두리 제거 및 깔끔한 배경 */
+  button[onclick*="logoutUser"] {
+    border: none !important;
+    outline: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding-left: 4px !important;
+    padding-right: 2px !important;
+  }
+  /* 문에서 사람이 오른쪽으로 나가는 이모지 조합 */
+  .exit-door-person-right {
+    display: inline-flex !important;
+    align-items: center !important;
+    vertical-align: middle !important;
+    margin-left: 2px !important;
+    line-height: 1 !important;
+  }
+  .exit-door-person-right .door-part {
+    font-size: 12px !important;
+    filter: grayscale(35%) opacity(0.85) !important;
+  }
+  .exit-door-person-right .person-part {
+    font-size: 12px !important;
+    display: inline-block !important;
+    transform: scaleX(-1) !important; /* 오른쪽 방향으로 걸어나가도록 반전 */
+    margin-left: -2px !important;
+  }
+  /* 3. 좌측 상단 홈추가 + helplogo.png 나란히 배치 그룹 */
+  #topLeftLogoGroup {
+    display: flex !important;
+    align-items: center !important;
+    gap: 5px !important; /* 아주 조금 띄움 */
+    margin-right: auto !important;
+    flex-shrink: 0 !important;
+  }
+  #topLeftLogoGroup #homeAddLogoBtn {
+    margin-right: 0 !important;
+  }
+</style>
+<script>
+  (function applyPatchV91() {
+    window.currentCloudStateV91 = window.currentCloudStateV91 || (typeof db !== 'undefined' && db ? 'connected' : 'disconnected');
+
+    // [1] 클라우드 연동 램프: 테두리 제거 및 터치 시 가벼운 설명 툴팁 표시
+    setCloudStatusLamp = function(status) {
+      window.currentCloudStateV91 = status;
+      const lamp = document.getElementById('cloudStatusLamp');
+      if (!lamp) return;
+      lamp.className = 'w-5 h-5 shrink-0 flex items-center justify-center cursor-pointer select-none active:scale-90 transition-transform';
+      if (status === 'connected') {
+        lamp.title = '연동';
+        lamp.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 block"></span>';
+      } else if (status === 'saving') {
+        lamp.title = '동작중';
+        lamp.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-sky-500 animate-ping block"></span>';
+      } else {
+        lamp.title = '연결안됨';
+        lamp.innerHTML = '<span class="w-2.5 h-2.5 rounded-full bg-pink-500 block"></span>';
+      }
+    };
+    setCloudStatusLamp(window.currentCloudStateV91);
+
+    let cloudPopTimer = null;
+    window.toggleCloudLightDesc = function(e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+      let pop = document.getElementById('cloudLightDescPopup');
+      if (pop && !pop.classList.contains('hidden')) {
+        pop.classList.add('hidden');
+        return;
+      }
+      if (!pop) {
+        pop = document.createElement('div');
+        pop.id = 'cloudLightDescPopup';
+        pop.className = 'fixed z-[99] bg-slate-800/95 text-white text-[11px] rounded-xl px-3 py-2 shadow-lg pointer-events-none transition-opacity duration-200';
+        document.body.appendChild(pop);
+      }
+
+      const st = window.currentCloudStateV91;
+      let curTitle = '🟢 연동 : 실시간 클라우드 정상 연결됨';
+      if (st === 'saving') curTitle = '🔵 동작중 : 데이터를 클라우드에 저장/동기화 중';
+      else if (st !== 'connected') curTitle = '🔴 연결안됨 : 오프라인 또는 연결 대기 상태';
+
+      pop.innerHTML =
+        '<p class="font-extrabold text-white mb-1">' + curTitle + '</p>' +
+        '<div class="text-[10px] text-slate-300 space-y-0.5 border-t border-slate-600/80 pt-1">' +
+          '<p>🟢 <b>연동</b> : 클라우드 실시간 동기화 중</p>' +
+          '<p>🔵 <b>동작중</b> : 데이터 저장·전송 처리 중</p>' +
+          '<p>🔴 <b>연결안됨</b> : 네트워크 확인 필요</p>' +
+        '</div>';
+
+      const lamp = document.getElementById('cloudStatusLamp');
+      if (lamp) {
+        const rect = lamp.getBoundingClientRect();
+        pop.style.top = (rect.bottom + 6) + 'px';
+        pop.style.right = Math.max(8, window.innerWidth - rect.right - 10) + 'px';
+      }
+      pop.classList.remove('hidden');
+      if (cloudPopTimer) clearTimeout(cloudPopTimer);
+      cloudPopTimer = setTimeout(function() {
+        pop.classList.add('hidden');
+      }, 2800);
+    };
+
+    const lampEl = document.getElementById('cloudStatusLamp');
+    if (lampEl) {
+      lampEl.onclick = function(e) { window.toggleCloudLightDesc(e); };
+    }
+    document.addEventListener('pointerdown', function(e) {
+      const pop = document.getElementById('cloudLightDescPopup');
+      const lamp = document.getElementById('cloudStatusLamp');
+      if (pop && !pop.classList.contains('hidden')) {
+        if (!lamp || !lamp.contains(e.target)) pop.classList.add('hidden');
+      }
+    }, { passive: true });
+
+    // [2] 로그인 정보 수정: 테두리 삭제 & 문에서 사람이 오른쪽으로 나가는 이모지(🚪🚶‍♂️) 배치
+    const origApplyRoleUIV90 = applyRoleUI;
+    applyRoleUI = function() {
+      if (origApplyRoleUIV90) origApplyRoleUIV90();
+      const badge = document.getElementById('roleBadgeText');
+      if (badge) {
+        const rolePrefix = isLeader ? '팀장' : '팀원';
+        const userName = currentUser || (isLeader ? '관리자' : '팀원');
+        badge.innerHTML = rolePrefix + ' ' + userName + ' <span class="exit-door-person-right" title="로그아웃"><span class="door-part">🚪</span><span class="person-part">🚶‍♂️</span></span>';
+      }
+      const logoutBtn = badge ? badge.closest('button') : null;
+      if (logoutBtn) {
+        logoutBtn.className = 'text-[11.5px] bg-transparent hover:bg-slate-200/50 text-slate-800 font-extrabold px-1.5 py-0.5 rounded transition whitespace-nowrap shrink-0 border-0 shadow-none focus:outline-none';
+      }
+    };
+    if (typeof currentUser !== 'undefined' && currentUser) {
+      applyRoleUI();
+    } else {
+      const badge = document.getElementById('roleBadgeText');
+      if (badge) {
+        badge.innerHTML = '팀장 관리자 <span class="exit-door-person-right"><span class="door-part">🚪</span><span class="person-part">🚶‍♂️</span></span>';
+      }
+    }
+
+    // [3] 좌측 상단 홈추가(hlogo.png) 오른쪽 옆에 아주 조금 띄워서 helplogo.png 배치
+    const homeBtn = document.getElementById('homeAddLogoBtn');
+    if (homeBtn && homeBtn.parentNode) {
+      const actionBar = homeBtn.parentNode;
+      let groupWrap = document.getElementById('topLeftLogoGroup');
+      if (!groupWrap) {
+        groupWrap = document.createElement('div');
+        groupWrap.id = 'topLeftLogoGroup';
+        actionBar.insertBefore(groupWrap, homeBtn);
+        groupWrap.appendChild(homeBtn);
+      }
+      homeBtn.classList.remove('mr-auto');
+
+      if (!document.getElementById('helpLogoHeaderBtn')) {
+        const helpLink = document.createElement('a');
+        helpLink.id = 'helpLogoHeaderBtn';
+        helpLink.href = 'foodhelp.html';
+        helpLink.title = '사용설명서 보기';
+        helpLink.className = 'p-0 bg-transparent border-0 focus:outline-none active:scale-95 transition shrink-0 flex items-center justify-center select-none';
+        helpLink.innerHTML = '<img src="helplogo.png" alt="도움말" draggable="false" class="h-6 w-auto object-contain block pointer-events-none select-none">';
+        groupWrap.appendChild(helpLink);
+      }
+    }
+  })();
+</script>
+<!-- ================= [패치 v9.1 END] ================= -->
 </body></html>
