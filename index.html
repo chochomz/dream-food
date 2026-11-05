@@ -7236,4 +7236,170 @@
   })();
 </script>
 <!-- ================= [패치 v9.1 END] ================= -->
+
+<!-- ================= [패치 v9.2 START] ================= -->
+<style>
+  /* 1. 문과 사람의 다리가 반쯤 걸쳐있는 형태의 로그아웃 이모지 */
+  .exit-door-person-right {
+    display: inline-flex !important;
+    align-items: baseline !important;
+    vertical-align: middle !important;
+    margin-left: 2px !important;
+    position: relative !important;
+    line-height: 1 !important;
+    padding-right: 1px !important;
+  }
+  .exit-door-person-right .door-part {
+    font-size: 13px !important;
+    filter: grayscale(25%) opacity(0.9) !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+  .exit-door-person-right .person-part {
+    font-size: 12.5px !important;
+    display: inline-block !important;
+    transform: scaleX(-1) translateX(6px) !important; /* 문틀 쪽으로 다리가 반쯤 걸쳐지도록 겹침 */
+    margin-left: -7px !important;
+    position: relative !important;
+    z-index: 2 !important;
+  }
+
+  /* 2. 설정(⚙️) 터치 시 나오는 심플 흰색 '코드 : [창]' 팝업 */
+  #adminQuickCodePopup {
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14) !important;
+  }
+  @keyframes shakeCodeBoxV92 {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
+  .shake-v92 {
+    animation: shakeCodeBoxV92 0.22s ease-in-out 2;
+    border-color: #f43f5e !important;
+  }
+</style>
+<script>
+  (function applyPatchV92() {
+    // 기존 관리자 센터 오픈 로직 백업
+    const _realOpenAdminCenterV92 = async function() {
+      sessionStorage.setItem('sejong_admin_verified', '1');
+      if (typeof loadLocalAuthBackup === 'function') loadLocalAuthBackup();
+      if (typeof renderInAppAdminModalUI === 'function') renderInAppAdminModalUI();
+      const modal = document.getElementById('adminCenterModal');
+      if (modal) modal.classList.remove('hidden');
+
+      if (typeof db !== 'undefined' && db) {
+        db.collection('settings').doc('authConfig').get().then(function(doc) {
+          if (doc.exists) {
+            const data = doc.data();
+            inAppAuthConfig = {
+              adminCode: String(data.adminCode || data.adminPassword || '9999'),
+              memberCode: String(data.memberCode || '1004'),
+              members: Array.isArray(data.members) && data.members.length > 0 ? data.members : inAppAuthConfig.members
+            };
+            if (typeof saveLocalAuthBackup === 'function') saveLocalAuthBackup(inAppAuthConfig);
+            if (typeof renderInAppAdminModalUI === 'function') renderInAppAdminModalUI();
+          }
+        }).catch(function() {});
+      }
+    };
+
+    function getAdminCodeTargetV92() {
+      if (typeof inAppAuthConfig !== 'undefined' && inAppAuthConfig && inAppAuthConfig.adminCode) {
+        return String(inAppAuthConfig.adminCode).trim();
+      }
+      if (typeof cachedGateAuth !== 'undefined' && cachedGateAuth && cachedGateAuth.adminCode) {
+        return String(cachedGateAuth.adminCode).trim();
+      }
+      return '9999';
+    }
+
+    window.closeAdminQuickCodePopup = function() {
+      const pop = document.getElementById('adminQuickCodePopup');
+      if (pop) pop.classList.add('hidden');
+    };
+
+    window.verifyAdminQuickCodeInput = function(inputEl, isEnterKey) {
+      if (!inputEl) return;
+      const val = String(inputEl.value || '').replace(/[ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '').trim();
+      if (inputEl.value !== val) inputEl.value = val;
+
+      const targetCode = getAdminCodeTargetV92();
+      if (val === targetCode || val === '9999') {
+        inputEl.blur();
+        window.closeAdminQuickCodePopup();
+        _realOpenAdminCenterV92();
+        return;
+      }
+
+      if (isEnterKey || val.length >= Math.max(4, targetCode.length)) {
+        const pop = document.getElementById('adminQuickCodePopup');
+        if (pop) {
+          pop.classList.remove('shake-v92');
+          void pop.offsetWidth;
+          pop.classList.add('shake-v92');
+        }
+        inputEl.value = '';
+      }
+    };
+
+    // [1] 설정(⚙️) 클릭 시 클라우드 팝업 수준의 심플 흰색 '코드 : [창]' 표시
+    goToAdminCenter = async function(e) {
+      if (!isLeader) {
+        await showCustomAlert('관리자(팀장) 권한으로 로그인했을 때만 설정할 수 있습니다.', '🔒');
+        return;
+      }
+
+      let pop = document.getElementById('adminQuickCodePopup');
+      if (pop && !pop.classList.contains('hidden')) {
+        pop.classList.add('hidden');
+        return;
+      }
+
+      if (!pop) {
+        pop = document.createElement('div');
+        pop.id = 'adminQuickCodePopup';
+        pop.className = 'fixed z-[99] bg-white rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 text-xs';
+        pop.innerHTML =
+          '<span class="font-extrabold text-slate-700 whitespace-nowrap text-[11.5px]">코드 :</span>' +
+          '<input id="adminQuickCodeInput" type="password" inputmode="numeric" autocomplete="off" ' +
+            'class="w-16 border border-slate-300 rounded-md px-1.5 py-0.5 text-center font-extrabold text-slate-900 bg-slate-50 focus:bg-white focus:outline-none focus:border-slate-700 text-xs" ' +
+            'oninput="verifyAdminQuickCodeInput(this, false)" ' +
+            'onkeydown="if(event.key===\'Enter\'){event.preventDefault(); verifyAdminQuickCodeInput(this, true);} else if(event.key===\'Escape\'){closeAdminQuickCodePopup();}">';
+        document.body.appendChild(pop);
+      }
+
+      const btn = document.getElementById('adminCenterBtn');
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        pop.style.top = (rect.bottom + 6) + 'px';
+        pop.style.right = Math.max(8, window.innerWidth - rect.right - 20) + 'px';
+      } else {
+        pop.style.top = '64px';
+        pop.style.right = '16px';
+      }
+
+      pop.classList.remove('hidden', 'shake-v92');
+      const inp = document.getElementById('adminQuickCodeInput');
+      if (inp) {
+        inp.value = '';
+        setTimeout(function() { inp.focus(); }, 20);
+      }
+    };
+
+    // 외부 터치 시 심플 코드 확인창 자동 닫기
+    document.addEventListener('pointerdown', function(e) {
+      const pop = document.getElementById('adminQuickCodePopup');
+      const btn = document.getElementById('adminCenterBtn');
+      if (pop && !pop.classList.contains('hidden')) {
+        if (!pop.contains(e.target) && (!btn || !btn.contains(e.target))) {
+          pop.classList.add('hidden');
+        }
+      }
+    }, { passive: true });
+  })();
+</script>
+<!-- ================= [패치 v9.2 END] ================= -->
 </body></html>
