@@ -6931,4 +6931,127 @@
   })();
 </script>
 <!-- ================= [패치 v8.8 END] ================= -->
+
+
+<!-- ================= [패치 v9.0 START] ================= -->
+<style>
+  /* 로그인 화면 v9.0 전용 스타일 */
+  #loginGateTitleBar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    margin-top: 16px !important;
+    width: 100% !important;
+  }
+  #loginGateSystemTitle {
+    font-size: 16px !important; /* 기존 12px 대비 +3pt 이상 확대 */
+    font-weight: 900 !important;
+    color: #1e293b !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+  }
+  #loginHelpBtn {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid #cbd5e1 !important; /* 가는 실선 테두리 */
+    border-radius: 8px !important;
+    padding: 2px 6px !important;
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    line-height: 1.1 !important;
+    text-decoration: none !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+    transition: all 0.15s ease !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+  }
+  #loginHelpBtn:hover, #loginHelpBtn:active {
+    background-color: #f1f5f9 !important;
+    border-color: #94a3b8 !important;
+    transform: scale(0.96) !important;
+  }
+  #loginHelpBtn .q-mark {
+    font-size: 10px !important;
+    font-weight: 900 !important;
+    color: #0d9488 !important;
+    line-height: 1 !important;
+  }
+  #loginHelpBtn .help-txt {
+    font-size: 9.5px !important;
+    font-weight: 800 !important;
+    color: #475569 !important;
+    white-space: nowrap !important;
+    margin-top: 1px !important;
+  }
+  .login-row-v90 {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+  }
+  .login-label-v90 {
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    color: #1e293b !important;
+    width: 38px !important;
+    flex-shrink: 0 !important;
+    margin-bottom: 0 !important;
+    padding-left: 2px !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+  }
+</style>
+<script>
+  (function applyPatchV90() {
+    const loginCard = document.getElementById('loginGateCard');
+    if (!loginCard) return;
+
+    // 1. "주간 식단관리 시스템" +3pt 확대(16px 굵게) 및 우측 [? / 사용설명서] 2열 가는 실선 테두리 버튼 배치
+    const topLogoArea = loginCard.querySelector('.flex.flex-col.items-center');
+    if (topLogoArea) {
+      const oldP = topLogoArea.querySelector('p');
+      if (oldP && !document.getElementById('loginGateTitleBar')) {
+        const barDiv = document.createElement('div');
+        barDiv.id = 'loginGateTitleBar';
+        barDiv.innerHTML =
+          '<span id="loginGateSystemTitle">주간 식단관리 시스템</span>' +
+          '<a id="loginHelpBtn" href="foodhelp.html" title="주간 식단관리 사용설명서 보기">' +
+            '<span class="q-mark">?</span>' +
+            '<span class="help-txt">사용설명서</span>' +
+          '</a>';
+        oldP.parentNode.replaceChild(barDiv, oldP);
+      }
+    }
+
+    // 2. '이름' / '코드' 라벨 확대 및 입력창 가로(1열) 배치 변환 (기존 input 요소 및 이벤트 100% 유지)
+    const nameInput = document.getElementById('gateUserName');
+    if (nameInput && nameInput.parentElement) {
+      const nameWrap = nameInput.parentElement;
+      nameWrap.className = 'login-row-v90';
+      const nameLabel = nameWrap.querySelector('label');
+      if (nameLabel) {
+        nameLabel.textContent = '이름';
+        nameLabel.className = 'login-label-v90';
+      }
+      nameInput.classList.add('flex-1', 'min-w-0');
+    }
+
+    const codeInput = document.getElementById('gateAccessCode');
+    if (codeInput && codeInput.parentElement) {
+      const codeWrap = codeInput.parentElement;
+      codeWrap.className = 'login-row-v90';
+      const codeLabel = codeWrap.querySelector('label');
+      if (codeLabel) {
+        codeLabel.textContent = '코드';
+        codeLabel.className = 'login-label-v90';
+      }
+      codeInput.classList.add('flex-1', 'min-w-0');
+    }
+  })();
+</script>
+<!-- ================= [패치 v9.0 END] ================= -->
+
 </body></html>
