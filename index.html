@@ -5194,7 +5194,9 @@
 
 
 
-<!-- ================= [패치 v8.6 START] ================= -->
+
+
+<!-- ================= [패치 v8.7 START] ================= -->
 <link rel="apple-touch-icon" href="hlogo.png">
 <link rel="icon" type="image/png" href="hlogo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5202,9 +5204,99 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <style>
-  /* [신규 v8.6] 검색어 일치 노란 형광펜 & 식판 신규 추가 메뉴 노란 형광색 스타일 */
+  /* [신규 v8.7] 1. 식판에 모으기 & 반찬 바구니: 내부는 현 상태 그대로 유지하고 외곽 테두리+상단 둥근바만 3D 입체 모양 적용 */
+  #trayCardBox {
+    position: relative !important;
+    margin-top: 12px !important;
+    padding-top: 16px !important;
+    overflow: visible !important;
+    border: 8px solid #f472b6 !important;
+    border-radius: 16px !important;
+    box-shadow:
+      inset 0 1.5px 2px rgba(255, 255, 255, 0.85),
+      0 4px 0 #db2777,
+      0 7px 14px rgba(219, 39, 119, 0.20) !important;
+  }
+  #trayCardBox > div:first-child {
+    position: absolute !important;
+    top: -18px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: linear-gradient(180deg, #f9a8d4 0%, #f472b6 45%, #db2777 100%) !important;
+    padding: 2px 20px !important;
+    border-radius: 9999px !important;
+    border: 1.5px solid #be185d !important;
+    margin: 0 !important;
+    z-index: 10 !important;
+    box-shadow:
+      inset 0 1.5px 1px rgba(255, 255, 255, 0.65),
+      0 2.5px 0 #9d174d,
+      0 4px 8px rgba(190, 24, 93, 0.28) !important;
+    white-space: nowrap !important;
+  }
+  #trayCardBox > div:first-child > span:first-child {
+    color: #ffffff !important;
+    font-size: 13.5px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.3 !important;
+    text-shadow: 0 1px 1.5px rgba(131, 24, 67, 0.55) !important;
+    display: block !important;
+  }
+
+  #basketSection > div {
+    position: relative !important;
+    margin-top: 12px !important;
+    padding-top: 18px !important;
+    overflow: visible !important;
+    border: 8px solid #34d399 !important;
+    border-radius: 16px !important;
+    box-shadow:
+      inset 0 1.5px 2px rgba(255, 255, 255, 0.85),
+      0 4px 0 #059669,
+      0 7px 14px rgba(5, 150, 105, 0.20) !important;
+  }
+  #basketSection > div > div:first-child {
+    position: absolute !important;
+    top: -18px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: linear-gradient(180deg, #6ee7b7 0%, #34d399 45%, #059669 100%) !important;
+    padding: 2px 20px !important;
+    border-radius: 9999px !important;
+    border: 1.5px solid #047857 !important;
+    margin: 0 !important;
+    z-index: 10 !important;
+    box-shadow:
+      inset 0 1.5px 1px rgba(255, 255, 255, 0.65),
+      0 2.5px 0 #065f46,
+      0 4px 8px rgba(4, 120, 87, 0.28) !important;
+    white-space: nowrap !important;
+  }
+  #basketSection > div > div:first-child > h2 {
+    color: #ffffff !important;
+    font-size: 13.5px !important;
+    font-weight: 900 !important;
+    letter-spacing: -0.02em !important;
+    line-height: 1.3 !important;
+    text-shadow: 0 1px 1.5px rgba(6, 78, 59, 0.55) !important;
+    display: block !important;
+  }
+
+  /* [신규 v8.7] 1-1) 식판에 모으기 내부 메뉴 칩이 창 바깥으로 나가지 않도록 보호 & 괄호 위치에서부터 2열 배치 */
+  #currentTray {
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+  #currentTray > div {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    white-space: normal !important;
+  }
+
+  /* [v8.6 유지] 검색어 일치 노란 형광펜 & 식판 신규 추가 메뉴 노란 형광색 스타일 */
   .hl-yellow-mark {
-    background-color: #fef08a !important; /* 선명한 노란 형광색 */
+    background-color: #fef08a !important;
     color: #0f172a !important;
     font-weight: 900 !important;
     padding: 0 2px !important;
@@ -5253,65 +5345,6 @@
   }
   #basketSlideDropdown > button span:last-child {
     font-size: 9.5px !important;
-  }
-
-  /* [v8.4 유지] 식판에 모으기 & 반찬 바구니: 위쪽 테두리 중앙 일체형 둥근 바(알약) 디자인 */
-  #trayCardBox {
-    position: relative !important;
-    margin-top: 11px !important;
-    padding-top: 16px !important;
-    overflow: visible !important;
-  }
-  #trayCardBox > div:first-child {
-    position: absolute !important;
-    top: -17px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background-color: #f472b6 !important;
-    padding: 2px 18px !important;
-    border-radius: 9999px !important;
-    border: none !important;
-    margin: 0 !important;
-    z-index: 10 !important;
-    box-shadow: 0 2px 5px rgba(244, 114, 182, 0.28) !important;
-    white-space: nowrap !important;
-  }
-  #trayCardBox > div:first-child > span:first-child {
-    color: #ffffff !important;
-    font-size: 13.5px !important;
-    font-weight: 900 !important;
-    letter-spacing: -0.02em !important;
-    line-height: 1.3 !important;
-    display: block !important;
-  }
-
-  #basketSection > div {
-    position: relative !important;
-    margin-top: 11px !important;
-    padding-top: 18px !important;
-    overflow: visible !important;
-  }
-  #basketSection > div > div:first-child {
-    position: absolute !important;
-    top: -17px !important;
-    left: 50% !important;
-    transform: translateX(-50%) !important;
-    background-color: #34d399 !important;
-    padding: 2px 18px !important;
-    border-radius: 9999px !important;
-    border: none !important;
-    margin: 0 !important;
-    z-index: 10 !important;
-    box-shadow: 0 2px 5px rgba(52, 211, 153, 0.28) !important;
-    white-space: nowrap !important;
-  }
-  #basketSection > div > div:first-child > h2 {
-    color: #ffffff !important;
-    font-size: 13.5px !important;
-    font-weight: 900 !important;
-    letter-spacing: -0.02em !important;
-    line-height: 1.3 !important;
-    display: block !important;
   }
 
   #homeAddLogoBtn, #homeAddLogoBtn img {
@@ -5415,13 +5448,11 @@
 </div>
 
 <script>
-  // ================= [패치 v8.6] 2글자 통합검색 형광펜 / +담기,-제외 초슬림화 / 식판 중앙배치 & 형광표시 =================
+  // ================= [패치 v8.7] 3D 테두리 / 식판 괄호 위치 2열 배치 / '지난 식단 관리' & 우측상단 식수인원 & 월·일 굵게 =================
 
-  // 방금 식판에 추가된 메뉴 ID 및 자동 스크롤 타임스탬프 관리
   window.newlyAddedTrayDishId = null;
   window.trayHighlightLockUntil = 0;
 
-  // 2글자 이상 검색어 추출 함수
   function getActiveSearchQuery() {
     const el = document.getElementById('basketSearch');
     if (!el) return '';
@@ -5429,7 +5460,6 @@
     return raw.length >= 2 ? raw : '';
   }
 
-  // 텍스트 내 일치하는 검색어를 노란색 형광펜으로 감싸는 헬퍼
   function highlightTextWithYellow(text, query) {
     const str = String(text || '');
     if (!query || query.length < 2) return str;
@@ -5442,7 +5472,23 @@
     }
   }
 
-  // 검색창 이외의 다른 것을 선택했을 때 검색 내용을 자동 해제하는 함수
+  // [신규 v8.7] 지난 식단 일자('2026년 11월8일(2주)')를 다 표시하되 '월, 일' 문자 사이즈만 굵고 크게 포맷팅하는 함수
+  function formatArchiveDateWithBoldMonthDay(dateStr, query) {
+    const raw = String(dateStr || '').trim();
+    if (!raw) return '';
+    if (query && query.length >= 2 && raw.includes(query)) {
+      return highlightTextWithYellow(raw, query);
+    }
+    // 예: "2026년 11월8일(2주)" -> 년도와 (0주)는 기본, "11월8일"만 크고 굵게
+    const m = raw.match(/^(\d{4}년\s*)(\d{1,2}월\s*\d{1,2}일)(.*)$/);
+    if (m) {
+      return '<span class="font-medium text-[10px] text-teal-700/90">' + m[1] + '</span>' +
+             '<span class="font-black text-[11.5px] text-teal-900 tracking-tight">' + m[2].replace(/\s+/g, '') + '</span>' +
+             '<span class="font-semibold text-[10px] text-teal-700/90">' + m[3] + '</span>';
+    }
+    return '<span class="font-bold text-[10.5px] text-teal-800">' + raw + '</span>';
+  }
+
   function clearSearchIfActive() {
     const el = document.getElementById('basketSearch');
     if (el && el.value.trim().length > 0) {
@@ -5452,7 +5498,6 @@
     }
   }
 
-  // 식판에 새로 들어온 메뉴의 노란 형광색 표시를 해제하는 함수
   function clearNewlyAddedTrayHighlight() {
     if (!window.newlyAddedTrayDishId) return;
     if (Date.now() < window.trayHighlightLockUntil) return;
@@ -5553,8 +5598,20 @@
     openAddToHomeModal();
   }
 
-  (function applyPatchV86() {
-    // 검색창 안내 문구 및 이벤트 연결 (입력 시 반찬 바구니 + 지난 식단 기록 동시 검색)
+  (function applyPatchV87() {
+    // [2] '지난 식단 기록' 타이틀을 '지난 식단 관리'로 수정하고 우측 '전체보기' 창 크기에 맞춰 확대
+    const archiveTriggerBtn = document.getElementById('archiveFilterTriggerBtn');
+    if (archiveTriggerBtn && archiveTriggerBtn.parentNode) {
+      const headerRow = archiveTriggerBtn.parentNode;
+      const h2El = headerRow.querySelector('h2');
+      if (h2El) {
+        h2El.textContent = '지난 식단 관리';
+        // 우측 전체보기 버튼(px-2.5 py-1)의 전체 높이와 시각적 크기에 맞춘 굵은 타이틀
+        h2El.className = 'text-[15px] font-black text-slate-800 tracking-tight leading-none py-1 flex items-center';
+      }
+    }
+
+    // 검색창 안내 문구 및 이벤트 연결
     const searchInput = document.getElementById('basketSearch');
     if (searchInput) {
       searchInput.setAttribute('placeholder', '반찬 이름 검색');
@@ -5562,7 +5619,6 @@
         renderBasket();
         renderArchiveGrid();
       };
-      // 우측 ✕ 초기화 버튼 클릭 시에도 반찬 바구니와 지난 식단 기록 동시 갱신
       const clearBtn = searchInput.parentNode ? searchInput.parentNode.querySelector('button') : null;
       if (clearBtn) {
         clearBtn.onclick = function(e) {
@@ -5574,7 +5630,6 @@
       }
     }
 
-    // 다른 요소를 터치하거나 선택할 때: ① 신규 담긴 메뉴 노란 형광색 해제, ② 검색창 외 선택 시 검색 해제
     document.addEventListener('pointerdown', function(e) {
       if (window.newlyAddedTrayDishId && Date.now() >= window.trayHighlightLockUntil) {
         clearNewlyAddedTrayHighlight();
@@ -5585,14 +5640,12 @@
         const inSearchWrap = searchWrap && searchWrap.contains(e.target);
         const inBasketList = document.getElementById('basketList') && document.getElementById('basketList').contains(e.target);
         const inArchiveGrid = document.getElementById('archiveGrid') && document.getElementById('archiveGrid').contains(e.target);
-        // 검색창 밖의 다른 메뉴/탭/일자 등을 선택하면 즉시 검색 해제 (반찬 담기나 카드 선택 시에는 해당 액션 직후 해제됨)
         if (!inSearchWrap && !inBasketList && !inArchiveGrid) {
           clearSearchIfActive();
         }
       }
     }, { passive: true });
 
-    // 사용자가 화면을 스크롤하거나 터치 이동할 때 식판의 노란 형광색 표시 자동 해제
     window.addEventListener('scroll', function() {
       if (window.newlyAddedTrayDishId && Date.now() >= window.trayHighlightLockUntil) {
         clearNewlyAddedTrayHighlight();
@@ -5605,7 +5658,74 @@
       }
     }, { passive: true });
 
-    // [1 & 2] 반찬 바구니 렌더링: 2글자 이상 검색어 노란 형광펜 + '+담기, -제외' 여백 최소화 및 초슬림화
+    // [1-1] 식판에 모으기 렌더링: 창 바깥으로 나가지 않도록 하고, 괄호 '(' 위치에서부터 자연스럽게 2열로 떨어지도록 구성
+    renderTray = function() {
+      const tray = document.getElementById('currentTray');
+      if (!tray) return;
+      tray.innerHTML = '';
+      tray.className = 'flex flex-wrap gap-x-1 gap-y-1 min-h-[30px] items-center py-0.5 max-w-full overflow-hidden';
+
+      let kidsCnt = 0;
+
+      currentTrayIds.forEach(function(id) {
+        const item = masterBasket.find(function(d) { return d.id === id; });
+        if (!item) return;
+
+        if (item.cat === '어린이반찬' || (item.name && item.name.includes('👶'))) kidsCnt++;
+
+        const style = catStyles[item.cat] ? catStyles[item.cat].badge : 'bg-slate-50 text-slate-800 border-slate-200';
+        const isNeon = window.newlyAddedTrayDishId && String(id) === String(window.newlyAddedTrayDishId);
+
+        // 반찬 이름 안에 괄호 '(' 가 있으면 첫 괄호 위치를 기준으로 앞부분과 뒷부분(괄호~준비kg)을 분리하여
+        // 공간이 좁아 2열이 될 때 반드시 괄호 '(' 위치에서부터 2열로 내려가도록 inline-block 처리
+        const rawName = String(item.name || '');
+        const parenIdx = rawName.indexOf('(');
+        let mainNamePart = rawName;
+        let nameParenPart = '';
+        if (parenIdx > 0) {
+          mainNamePart = rawName.slice(0, parenIdx).trim();
+          nameParenPart = rawName.slice(parenIdx).trim();
+        }
+        const kgBracketStr = item.kg ? '(' + item.kg + ')' : '';
+        const bracketGroupStr = [nameParenPart, kgBracketStr].filter(Boolean).join(' ');
+
+        const chip = document.createElement('div');
+        chip.setAttribute('data-tray-dish-id', String(id));
+        chip.className = style + ' border px-1.5 py-[2px] rounded-lg text-[13px] leading-tight font-extrabold flex items-center justify-between gap-1 shadow-2xs max-w-full box-border' + (isNeon ? ' tray-chip-neon-yellow' : '');
+
+        chip.innerHTML =
+          '<button type="button" onclick="openDishDetailModal(\'' + item.id + '\')" class="hover:underline text-left flex flex-wrap items-baseline gap-x-0.5 min-w-0 flex-1 leading-tight break-keep">' +
+            '<span class="inline-block break-keep">' + mainNamePart + '</span>' +
+            (bracketGroupStr ? '<span class="inline-block text-[11px] font-semibold opacity-80 whitespace-nowrap">' + bracketGroupStr + '</span>' : '') +
+          '</button>' +
+          '<button type="button" onclick="requestRemoveFromTray(\'' + item.id + '\')" title="식판에서 제외" class="bg-slate-100 hover:bg-slate-200 border border-slate-300 text-slate-600 hover:text-rose-600 font-bold rounded px-1 py-0.2 text-[10px] leading-none shrink-0 ml-0.5 transition">✕</button>';
+
+        tray.appendChild(chip);
+      });
+
+      if (currentTrayIds.length === 0) {
+        tray.innerHTML = '<span class="text-xs text-slate-400 whitespace-nowrap">아래 반찬 바구니에서 메뉴를 터치해 담아주세요.</span>';
+      }
+
+      const kb = document.getElementById('kidsBadge');
+      if (kb) {
+        kb.innerText = '어린이 반찬 ' + kidsCnt + '종';
+        kb.className = 'text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-bold whitespace-nowrap shrink-0';
+      }
+
+      const sumAdmin = document.getElementById('totalSummaryAdmin');
+      if (sumAdmin) sumAdmin.innerText = '총 ' + currentTrayIds.length + '종';
+      const sumMember = document.getElementById('totalSummaryMember');
+      if (sumMember) sumMember.innerText = '총 ' + currentTrayIds.length + '종';
+
+      const selDate = document.getElementById('currentDate');
+      if (selDate) applySeasonalTrayBorder(selDate.value);
+
+      renderBasket();
+      renderTrayPhotosStrip();
+    };
+
+    // 반찬 바구니 렌더링 유지
     renderBasket = function() {
       Object.keys(catStyles).forEach(function(cat) {
         const btn = document.getElementById('tab-' + cat);
@@ -5636,7 +5756,6 @@
         const btn = document.createElement('button');
         btn.type = 'button';
 
-        // 메뉴 이름 및 부가 정보(준비량 · 재료/조리요약) 표시 문자열 구성 + 2글자 이상 검색어 노란 형광펜 적용
         const nameHtml = highlightTextWithYellow(dish.name || '', query);
         const subInfoRaw = [dish.kg, dish.recipe].filter(function(v) { return v && v !== '기본 조리'; }).join(' · ') || (dish.kg || '');
         const subInfoHtml = highlightTextWithYellow(subInfoRaw, query);
@@ -5658,7 +5777,6 @@
             ? 'flex justify-between items-center px-1.5 py-1 rounded-lg ' + catBadgeStyle + ' border-2 border-slate-400 text-slate-900 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden'
             : 'flex justify-between items-center px-1.5 py-1 rounded-lg ' + catBadgeStyle + ' border hover:border-slate-300 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden';
 
-          // [2] '+담기, -제외' 표시창 여백 최소(px-[3px] py-[1px]) & 사이즈 축소(text-[8.5px])로 메뉴·재료 정보 영역 극대화
           const slimActionBadge = inTray
             ? '<span class="inline-flex items-center justify-center whitespace-nowrap text-[8.5px] leading-none font-extrabold text-rose-600 bg-rose-50/90 border border-rose-200 rounded-xs px-[3px] py-[1.5px] shrink-0 ml-0.5 tracking-tighter">－제외</span>'
             : '<span class="inline-flex items-center justify-center whitespace-nowrap text-[8.5px] leading-none font-extrabold text-emerald-700 bg-emerald-50/90 border border-emerald-200 rounded-xs px-[3px] py-[1.5px] shrink-0 ml-0.5 tracking-tighter">＋담기</span>';
@@ -5674,9 +5792,7 @@
       });
     };
 
-    // [3] '+담기' 선택 시: 바로 식판에 모으기로 들어가고, 식판 창을 화면 중앙에 배치하며, 들어온 메뉴를 노란 형광색으로 표시
     toggleDishInTray = async function(id) {
-      // 반찬을 선택하면 활성화되어 있던 검색어는 자동 해제
       const sInput = document.getElementById('basketSearch');
       const hadSearch = sInput && sInput.value.trim().length > 0;
       if (hadSearch) {
@@ -5689,13 +5805,11 @@
       } else {
         currentTrayIds.push(id);
         window.newlyAddedTrayDishId = id;
-        // 자동 중앙 스크롤이 진행되는 약 650ms 동안은 스크롤 이벤트로 형광색이 지워지지 않도록 보호
         window.trayHighlightLockUntil = Date.now() + 650;
 
         renderTray();
         if (hadSearch) renderArchiveGrid();
 
-        // 식판에 모으기 창(#trayCardBox)이 화면 중앙에 잘 보이도록 부드럽게 배치
         const trayBox = document.getElementById('trayCardBox');
         if (trayBox) {
           requestAnimationFrame(function() {
@@ -5706,26 +5820,7 @@
       }
     };
 
-    // 식판 렌더링 시 방금 들어온 메뉴(window.newlyAddedTrayDishId)에 노란 형광색 적용
-    const prevRenderTrayV85 = renderTray;
-    renderTray = function() {
-      prevRenderTrayV85();
-      const tray = document.getElementById('currentTray');
-      if (!tray) return;
-      const chips = Array.from(tray.children);
-      currentTrayIds.forEach(function(id, idx) {
-        const chipEl = chips[idx];
-        if (!chipEl || chipEl.tagName !== 'DIV') return;
-        chipEl.setAttribute('data-tray-dish-id', String(id));
-        if (window.newlyAddedTrayDishId && String(id) === String(window.newlyAddedTrayDishId)) {
-          chipEl.classList.add('tray-chip-neon-yellow');
-        } else {
-          chipEl.classList.remove('tray-chip-neon-yellow');
-        }
-      });
-    };
-
-    // [1] 지난 식단 기록 렌더링: 2글자 이상 검색어 필터링 & 일치 문자 노란 형광펜 표시 + 카드 선택 시 검색 자동 해제
+    // [2] 지난 식단 관리 카드 렌더링: 식수인원('300명')을 상단 '계절·일품/간편' 라인 오른쪽으로 이동 배치 + '년도 월 일(0주)' 전체 표시(월·일만 굵게)
     renderArchiveGrid = function() {
       stripStandardSuffixFromArchives();
       const filter = document.getElementById('archiveFilter') ? document.getElementById('archiveFilter').value : '전체';
@@ -5740,7 +5835,6 @@
           if (!passFilter) return false;
           if (!query) return true;
 
-          // 지난 식단 기록 내 제목, 일자, 반찬 이름, 장보기 재료 등에서 2글자 이상 검색어 매칭
           const dishNamesStr = (a.dishIds || []).map(function(id) {
             const found = masterBasket.find(function(d) { return d.id === id; });
             return found ? found.name : id;
@@ -5772,15 +5866,17 @@
         const firstPhotoSrc = getFirstPhotoSrcForArchive(item);
         const mainMenuTitleRaw = getMainMenuDisplayTitle(item);
         const cleanHc = item.headcount ? String(item.headcount).replace(/\s*\(기준\)/g, '').trim() : '';
-        const hcBadge = cleanHc
-          ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold whitespace-nowrap shrink-0">' + cleanHc + '</span>'
+
+        // 식수인원 배지: 상단 '계절·메뉴분류' 라인의 오른쪽(top-1.5 right-1.5)에 배치
+        const topRightHcBadge = cleanHc
+          ? '<span class="absolute top-1.5 right-1.5 bg-amber-50/95 text-amber-900 border border-amber-200 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold shadow-2xs whitespace-nowrap">' + cleanHc + '</span>'
           : '';
 
-        // 2글자 이상 검색 시 일치하는 문자에 노란 형광펜 표시
         const mainMenuTitleHtml = highlightTextWithYellow(mainMenuTitleRaw, query);
         const titleHtml = highlightTextWithYellow(item.title || '', query);
         const namesHtml = highlightTextWithYellow(namesRaw, query);
-        const dateHtml = highlightTextWithYellow(item.date || '', query);
+        // '년도 월 일(0주)' 전체가 다 표시되며 '월, 일'만 굵고 크게 포맷팅
+        const formattedDateHtml = formatArchiveDateWithBoldMonthDay(item.date || '', query);
 
         const mediaAreaHtml = firstPhotoSrc
           ? '<img src="' + firstPhotoSrc + '" class="w-full h-full object-cover">' +
@@ -5803,12 +5899,12 @@
         card.innerHTML =
           '<div class="relative h-28 border-b border-slate-100">' +
             mediaAreaHtml +
-            '<span class="absolute top-1.5 left-1.5 bg-white/85 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">' + item.season + '·' + item.menuType + '</span>' +
+            '<span class="absolute top-1.5 left-1.5 bg-white/90 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold shadow-2xs whitespace-nowrap">' + item.season + '·' + item.menuType + '</span>' +
+            topRightHcBadge +
           '</div>' +
           '<div class="p-2.5">' +
-            '<div class="flex items-center justify-between gap-1 whitespace-nowrap overflow-hidden">' +
-              '<p class="text-[10px] text-teal-700 font-bold truncate">' + dateHtml + '</p>' +
-              hcBadge +
+            '<div class="w-full whitespace-nowrap overflow-hidden">' +
+              '<p class="leading-tight tracking-tight whitespace-nowrap">' + formattedDateHtml + '</p>' +
             '</div>' +
             '<h4 class="font-extrabold text-xs text-slate-800 truncate mt-0.5">' + titleHtml + '</h4>' +
             '<p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">' + namesHtml + '</p>' +
@@ -5817,7 +5913,6 @@
       });
     };
 
-    // 지난 식단 카드를 선택(탭 또는 길게 누르기)하면 검색어 자동 해제 연동
     const origHighlightArchiveCard = highlightArchiveCard;
     highlightArchiveCard = function(archId) {
       const sInput = document.getElementById('basketSearch');
@@ -5829,7 +5924,6 @@
       origHighlightArchiveCard(archId);
     };
 
-    // 카테고리 탭 선택 시에도 검색어 자동 해제 보장
     selectCategory = function(cat) {
       currentCat = cat;
       const sInput = document.getElementById('basketSearch');
@@ -5840,14 +5934,12 @@
       renderBasket();
     };
 
-    // [v8.5 유지] "반찬등록/삭제/불러오기" 풀다운 메뉴 클래스 정리
     const slideDropdown = document.getElementById('basketSlideDropdown');
     if (slideDropdown) {
       slideDropdown.classList.remove('w-44', 'bg-white', 'border-slate-200');
       slideDropdown.classList.add('w-full', 'left-0', 'right-0', 'bg-emerald-50', 'border-emerald-300');
     }
 
-    // [v8.4 유지] A4출력 라인 제일 왼쪽에 hlogo.png 배치 + 짧게 터치(설명) / 길게 누르기(홈추가)
     const printBtn = document.querySelector('header button[onclick*="openPrintModal"]');
     if (printBtn && printBtn.parentNode) {
       const actionBar = printBtn.parentNode;
@@ -5904,7 +5996,6 @@
       });
     }
 
-    // "식판에 모으기", "반찬 바구니" 위쪽 테두리 중앙 둥근 바 스타일 보장
     const origApplySeasonalTrayBorder = applySeasonalTrayBorder;
     applySeasonalTrayBorder = function(dateStr) {
       if (origApplySeasonalTrayBorder) origApplySeasonalTrayBorder(dateStr);
@@ -5927,7 +6018,7 @@
     };
     applySeasonalTrayBorder();
 
-    // ================= [기존 v8.2~v8.5 크롭/사진/식단확정 핵심 패치 기능 유지] =================
+    // ================= [기존 크롭/사진/식단확정 핵심 패치 기능 유지] =================
     window.cropAutoBright = false;
 
     const stageArea = document.getElementById('cropStageArea');
@@ -6401,7 +6492,7 @@
         } else {
           await syncCurrentStateToDb();
         }
-        await showCustomAlert('식판 사진이 [' + selDateStr + '] 지난 식단 기록에 즉시 저장되었습니다!', '📸');
+        await showCustomAlert('식판 사진이 [' + selDateStr + '] 지난 식단 관리에 즉시 저장되었습니다!', '📸');
       } catch (err) {
         console.error(err);
         setCloudStatusLamp('disconnected');
@@ -6485,7 +6576,7 @@
         await syncCurrentStateToDb();
       }
 
-      await showCustomAlert('[' + dateStr + ']\n식단이 확정되어 아래 「지난 식단 기록」에 즉시 저장되었습니다!', '✅');
+      await showCustomAlert('[' + dateStr + ']\n식단이 확정되어 아래 「지난 식단 관리」에 즉시 저장되었습니다!', '✅');
     };
 
     renderTrayPhotosStrip = function() {
@@ -6508,7 +6599,7 @@
       validIds.forEach(function(pid, idx) {
         const wrap = document.createElement('div');
         wrap.className = 'relative shrink-0 w-14 h-11 rounded-lg overflow-hidden border border-slate-300 shadow-2xs bg-slate-100 cursor-pointer active:scale-95 transition';
-        wrap.title = '터치하면 식판과 지난 식단 기록에서 사진이 함께 삭제됩니다';
+        wrap.title = '터치하면 식판과 지난 식단 관리에서 사진이 함께 삭제됩니다';
 
         const img = document.createElement('img');
         img.src = dbPhotoStore[pid];
@@ -6532,7 +6623,7 @@
 
     removePhotoFromTrayStrip = async function(index) {
       if (!isLeader) return;
-      const ok = await showCustomConfirm('이 사진을 삭제할까요?\n(식판과 지난 식단 기록에서 모두 지워집니다)', '🗑️');
+      const ok = await showCustomConfirm('이 사진을 삭제할까요?\n(식판과 지난 식단 관리에서 모두 지워집니다)', '🗑️');
       if (!ok) return;
 
       const removedPhotoId = currentSavedPhotoIds[index];
@@ -6627,5 +6718,5 @@
     renderArchiveGrid();
   })();
 </script>
-<!-- ================= [패치 v8.6 END] ================= -->
+<!-- ================= [패치 v8.7 END] ================= -->
 </body></html>
