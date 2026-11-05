@@ -8564,4 +8564,181 @@
 })();
 </script>
 <!-- ================= [패치 v9.5 END] ================= -->
+
+<!-- ================= [패치 v9.6 START] ================= -->
+<style>
+  /* 로그인 상단 브랜드 정렬 컨테이너: 위(로고+타이틀)와 아래(설명서+문구) 좌측 시작선 및 폭 일치 */
+  #loginBrandAlignWrap {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    margin: 0 auto !important;
+  }
+  #loginTopLogoRow {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+  }
+  #loginHeaderDivider {
+    width: 100% !important;
+    height: 1px !important;
+    background-color: #e2e8f0 !important;
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+  }
+  #loginGateTitleBar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    margin-top: 0 !important;
+    width: 100% !important;
+  }
+  #loginHelpBtn {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 36px !important;
+    padding: 0 7px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 11px !important;
+    background-color: #f8fafc !important;
+    color: #334155 !important;
+    line-height: 1.05 !important;
+    text-decoration: none !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+  }
+  #loginGateSystemTitle {
+    font-size: 17.5px !important;
+    font-weight: 900 !important;
+    color: #1e293b !important;
+    letter-spacing: -0.01em !important;
+    line-height: 1.2 !important;
+    white-space: nowrap !important;
+    text-align: left !important;
+  }
+  /* 포커스 이동 시 카드 트랜지션 흔들림 방지 */
+  #loginGateCard {
+    will-change: auto !important;
+    transition: none !important;
+  }
+</style>
+<script>
+(function applyPatchV96() {
+  // [1] 로그인 상단 레이아웃 개편: [로고, 타이틀] / 여유 구분선 / [설명서, 주간 식단관리 시스템] 좌측 시작선 및 폭 맞춤
+  function restructureLoginHeaderV96() {
+    var loginCard = document.getElementById("loginGateCard");
+    if (!loginCard) return;
+    var topCol = loginCard.querySelector(".flex.flex-col.items-center");
+    if (!topCol) return;
+
+    var logoRow = topCol.querySelector(".flex.items-center.justify-center");
+    if (!logoRow) return;
+
+    // 이미 구조화되어 있으면 폭만 동기화
+    var alignWrap = document.getElementById("loginBrandAlignWrap");
+    if (!alignWrap) {
+      alignWrap = document.createElement("div");
+      alignWrap.id = "loginBrandAlignWrap";
+
+      logoRow.id = "loginTopLogoRow";
+      logoRow.className = "flex items-center justify-start gap-2.5";
+
+      var oldTitleBar = document.getElementById("loginGateTitleBar") || topCol.querySelector("p");
+      if (oldTitleBar && oldTitleBar.parentNode) {
+        oldTitleBar.parentNode.removeChild(oldTitleBar);
+      }
+
+      var divider = document.createElement("div");
+      divider.id = "loginHeaderDivider";
+
+      var newTitleBar = document.createElement("div");
+      newTitleBar.id = "loginGateTitleBar";
+      newTitleBar.innerHTML =
+        '<a id="loginHelpBtn" href="foodhelp.html" title="주간 식단관리 사용설명서 보기">' +
+          '<span class="q-mark">?</span>' +
+          '<span class="help-txt">사용설명서</span>' +
+        '</a>' +
+        '<span id="loginGateSystemTitle">주간 식단관리 시스템</span>';
+
+      topCol.innerHTML = "";
+      alignWrap.appendChild(logoRow);
+      alignWrap.appendChild(divider);
+      alignWrap.appendChild(newTitleBar);
+      topCol.appendChild(alignWrap);
+    }
+
+    // 위 로고 박스 폭과 아래 설명서 버튼 폭을 맞춰 시작 위치와 문구 정렬을 정확히 일치시킴
+    var topLogoBox = logoRow.querySelector("div:first-child");
+    var helpBtn = document.getElementById("loginHelpBtn");
+    if (topLogoBox && helpBtn) {
+      var logoBoxW = topLogoBox.offsetWidth;
+      if (logoBoxW > 30) {
+        helpBtn.style.minWidth = logoBoxW + "px";
+      }
+    }
+  }
+
+  restructureLoginHeaderV96();
+  window.addEventListener("load", restructureLoginHeaderV96);
+  setTimeout(restructureLoginHeaderV96, 120);
+
+  // [2] 이름 입력 시 화면 흔들림 없이 자연스럽게 코드 입력창으로 커서 이동
+  adjustLoginCardForKeyboard = function(isFocused) {
+    var card = document.getElementById("loginGateCard");
+    if (card) card.style.transform = "translateY(0px)";
+  };
+
+  var smoothAdvanceTimerV96 = null;
+  var lastAdvancedNameV96 = "";
+
+  handleGateNameAutoAdvance = function(inputEl, evt, isCompositionEnd) {
+    if (smoothAdvanceTimerV96) clearTimeout(smoothAdvanceTimerV96);
+    if (evt && evt.isComposing && !isCompositionEnd) return;
+
+    var val = (inputEl && inputEl.value ? inputEl.value : "").trim();
+    if (!val || val.length < 2) {
+      lastAdvancedNameV96 = "";
+      return;
+    }
+
+    var delay = isCompositionEnd ? 90 : 240;
+    smoothAdvanceTimerV96 = setTimeout(function() {
+      var currentVal = (inputEl && inputEl.value ? inputEl.value : "").trim();
+      var matched = (typeof findMatchedGateMember === "function") ? findMatchedGateMember(currentVal) : null;
+      if (matched && lastAdvancedNameV96 !== currentVal) {
+        lastAdvancedNameV96 = currentVal;
+        var codeEl = document.getElementById("gateAccessCode");
+        if (codeEl && document.activeElement === inputEl) {
+          // blur()를 호출하지 않고 preventScroll 옵션으로 바로 포커스만 이동하여 키보드/화면 흔들림 완벽 방지
+          codeEl.value = "";
+          try {
+            codeEl.focus({ preventScroll: true });
+          } catch (err) {
+            codeEl.focus();
+          }
+        }
+      }
+    }, delay);
+  };
+
+  var nameInp = document.getElementById("gateUserName");
+  if (nameInp) {
+    nameInp.onkeydown = function(event) {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        var codeEl = document.getElementById("gateAccessCode");
+        if (codeEl) {
+          try { codeEl.focus({ preventScroll: true }); } catch (e) { codeEl.focus(); }
+        }
+      }
+    };
+  }
+})();
+</script>
+<!-- ================= [패치 v9.6 END] ================= -->
 </body></html>
