@@ -7919,4 +7919,649 @@
 })();
 </script>
 <!-- ================= [패치 v9.4 END] ================= -->
+
+<!-- ================= [패치 v9.5 START] ================= -->
+<style>
+  #shoppingListModal, #shoppingListModal *:not(input) {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+  .shop-tree-checkbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 2px solid #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    flex-shrink: 0;
+    background-color: #ffffff;
+  }
+  .shop-tree-checkbox.checked {
+    background-color: #0d9488;
+    border-color: #0f766e;
+    color: #ffffff;
+  }
+  .shop-tree-checkbox.locked-box {
+    opacity: 0.65;
+    cursor: not-allowed;
+  }
+  .shop-group-locked {
+    background-color: #f1f5f9 !important;
+    border-color: #cbd5e1 !important;
+  }
+</style>
+
+<div id="shoppingListModal" onclick="if(event.target===this) closeShoppingListModal()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2.5 overscroll-none">
+  <div class="bg-white rounded-2xl w-[92vw] max-w-sm min-h-[80dvh] max-h-[95dvh] flex flex-col justify-between overflow-hidden shadow-2xl border-[4px] border-teal-400 box-border">
+    <div class="bg-teal-50/90 px-3 py-2.5 border-b border-teal-200 shrink-0">
+      <div class="flex items-center justify-between gap-1">
+        <div class="flex items-center gap-1.5 min-w-0">
+          <span class="text-base leading-none">🛒</span>
+          <h3 class="text-sm font-black text-teal-950 truncate">장보기 체크리스트</h3>
+        </div>
+        <span id="shoppingModalDateBadge" class="text-[10.5px] font-extrabold text-teal-900 bg-white px-2 py-0.5 rounded-lg border border-teal-200 shrink-0"></span>
+      </div>
+      <div class="mt-1.5 flex items-center justify-between text-[10px] font-extrabold text-teal-800 bg-white/80 px-2 py-1 rounded-lg border border-teal-100">
+        <span>💡 마지막 체크 길게눌러 잠금🔒</span>
+        <span>메뉴명 길게눌러 해제🔓</span>
+      </div>
+    </div>
+
+    <div id="shoppingTreeContainer" class="p-2.5 space-y-2.5 overflow-y-auto overscroll-contain flex-1 bg-slate-50/50"></div>
+
+    <div class="p-2.5 bg-white border-t border-slate-200 grid grid-cols-3 gap-2 shrink-0">
+      <button type="button" onclick="closeShoppingListModal()" class="col-span-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-extrabold py-2 rounded-xl text-xs transition active:scale-95">
+        임시닫기
+      </button>
+      <button type="button" onclick="completeShoppingAndCommit()" class="col-span-2 bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-xs shadow-sm transition active:scale-95">
+        ✅ 장보기 완료
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function applyPatchV95() {
+  var SHOPPING_STORAGE_KEY = "sejong_shopping_trees_v1";
+  var shoppingTreesMap = {};
+  try {
+    var rawShop = localStorage.getItem(SHOPPING_STORAGE_KEY);
+    if (rawShop) shoppingTreesMap = JSON.parse(rawShop) || {};
+  } catch (e) { shoppingTreesMap = {}; }
+
+  function saveShoppingTreesToLocal() {
+    try {
+      localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(shoppingTreesMap));
+    } catch (e) {}
+  }
+
+  // [1] 사진 크롭창 상단 타이틀("식판사진 등록/삭제 관리") 및 버튼("불러오기") 수정
+  function updatePhotoModalTextsV95() {
+    var modal = document.getElementById("photoUploadModal");
+    if (!modal) return;
+    var titleEl = modal.querySelector("h3");
+    if (titleEl) titleEl.innerText = "📸 식판사진 등록/삭제 관리";
+    var changeBtn = modal.querySelector('button[onclick*="inputGallery"]');
+    if (changeBtn) changeBtn.innerHTML = "🔄 불러오기";
+  }
+  updatePhotoModalTextsV95();
+
+  var _prevOpenPhotoModalV95 = openPhotoUploadModal;
+  openPhotoUploadModal = async function() {
+    updatePhotoModalTextsV95();
+    if (_prevOpenPhotoModalV95) return await _prevOpenPhotoModalV95();
+  };
+
+  // 모달 스크롤 잠금 감시에 shoppingListModal 추가
+  var shopModalEl = document.getElementById("shoppingListModal");
+  if (shopModalEl) {
+    var obs = new MutationObserver(function() {
+      if (!shopModalEl.classList.contains("hidden")) {
+        document.body.classList.add("modal-scroll-locked");
+      } else {
+        document.body.classList.remove("modal-scroll-locked");
+        document.body.style.top = "";
+      }
+    });
+    obs.observe(shopModalEl, { attributes: true, attributeFilter: ["class"] });
+  }
+
+  // [2] 현재 선택된 일자의 장보기 트리 구조 생성 및 동기화
+  function parseIngredientsFromText(str) {
+    if (!str) return [];
+    return String(str)
+      .split(/[,/\n]+/)
+      .map(function(s) { return s.trim(); })
+      .filter(function(s) { return s.length > 0 && s !== "기본 조리" && s !== "적당량"; });
+  }
+
+  function ensureShoppingTreeForDate(cleanDate) {
+    var matchedArch = (archiveList || []).find(function(a) {
+      return a && normalizeCompactDateStr(a.date) === cleanDate;
+    });
+
+    // 클라우드 아카이브에 저장된 shoppingTree가 있고 로컬에 없으면 복원
+    if (!shoppingTreesMap[cleanDate] && matchedArch && matchedArch.shoppingTree) {
+      shoppingTreesMap[cleanDate] = JSON.parse(JSON.stringify(matchedArch.shoppingTree));
+    }
+
+    var activeDishIds = (currentTrayIds && currentTrayIds.length > 0)
+      ? currentTrayIds.slice()
+      : (matchedArch && Array.isArray(matchedArch.dishIds) ? matchedArch.dishIds.slice() : []);
+
+    var existingTree = shoppingTreesMap[cleanDate];
+    var newGroups = [];
+
+    // 1) 각 메뉴별 그룹 구성
+    activeDishIds.forEach(function(dId) {
+      var dish = (masterBasket || []).find(function(x) { return x.id === dId; });
+      var dishName = dish ? dish.name : dId;
+      var prevGroup = existingTree && Array.isArray(existingTree.groups)
+        ? existingTree.groups.find(function(g) { return g.id === dId || g.name === dishName; })
+        : null;
+
+      if (prevGroup) {
+        prevGroup.name = dishName;
+        newGroups.push(prevGroup);
+      } else {
+        var initItems = [];
+        if (dish) {
+          var parsedNote = parseIngredientsFromText(dish.note);
+          var parsedRecipe = parseIngredientsFromText(dish.recipe);
+          var combined = parsedNote.concat(parsedRecipe);
+          if (combined.length > 0) {
+            combined.forEach(function(txt, idx) {
+              initItems.push({ id: "ing_" + Date.now() + "_" + idx + "_" + Math.random().toString(36).slice(2, 5), name: txt, checked: false });
+            });
+          } else {
+            var defaultLabel = dishName.replace("(👶)", "") + (dish.kg && dish.kg !== "적당량" ? " (" + dish.kg + ")" : " 주재료");
+            initItems.push({ id: "ing_" + Date.now() + "_0_" + Math.random().toString(36).slice(2, 5), name: defaultLabel, checked: false });
+          }
+        }
+        newGroups.push({
+          id: dId,
+          name: dishName,
+          isCommon: false,
+          locked: false,
+          items: initItems
+        });
+      }
+    });
+
+    // 2) 최하단 "공통재료" 그룹 구성
+    var prevCommon = existingTree && Array.isArray(existingTree.groups)
+      ? existingTree.groups.find(function(g) { return g.isCommon || g.id === "common_group"; })
+      : null;
+
+    if (prevCommon) {
+      prevCommon.id = "common_group";
+      prevCommon.name = "공통재료";
+      prevCommon.isCommon = true;
+      newGroups.push(prevCommon);
+    } else {
+      var commonItems = [];
+      if (matchedArch) {
+        var supArr = parseIngredientsFromText(matchedArch.supplies);
+        supArr.forEach(function(txt, idx) {
+          commonItems.push({ id: "com_" + Date.now() + "_" + idx + "_" + Math.random().toString(36).slice(2, 5), name: txt, checked: false });
+        });
+      }
+      newGroups.push({
+        id: "common_group",
+        name: "공통재료",
+        isCommon: true,
+        locked: false,
+        items: commonItems
+      });
+    }
+
+    shoppingTreesMap[cleanDate] = {
+      date: cleanDate,
+      groups: newGroups,
+      updatedAt: Date.now()
+    };
+    saveShoppingTreesToLocal();
+    return shoppingTreesMap[cleanDate];
+  }
+
+  function getActiveCleanDateV95() {
+    var curEl = document.getElementById("currentDate");
+    return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+  }
+
+  // [3] 장보기 버튼 터치 시: "식단 확정이 완료되었나요.?" (예/아니오) 확인 후 모달 오픈
+  window.openShoppingListModal = async function() {
+    var isConfirmed = await showCustomConfirm("식단 확정이 완료되었나요.?", "🛒");
+    if (!isConfirmed) return;
+
+    var cleanDate = getActiveCleanDateV95();
+    var badgeEl = document.getElementById("shoppingModalDateBadge");
+    if (badgeEl) badgeEl.innerText = cleanDate;
+
+    ensureShoppingTreeForDate(cleanDate);
+    renderShoppingTreeModal();
+    document.getElementById("shoppingListModal").classList.remove("hidden");
+  };
+
+  window.closeShoppingListModal = function() {
+    saveShoppingTreesToLocal();
+    var modal = document.getElementById("shoppingListModal");
+    if (modal) modal.classList.add("hidden");
+  };
+
+  // 길게 누르기(Long-Press) 헬퍼 (클릭과 롱프레스 분리)
+  function bindTapAndLongPressV95(el, onSingleTap, onLongPress) {
+    var timer = null;
+    var startX = 0, startY = 0;
+    var longFired = false;
+
+    el.oncontextmenu = function(e) { e.preventDefault(); e.stopPropagation(); return false; };
+
+    el.onpointerdown = function(e) {
+      if (e.button && e.button !== 0) return;
+      startX = e.clientX;
+      startY = e.clientY;
+      longFired = false;
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function() {
+        longFired = true;
+        timer = null;
+        if (navigator.vibrate) { try { navigator.vibrate(40); } catch (err) {} }
+        if (onLongPress) onLongPress(e);
+      }, 450);
+    };
+
+    el.onpointermove = function(e) {
+      if (!timer) return;
+      if (Math.hypot(e.clientX - startX, e.clientY - startY) > 10) {
+        clearTimeout(timer);
+        timer = null;
+      }
+    };
+
+    var finishPointer = function(e) {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+        if (!longFired && onSingleTap) {
+          onSingleTap(e);
+        }
+      }
+    };
+
+    el.onpointerup = finishPointer;
+    el.onpointercancel = function() { if (timer) { clearTimeout(timer); timer = null; } };
+    el.onpointerleave = function() { if (timer) { clearTimeout(timer); timer = null; } };
+  }
+
+  // 해당 재료가 그룹의 "마지막 체크박스"인지 판별 (맨 마지막 항목이거나, 유일하게 남은 미체크 항목인 경우)
+  function isLastCheckboxCandidate(group, itemIdx) {
+    if (!group || !Array.isArray(group.items) || group.items.length === 0) return false;
+    if (itemIdx === group.items.length - 1) return true;
+    var uncheckedIndices = [];
+    group.items.forEach(function(it, idx) {
+      if (!it.checked) uncheckedIndices.push(idx);
+    });
+    if (uncheckedIndices.length === 1 && uncheckedIndices[0] === itemIdx) return true;
+    if (uncheckedIndices.length === 0) return true;
+    return false;
+  }
+
+  // 재료 추가 인라인 입력칸 토글
+  window.activeAddInputGroupIdV95 = null;
+  window.openInlineAddIngredientV95 = function(groupId) {
+    if (window.activeAddInputGroupIdV95 === groupId) {
+      window.activeAddInputGroupIdV95 = null;
+    } else {
+      window.activeAddInputGroupIdV95 = groupId;
+    }
+    renderShoppingTreeModal();
+    setTimeout(function() {
+      var inp = document.getElementById("inlineAddIngInput_" + groupId);
+      if (inp) inp.focus();
+    }, 30);
+  };
+
+  window.submitInlineAddIngredientV95 = function(groupId) {
+    var inp = document.getElementById("inlineAddIngInput_" + groupId);
+    if (!inp) return;
+    var rawVal = String(inp.value || "").trim();
+    if (!rawVal) {
+      window.activeAddInputGroupIdV95 = null;
+      renderShoppingTreeModal();
+      return;
+    }
+    var cleanDate = getActiveCleanDateV95();
+    var tree = ensureShoppingTreeForDate(cleanDate);
+    var group = tree.groups.find(function(g) { return g.id === groupId; });
+    if (group && !group.locked) {
+      var parts = rawVal.split(/[,]+/).map(function(s) { return s.trim(); }).filter(Boolean);
+      parts.forEach(function(p, idx) {
+        group.items.push({
+          id: "ing_" + Date.now() + "_" + idx + "_" + Math.random().toString(36).slice(2, 5),
+          name: p,
+          checked: false
+        });
+      });
+      saveShoppingTreesToLocal();
+    }
+    window.activeAddInputGroupIdV95 = null;
+    renderShoppingTreeModal();
+  };
+
+  window.deleteShoppingIngredientItemV95 = function(groupId, itemId) {
+    var cleanDate = getActiveCleanDateV95();
+    var tree = ensureShoppingTreeForDate(cleanDate);
+    var group = tree.groups.find(function(g) { return g.id === groupId; });
+    if (!group || group.locked) return;
+    group.items = group.items.filter(function(it) { return it.id !== itemId; });
+    saveShoppingTreesToLocal();
+    renderShoppingTreeModal();
+  };
+
+  // [4] 장보기 트리 UI 렌더링
+  window.renderShoppingTreeModal = function() {
+    var container = document.getElementById("shoppingTreeContainer");
+    if (!container) return;
+    var cleanDate = getActiveCleanDateV95();
+    var tree = ensureShoppingTreeForDate(cleanDate);
+    container.innerHTML = "";
+
+    (tree.groups || []).forEach(function(group) {
+      var totalCnt = Array.isArray(group.items) ? group.items.length : 0;
+      var isLocked = Boolean(group.locked);
+      var isCommon = Boolean(group.isCommon);
+
+      var card = document.createElement("div");
+      card.className = "rounded-xl border p-2.5 shadow-2xs transition " +
+        (isLocked ? "shop-group-locked border-slate-300" : (isCommon ? "bg-amber-50/40 border-amber-200" : "bg-white border-slate-200"));
+
+      // 상위 메뉴 헤더 줄 (길게 누르면 잠금 해제)
+      var headerRow = document.createElement("div");
+      headerRow.className = "flex items-center justify-between gap-1 pb-1.5 border-b " +
+        (isLocked ? "border-slate-200 cursor-pointer" : (isCommon ? "border-amber-200/70" : "border-slate-100"));
+
+      var leftTitleWrap = document.createElement("div");
+      leftTitleWrap.className = "flex items-center gap-1.5 min-w-0 flex-1 py-0.5";
+      leftTitleWrap.innerHTML =
+        '<span class="text-xs shrink-0">' + (isLocked ? "🔒" : (isCommon ? "🧺" : "🍽️")) + '</span>' +
+        '<span class="text-[13px] font-black ' + (isLocked ? "text-slate-600" : (isCommon ? "text-amber-950" : "text-slate-900")) + ' truncate">' + group.name + '</span>' +
+        '<span class="text-[11.5px] font-extrabold ' + (isLocked ? "text-slate-500" : "text-teal-700") + ' shrink-0">(' + totalCnt + '개)</span>';
+
+      // 상위 메뉴를 길게 누르면 잠금 해제
+      bindTapAndLongPressV95(
+        leftTitleWrap,
+        function() {},
+        function() {
+          if (group.locked) {
+            group.locked = false;
+            saveShoppingTreesToLocal();
+            renderShoppingTreeModal();
+          }
+        }
+      );
+
+      var rightActionWrap = document.createElement("div");
+      rightActionWrap.className = "flex items-center gap-1 shrink-0";
+      if (isLocked) {
+        var lockBadge = document.createElement("span");
+        lockBadge.className = "text-[9.5px] font-extrabold bg-rose-100 text-rose-800 border border-rose-200 px-1.5 py-0.5 rounded-md";
+        lockBadge.innerText = "잠김 (메뉴 길게눌러 해제)";
+        bindTapAndLongPressV95(lockBadge, function() {}, function() {
+          group.locked = false;
+          saveShoppingTreesToLocal();
+          renderShoppingTreeModal();
+        });
+        rightActionWrap.appendChild(lockBadge);
+      } else {
+        var addBtn = document.createElement("button");
+        addBtn.type = "button";
+        addBtn.className = "text-[10px] font-extrabold bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 px-2 py-0.5 rounded-md active:scale-95 transition";
+        addBtn.innerText = "＋재료";
+        addBtn.onclick = function(e) {
+          e.stopPropagation();
+          window.openInlineAddIngredientV95(group.id);
+        };
+        rightActionWrap.appendChild(addBtn);
+      }
+
+      headerRow.appendChild(leftTitleWrap);
+      headerRow.appendChild(rightActionWrap);
+      card.appendChild(headerRow);
+
+      // 인라인 재료 추가 입력창
+      if (!isLocked && window.activeAddInputGroupIdV95 === group.id) {
+        var addInputRow = document.createElement("div");
+        addInputRow.className = "mt-1.5 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-teal-300";
+        addInputRow.innerHTML =
+          '<input id="inlineAddIngInput_' + group.id + '" type="text" placeholder="재료명 입력 (쉼표로 여러개 가능)" class="flex-1 min-w-0 text-xs font-bold bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none focus:border-teal-500">' +
+          '<button type="button" onclick="submitInlineAddIngredientV95(\'' + group.id + '\')" class="bg-teal-600 text-white text-[11px] font-extrabold px-2.5 py-1 rounded shrink-0">추가</button>';
+        var inpField = addInputRow.querySelector("input");
+        if (inpField) {
+          inpField.onkeydown = function(ev) {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              window.submitInlineAddIngredientV95(group.id);
+            }
+          };
+        }
+        card.appendChild(addInputRow);
+      }
+
+      // 하위 재료 트리 리스트
+      var treeList = document.createElement("div");
+      treeList.className = "mt-1.5 pl-1.5 space-y-1";
+
+      if (totalCnt === 0) {
+        var emptyRow = document.createElement("div");
+        emptyRow.className = "text-[11px] text-slate-400 font-semibold pl-2 py-1";
+        emptyRow.innerText = "└─ 등록된 구입 재료가 없습니다 (우측 ＋재료 버튼으로 추가)";
+        treeList.appendChild(emptyRow);
+      } else {
+        group.items.forEach(function(item, idx) {
+          var isLastRow = (idx === totalCnt - 1);
+          var branchChar = isLastRow ? "└─" : "├─";
+          var canLockHere = isLastCheckboxCandidate(group, idx);
+
+          var itemRow = document.createElement("div");
+          itemRow.className = "flex items-center justify-between gap-1.5 py-1 px-1 rounded-lg transition " +
+            (item.checked ? "bg-teal-50/50" : "hover:bg-slate-50");
+
+          var leftTouchArea = document.createElement("div");
+          leftTouchArea.className = "flex items-center gap-1.5 min-w-0 flex-1 " + (isLocked ? "cursor-not-allowed" : "cursor-pointer");
+
+          var branchSpan = document.createElement("span");
+          branchSpan.className = "text-slate-300 font-mono text-xs shrink-0 select-none";
+          branchSpan.innerText = branchChar;
+
+          var chkBox = document.createElement("span");
+          chkBox.className = "shop-tree-checkbox" + (item.checked ? " checked" : "") + (isLocked ? " locked-box" : "");
+          chkBox.innerHTML = item.checked ? '<span class="text-[11px] font-black leading-none">✓</span>' : "";
+
+          var nameSpan = document.createElement("span");
+          nameSpan.className = "text-xs font-bold leading-snug break-keep " +
+            (item.checked ? "line-through text-slate-400" : "text-slate-800");
+          nameSpan.innerText = item.name;
+
+          leftTouchArea.appendChild(branchSpan);
+          leftTouchArea.appendChild(chkBox);
+          leftTouchArea.appendChild(nameSpan);
+
+          if (isLastRow && !isLocked) {
+            var lockHint = document.createElement("span");
+            lockHint.className = "text-[9px] text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.2 rounded font-bold shrink-0 ml-1";
+            lockHint.innerText = "길게눌러 잠금";
+            leftTouchArea.appendChild(lockHint);
+          }
+
+          // 잠긴 상태에서는 하위 체크박스 터치 불가 / 잠금 전에는 터치 시 체크 토글, 마지막 체크박스 길게 누르면 잠금!
+          bindTapAndLongPressV95(
+            leftTouchArea,
+            function() {
+              if (group.locked) return;
+              item.checked = !item.checked;
+              saveShoppingTreesToLocal();
+              renderShoppingTreeModal();
+            },
+            function() {
+              if (group.locked) return;
+              if (canLockHere || isLastRow) {
+                item.checked = true;
+                group.locked = true;
+                saveShoppingTreesToLocal();
+                renderShoppingTreeModal();
+              }
+            }
+          );
+
+          itemRow.appendChild(leftTouchArea);
+
+          if (!isLocked) {
+            var delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.className = "text-[10px] text-slate-300 hover:text-rose-500 font-bold px-1.5 py-0.5 shrink-0";
+            delBtn.innerText = "✕";
+            delBtn.onclick = function(e) {
+              e.stopPropagation();
+              window.deleteShoppingIngredientItemV95(group.id, item.id);
+            };
+            itemRow.appendChild(delBtn);
+          }
+
+          treeList.appendChild(itemRow);
+        });
+      }
+
+      card.appendChild(treeList);
+      container.appendChild(card);
+    });
+  };
+
+  // [5] 최하단 "장보기 완료" 기능: 식판에 모으기, 바구니, 지난 식단 관리 등 관련 자료에 완전히 수정 업데이트 & 기존 구 데이터 덮어쓰기 삭제
+  window.completeShoppingAndCommit = async function() {
+    var ok = await showCustomConfirm("장보기를 완료하시겠습니까?\n현재 장보기 내역으로 식판 및 지난 식단 관리 데이터가 완전히 업데이트되며 기존 데이터는 교체됩니다.", "✅");
+    if (!ok) return;
+
+    var cleanDate = getActiveCleanDateV95();
+    var tree = ensureShoppingTreeForDate(cleanDate);
+
+    var menuIngSummaryLines = [];
+    var commonSuppliesList = [];
+    var updatedDishIds = [];
+    var modifiedBasketDishes = [];
+
+    (tree.groups || []).forEach(function(group) {
+      var itemNames = (group.items || []).map(function(it) { return it.name; }).filter(Boolean);
+      if (group.isCommon || group.id === "common_group") {
+        commonSuppliesList = itemNames.slice();
+      } else {
+        updatedDishIds.push(group.id);
+        if (itemNames.length > 0) {
+          menuIngSummaryLines.push("• " + group.name.replace("(👶)", "") + ": " + itemNames.join(", "));
+        }
+        // 반찬 바구니(masterBasket)의 해당 메뉴 재료/비고도 최신 장보기 내역으로 덮어쓰기 업데이트
+        var dishObj = (masterBasket || []).find(function(d) { return d.id === group.id; });
+        if (dishObj && itemNames.length > 0) {
+          dishObj.note = itemNames.join(", ");
+          modifiedBasketDishes.push(dishObj);
+        }
+      }
+    });
+
+    var finalRawIngredients = menuIngSummaryLines.join("\n");
+    var finalSupplies = commonSuppliesList.join(", ");
+
+    // 1) 식판에 모으기(currentTrayIds) 및 주간 계획(weeklyPlanMap) 기존 데이터 교체 업데이트
+    currentTrayIds = updatedDishIds.slice();
+    var firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || "default_4");
+    if (weeklyPlanMap) {
+      weeklyPlanMap[cleanDate] = {
+        trayIds: currentTrayIds.slice(),
+        photoId: firstPhotoId,
+        photoIds: (currentSavedPhotoIds || []).slice(),
+        shoppingCompleted: true,
+        updatedAt: Date.now()
+      };
+      if (typeof saveLocalWeeklyPlans === "function") saveLocalWeeklyPlans();
+    }
+
+    // 2) 지난 식단 관리(archiveList)에서 해당 일자의 기존 중복/구 데이터를 모두 제거하고 최신 완료 데이터 1건으로 완전 대체
+    var existingArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
+    var oldArchIdsToDelete = [];
+    (archiveList || []).forEach(function(a) {
+      if (a && normalizeCompactDateStr(a.date) === cleanDate) {
+        oldArchIdsToDelete.push(String(a.id));
+      }
+    });
+
+    var firstMain = (masterBasket || []).find(function(d) { return currentTrayIds.indexOf(d.id) !== -1 && d.cat === "메인반찬"; }) ||
+                    (masterBasket || []).find(function(d) { return d.id === currentTrayIds[0]; });
+    var newArchId = existingArch ? String(existingArch.id) : String(Date.now());
+
+    var updatedArchive = {
+      id: newArchId,
+      date: cleanDate,
+      title: existingArch && existingArch.title ? existingArch.title : ((firstMain ? firstMain.name.replace("(👶)", "") : "공동체") + " 식단"),
+      season: existingArch && existingArch.season ? existingArch.season : (typeof inferSeasonFromDateStr === "function" ? inferSeasonFromDateStr(cleanDate) : "가을"),
+      menuType: existingArch && existingArch.menuType ? existingArch.menuType : "육류",
+      dishIds: currentTrayIds.slice(),
+      headcount: existingArch && existingArch.headcount ? String(existingArch.headcount).replace(/\s*\(기준\)/g, "").trim() : "300명",
+      leftoverNote: existingArch && existingArch.leftoverNote ? existingArch.leftoverNote : "장보기 완료",
+      rawIngredients: finalRawIngredients,
+      supplies: finalSupplies,
+      shoppingTree: JSON.parse(JSON.stringify(tree)),
+      shoppingCompletedAt: Date.now(),
+      likes: existingArch && existingArch.likes ? existingArch.likes : 9,
+      photoId: existingArch && existingArch.photoId && String(existingArch.photoId).indexOf("default_") !== 0 ? existingArch.photoId : firstPhotoId,
+      photoIds: existingArch && Array.isArray(existingArch.photoIds) && existingArch.photoIds.length > 0 ? existingArch.photoIds : (currentSavedPhotoIds || []).slice(),
+      createdAt: Date.now()
+    };
+
+    // 기존 동일 일자 아카이브 데이터를 모두 지우고 새 아카이브로 교체
+    archiveList = (archiveList || []).filter(function(a) {
+      return !(a && normalizeCompactDateStr(a.date) === cleanDate);
+    });
+    archiveList.unshift(updatedArchive);
+
+    // 3) 기존 임시 장보기 캐시는 완료된 트리로 깔끔히 갱신
+    shoppingTreesMap[cleanDate] = tree;
+    saveShoppingTreesToLocal();
+
+    closeShoppingListModal();
+    renderTray();
+    renderArchiveGrid();
+
+    // 4) Firebase 클라우드 동기화 (구 문서 정리 및 최신 문서 저장)
+    if (db) {
+      setCloudStatusLamp("saving");
+      try {
+        var promises = [];
+        oldArchIdsToDelete.forEach(function(oldId) {
+          if (String(oldId) !== String(newArchId)) {
+            promises.push(db.collection("archives").doc(String(oldId)).delete().catch(function() {}));
+          }
+        });
+        modifiedBasketDishes.forEach(function(dObj) {
+          promises.push(db.collection("basket").doc(String(dObj.id)).set(dObj, { merge: true }).catch(function() {}));
+        });
+        promises.push(db.collection("archives").doc(String(newArchId)).set(updatedArchive));
+        promises.push(syncCurrentStateToDb());
+        await Promise.all(promises);
+        setCloudStatusLamp("connected");
+      } catch (err) {
+        console.error(err);
+        setCloudStatusLamp("disconnected");
+      }
+    } else {
+      await syncCurrentStateToDb();
+    }
+
+    await showCustomAlert("[" + cleanDate + "]\n장보기 완료 처리되어 식판 및 지난 식단 관리 자료가 최신 내역으로 완전히 업데이트되었습니다!", "🎉");
+  };
+})();
+</script>
+<!-- ================= [패치 v9.5 END] ================= -->
 </body></html>
