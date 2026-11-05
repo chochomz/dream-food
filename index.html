@@ -5192,7 +5192,9 @@
 
 
 
-<!-- ================= [패치 v8.5 START] ================= -->
+
+
+<!-- ================= [패치 v8.6 START] ================= -->
 <link rel="apple-touch-icon" href="hlogo.png">
 <link rel="icon" type="image/png" href="hlogo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5200,15 +5202,37 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <style>
-  /* [신규 v8.5] "반찬등록/삭제/불러오기" 풀다운 메뉴: 버튼과 동일한 가로 사이즈(100%) + 연한 초록색 배경 */
+  /* [신규 v8.6] 검색어 일치 노란 형광펜 & 식판 신규 추가 메뉴 노란 형광색 스타일 */
+  .hl-yellow-mark {
+    background-color: #fef08a !important; /* 선명한 노란 형광색 */
+    color: #0f172a !important;
+    font-weight: 900 !important;
+    padding: 0 2px !important;
+    border-radius: 3px !important;
+    box-shadow: 0 0 0 1px #fde047 !important;
+  }
+  .tray-chip-neon-yellow {
+    background-color: #fef08a !important;
+    border: 2px solid #eab308 !important;
+    color: #0f172a !important;
+    box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.45) !important;
+    transition: all 0.2s ease !important;
+  }
+  .tray-chip-neon-yellow button,
+  .tray-chip-neon-yellow span {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+  }
+
+  /* [v8.5 유지] "반찬등록/삭제/불러오기" 풀다운 메뉴: 버튼과 동일한 가로 사이즈(100%) + 연한 초록색 배경 */
   #basketSlideDropdown {
     width: 100% !important;
     min-width: 100% !important;
     max-width: 100% !important;
     left: 0 !important;
     right: 0 !important;
-    background-color: #ecfdf5 !important; /* 연한 초록색 (emerald-50) */
-    border: 1.5px solid #6ee7b7 !important; /* 초록 테두리 (emerald-300) */
+    background-color: #ecfdf5 !important;
+    border: 1.5px solid #6ee7b7 !important;
     border-radius: 0.75rem !important;
     box-sizing: border-box !important;
     padding: 2px 0 !important;
@@ -5217,7 +5241,7 @@
     padding: 7px 8px !important;
     font-size: 11px !important;
     background-color: transparent !important;
-    border-bottom-color: #a7f3d0 !important; /* 은은한 초록 구분선 (emerald-200) */
+    border-bottom-color: #a7f3d0 !important;
     white-space: nowrap !important;
   }
   #basketSlideDropdown > button:last-child {
@@ -5225,7 +5249,7 @@
   }
   #basketSlideDropdown > button:hover,
   #basketSlideDropdown > button:active {
-    background-color: #d1fae5 !important; /* 터치 시 살짝 진한 연초록 (emerald-100) */
+    background-color: #d1fae5 !important;
   }
   #basketSlideDropdown > button span:last-child {
     font-size: 9.5px !important;
@@ -5290,7 +5314,6 @@
     display: block !important;
   }
 
-  /* 좌측 상단 hlogo 길게 누를 때 브라우저 기본 이미지 복사/저장 팝업 차단 */
   #homeAddLogoBtn, #homeAddLogoBtn img {
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
@@ -5392,8 +5415,57 @@
 </div>
 
 <script>
-  // ================= [패치 v8.5] 풀다운 메뉴 사이즈 일치 & 연초록 배경 + 검색창 문구 수정 + v8.4 전체 유지 =================
+  // ================= [패치 v8.6] 2글자 통합검색 형광펜 / +담기,-제외 초슬림화 / 식판 중앙배치 & 형광표시 =================
 
+  // 방금 식판에 추가된 메뉴 ID 및 자동 스크롤 타임스탬프 관리
+  window.newlyAddedTrayDishId = null;
+  window.trayHighlightLockUntil = 0;
+
+  // 2글자 이상 검색어 추출 함수
+  function getActiveSearchQuery() {
+    const el = document.getElementById('basketSearch');
+    if (!el) return '';
+    const raw = String(el.value || '').trim();
+    return raw.length >= 2 ? raw : '';
+  }
+
+  // 텍스트 내 일치하는 검색어를 노란색 형광펜으로 감싸는 헬퍼
+  function highlightTextWithYellow(text, query) {
+    const str = String(text || '');
+    if (!query || query.length < 2) return str;
+    const escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      const regex = new RegExp('(' + escaped + ')', 'gi');
+      return str.replace(regex, '<mark class="hl-yellow-mark">$1</mark>');
+    } catch (e) {
+      return str;
+    }
+  }
+
+  // 검색창 이외의 다른 것을 선택했을 때 검색 내용을 자동 해제하는 함수
+  function clearSearchIfActive() {
+    const el = document.getElementById('basketSearch');
+    if (el && el.value.trim().length > 0) {
+      el.value = '';
+      renderBasket();
+      renderArchiveGrid();
+    }
+  }
+
+  // 식판에 새로 들어온 메뉴의 노란 형광색 표시를 해제하는 함수
+  function clearNewlyAddedTrayHighlight() {
+    if (!window.newlyAddedTrayDishId) return;
+    if (Date.now() < window.trayHighlightLockUntil) return;
+    window.newlyAddedTrayDishId = null;
+    const tray = document.getElementById('currentTray');
+    if (tray) {
+      tray.querySelectorAll('.tray-chip-neon-yellow').forEach(function(el) {
+        el.classList.remove('tray-chip-neon-yellow');
+      });
+    }
+  }
+
+  // PWA 동적 매니페스트 생성
   (function injectDynamicPwaManifest() {
     try {
       const iconAbsoluteUrl = new URL('hlogo.png', window.location.href).href;
@@ -5481,14 +5553,294 @@
     openAddToHomeModal();
   }
 
-  (function applyPatchV85() {
-    // [1] 반찬 검색창 placeholder 문구를 '반찬 이름 검색'으로 수정
+  (function applyPatchV86() {
+    // 검색창 안내 문구 및 이벤트 연결 (입력 시 반찬 바구니 + 지난 식단 기록 동시 검색)
     const searchInput = document.getElementById('basketSearch');
     if (searchInput) {
       searchInput.setAttribute('placeholder', '반찬 이름 검색');
+      searchInput.oninput = function() {
+        renderBasket();
+        renderArchiveGrid();
+      };
+      // 우측 ✕ 초기화 버튼 클릭 시에도 반찬 바구니와 지난 식단 기록 동시 갱신
+      const clearBtn = searchInput.parentNode ? searchInput.parentNode.querySelector('button') : null;
+      if (clearBtn) {
+        clearBtn.onclick = function(e) {
+          e.stopPropagation();
+          searchInput.value = '';
+          renderBasket();
+          renderArchiveGrid();
+        };
+      }
     }
 
-    // [2] "반찬등록/삭제/불러오기" 풀다운 메뉴 클래스 정리 (w-44 제거 후 100% 폭 & 연초록 테마 적용)
+    // 다른 요소를 터치하거나 선택할 때: ① 신규 담긴 메뉴 노란 형광색 해제, ② 검색창 외 선택 시 검색 해제
+    document.addEventListener('pointerdown', function(e) {
+      if (window.newlyAddedTrayDishId && Date.now() >= window.trayHighlightLockUntil) {
+        clearNewlyAddedTrayHighlight();
+      }
+      const sInput = document.getElementById('basketSearch');
+      if (sInput && sInput.value.trim().length > 0) {
+        const searchWrap = sInput.parentNode;
+        const inSearchWrap = searchWrap && searchWrap.contains(e.target);
+        const inBasketList = document.getElementById('basketList') && document.getElementById('basketList').contains(e.target);
+        const inArchiveGrid = document.getElementById('archiveGrid') && document.getElementById('archiveGrid').contains(e.target);
+        // 검색창 밖의 다른 메뉴/탭/일자 등을 선택하면 즉시 검색 해제 (반찬 담기나 카드 선택 시에는 해당 액션 직후 해제됨)
+        if (!inSearchWrap && !inBasketList && !inArchiveGrid) {
+          clearSearchIfActive();
+        }
+      }
+    }, { passive: true });
+
+    // 사용자가 화면을 스크롤하거나 터치 이동할 때 식판의 노란 형광색 표시 자동 해제
+    window.addEventListener('scroll', function() {
+      if (window.newlyAddedTrayDishId && Date.now() >= window.trayHighlightLockUntil) {
+        clearNewlyAddedTrayHighlight();
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function() {
+      if (window.newlyAddedTrayDishId && Date.now() >= window.trayHighlightLockUntil) {
+        clearNewlyAddedTrayHighlight();
+      }
+    }, { passive: true });
+
+    // [1 & 2] 반찬 바구니 렌더링: 2글자 이상 검색어 노란 형광펜 + '+담기, -제외' 여백 최소화 및 초슬림화
+    renderBasket = function() {
+      Object.keys(catStyles).forEach(function(cat) {
+        const btn = document.getElementById('tab-' + cat);
+        if (!btn) return;
+        btn.className = (cat === currentCat)
+          ? 'py-1 rounded-lg border transition whitespace-nowrap ' + catStyles[cat].tabActive
+          : 'py-1 rounded-lg border transition whitespace-nowrap ' + (catStyles[cat].tabInactive || 'bg-white text-slate-600 border-slate-200');
+      });
+
+      const query = getActiveSearchQuery();
+      const listEl = document.getElementById('basketList');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      const filtered = query
+        ? masterBasket.filter(function(d) {
+            return (d.name && d.name.includes(query)) ||
+                   (d.recipe && d.recipe.includes(query)) ||
+                   (d.kg && d.kg.includes(query)) ||
+                   (d.note && d.note.includes(query));
+          })
+        : masterBasket.filter(function(d) { return d.cat === currentCat; });
+
+      filtered.forEach(function(dish) {
+        const inTray = currentTrayIds.includes(dish.id);
+        const isDelSelected = isBasketDeleteMode && selectedBasketDeleteIds.includes(dish.id);
+        const catBadgeStyle = catStyles[dish.cat] ? catStyles[dish.cat].badge : 'bg-white text-slate-700 border-slate-200';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+
+        // 메뉴 이름 및 부가 정보(준비량 · 재료/조리요약) 표시 문자열 구성 + 2글자 이상 검색어 노란 형광펜 적용
+        const nameHtml = highlightTextWithYellow(dish.name || '', query);
+        const subInfoRaw = [dish.kg, dish.recipe].filter(function(v) { return v && v !== '기본 조리'; }).join(' · ') || (dish.kg || '');
+        const subInfoHtml = highlightTextWithYellow(subInfoRaw, query);
+
+        if (isBasketDeleteMode) {
+          btn.onclick = function() { toggleSelectDishForDelete(dish.id); };
+          btn.className = isDelSelected
+            ? 'flex justify-between items-center px-1.5 py-1 rounded-lg bg-rose-100 border-2 border-rose-500 text-rose-950 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden'
+            : 'flex justify-between items-center px-1.5 py-1 rounded-lg bg-white border border-rose-200 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden';
+          btn.innerHTML =
+            '<div class="truncate pr-0.5 min-w-0 flex-1">' +
+              '<p class="truncate text-[11.5px] leading-tight">' + nameHtml + '</p>' +
+              '<p class="text-[9.5px] text-slate-500 font-normal truncate leading-tight">' + subInfoHtml + '</p>' +
+            '</div>' +
+            '<span class="text-[9px] whitespace-nowrap shrink-0 ml-0.5 ' + (isDelSelected ? 'text-rose-700 font-extrabold' : 'text-slate-400') + '">' + (isDelSelected ? '☑️' : '☐') + '</span>';
+        } else {
+          btn.onclick = function() { toggleDishInTray(dish.id); };
+          btn.className = inTray
+            ? 'flex justify-between items-center px-1.5 py-1 rounded-lg ' + catBadgeStyle + ' border-2 border-slate-400 text-slate-900 text-xs font-extrabold text-left whitespace-nowrap overflow-hidden'
+            : 'flex justify-between items-center px-1.5 py-1 rounded-lg ' + catBadgeStyle + ' border hover:border-slate-300 text-slate-700 text-xs font-medium text-left whitespace-nowrap overflow-hidden';
+
+          // [2] '+담기, -제외' 표시창 여백 최소(px-[3px] py-[1px]) & 사이즈 축소(text-[8.5px])로 메뉴·재료 정보 영역 극대화
+          const slimActionBadge = inTray
+            ? '<span class="inline-flex items-center justify-center whitespace-nowrap text-[8.5px] leading-none font-extrabold text-rose-600 bg-rose-50/90 border border-rose-200 rounded-xs px-[3px] py-[1.5px] shrink-0 ml-0.5 tracking-tighter">－제외</span>'
+            : '<span class="inline-flex items-center justify-center whitespace-nowrap text-[8.5px] leading-none font-extrabold text-emerald-700 bg-emerald-50/90 border border-emerald-200 rounded-xs px-[3px] py-[1.5px] shrink-0 ml-0.5 tracking-tighter">＋담기</span>';
+
+          btn.innerHTML =
+            '<div class="truncate pr-0.5 min-w-0 flex-1">' +
+              '<p class="truncate text-[11.5px] leading-tight">' + nameHtml + '</p>' +
+              '<p class="text-[9.5px] text-slate-500 font-normal truncate leading-tight">' + subInfoHtml + '</p>' +
+            '</div>' +
+            slimActionBadge;
+        }
+        listEl.appendChild(btn);
+      });
+    };
+
+    // [3] '+담기' 선택 시: 바로 식판에 모으기로 들어가고, 식판 창을 화면 중앙에 배치하며, 들어온 메뉴를 노란 형광색으로 표시
+    toggleDishInTray = async function(id) {
+      // 반찬을 선택하면 활성화되어 있던 검색어는 자동 해제
+      const sInput = document.getElementById('basketSearch');
+      const hadSearch = sInput && sInput.value.trim().length > 0;
+      if (hadSearch) {
+        sInput.value = '';
+      }
+
+      if (currentTrayIds.includes(id)) {
+        if (hadSearch) renderArchiveGrid();
+        requestRemoveFromTray(id);
+      } else {
+        currentTrayIds.push(id);
+        window.newlyAddedTrayDishId = id;
+        // 자동 중앙 스크롤이 진행되는 약 650ms 동안은 스크롤 이벤트로 형광색이 지워지지 않도록 보호
+        window.trayHighlightLockUntil = Date.now() + 650;
+
+        renderTray();
+        if (hadSearch) renderArchiveGrid();
+
+        // 식판에 모으기 창(#trayCardBox)이 화면 중앙에 잘 보이도록 부드럽게 배치
+        const trayBox = document.getElementById('trayCardBox');
+        if (trayBox) {
+          requestAnimationFrame(function() {
+            trayBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          });
+        }
+        await syncCurrentStateToDb();
+      }
+    };
+
+    // 식판 렌더링 시 방금 들어온 메뉴(window.newlyAddedTrayDishId)에 노란 형광색 적용
+    const prevRenderTrayV85 = renderTray;
+    renderTray = function() {
+      prevRenderTrayV85();
+      const tray = document.getElementById('currentTray');
+      if (!tray) return;
+      const chips = Array.from(tray.children);
+      currentTrayIds.forEach(function(id, idx) {
+        const chipEl = chips[idx];
+        if (!chipEl || chipEl.tagName !== 'DIV') return;
+        chipEl.setAttribute('data-tray-dish-id', String(id));
+        if (window.newlyAddedTrayDishId && String(id) === String(window.newlyAddedTrayDishId)) {
+          chipEl.classList.add('tray-chip-neon-yellow');
+        } else {
+          chipEl.classList.remove('tray-chip-neon-yellow');
+        }
+      });
+    };
+
+    // [1] 지난 식단 기록 렌더링: 2글자 이상 검색어 필터링 & 일치 문자 노란 형광펜 표시 + 카드 선택 시 검색 자동 해제
+    renderArchiveGrid = function() {
+      stripStandardSuffixFromArchives();
+      const filter = document.getElementById('archiveFilter') ? document.getElementById('archiveFilter').value : '전체';
+      const query = getActiveSearchQuery();
+      const grid = document.getElementById('archiveGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const filtered = archiveList
+        .filter(function(a) {
+          const passFilter = (filter === '전체' || a.season === filter || a.menuType === filter);
+          if (!passFilter) return false;
+          if (!query) return true;
+
+          // 지난 식단 기록 내 제목, 일자, 반찬 이름, 장보기 재료 등에서 2글자 이상 검색어 매칭
+          const dishNamesStr = (a.dishIds || []).map(function(id) {
+            const found = masterBasket.find(function(d) { return d.id === id; });
+            return found ? found.name : id;
+          }).filter(Boolean).join(' ');
+
+          const searchableText = [
+            a.title || '',
+            a.date || '',
+            dishNamesStr,
+            a.rawIngredients || '',
+            a.leftoverNote || ''
+          ].join(' ');
+
+          return searchableText.includes(query);
+        })
+        .slice()
+        .sort(function(a, b) {
+          const dateDiff = parseArchiveDateValue(b.date) - parseArchiveDateValue(a.date);
+          if (dateDiff !== 0) return dateDiff;
+          return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+        });
+
+      filtered.forEach(function(item) {
+        const namesRaw = (item.dishIds || []).map(function(id) {
+          const found = masterBasket.find(function(d) { return d.id === id; });
+          return found ? found.name : id;
+        }).filter(Boolean).join(', ');
+
+        const firstPhotoSrc = getFirstPhotoSrcForArchive(item);
+        const mainMenuTitleRaw = getMainMenuDisplayTitle(item);
+        const cleanHc = item.headcount ? String(item.headcount).replace(/\s*\(기준\)/g, '').trim() : '';
+        const hcBadge = cleanHc
+          ? '<span class="text-[9.5px] bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.2 rounded font-bold whitespace-nowrap shrink-0">' + cleanHc + '</span>'
+          : '';
+
+        // 2글자 이상 검색 시 일치하는 문자에 노란 형광펜 표시
+        const mainMenuTitleHtml = highlightTextWithYellow(mainMenuTitleRaw, query);
+        const titleHtml = highlightTextWithYellow(item.title || '', query);
+        const namesHtml = highlightTextWithYellow(namesRaw, query);
+        const dateHtml = highlightTextWithYellow(item.date || '', query);
+
+        const mediaAreaHtml = firstPhotoSrc
+          ? '<img src="' + firstPhotoSrc + '" class="w-full h-full object-cover">' +
+            '<div class="absolute inset-0 flex items-center justify-center p-2 text-center pointer-events-none">' +
+              '<span class="bg-slate-900/65 text-white font-black text-sm px-2.5 py-1 rounded-lg shadow leading-snug break-keep opacity-80">' + mainMenuTitleHtml + '</span>' +
+            '</div>'
+          : '<div class="w-full h-full bg-slate-50 flex items-center justify-center p-3 text-center select-none">' +
+              '<span class="text-slate-400 font-black text-base tracking-tight leading-snug break-keep opacity-80">' + mainMenuTitleHtml + '</span>' +
+            '</div>';
+
+        const isHighlighted = (String(item.id) === String(highlightedArchiveId));
+        const card = document.createElement('div');
+        card.setAttribute('data-arch-id', String(item.id));
+        card.className = isHighlighted
+          ? 'bg-white rounded-2xl shadow-md border-[3px] border-teal-500 ring-2 ring-teal-200/80 overflow-hidden cursor-pointer transition select-none'
+          : 'bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden cursor-pointer transition select-none';
+
+        attachSingleTapAndLongPress(card, item.id);
+
+        card.innerHTML =
+          '<div class="relative h-28 border-b border-slate-100">' +
+            mediaAreaHtml +
+            '<span class="absolute top-1.5 left-1.5 bg-white/85 text-slate-700 text-[10px] px-1.5 py-0.5 rounded-md font-bold">' + item.season + '·' + item.menuType + '</span>' +
+          '</div>' +
+          '<div class="p-2.5">' +
+            '<div class="flex items-center justify-between gap-1 whitespace-nowrap overflow-hidden">' +
+              '<p class="text-[10px] text-teal-700 font-bold truncate">' + dateHtml + '</p>' +
+              hcBadge +
+            '</div>' +
+            '<h4 class="font-extrabold text-xs text-slate-800 truncate mt-0.5">' + titleHtml + '</h4>' +
+            '<p class="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-snug">' + namesHtml + '</p>' +
+          '</div>';
+        grid.appendChild(card);
+      });
+    };
+
+    // 지난 식단 카드를 선택(탭 또는 길게 누르기)하면 검색어 자동 해제 연동
+    const origHighlightArchiveCard = highlightArchiveCard;
+    highlightArchiveCard = function(archId) {
+      const sInput = document.getElementById('basketSearch');
+      if (sInput && sInput.value.trim().length > 0) {
+        sInput.value = '';
+        renderBasket();
+        renderArchiveGrid();
+      }
+      origHighlightArchiveCard(archId);
+    };
+
+    // 카테고리 탭 선택 시에도 검색어 자동 해제 보장
+    selectCategory = function(cat) {
+      currentCat = cat;
+      const sInput = document.getElementById('basketSearch');
+      if (sInput && sInput.value.trim().length > 0) {
+        sInput.value = '';
+        renderArchiveGrid();
+      }
+      renderBasket();
+    };
+
+    // [v8.5 유지] "반찬등록/삭제/불러오기" 풀다운 메뉴 클래스 정리
     const slideDropdown = document.getElementById('basketSlideDropdown');
     if (slideDropdown) {
       slideDropdown.classList.remove('w-44', 'bg-white', 'border-slate-200');
@@ -5575,7 +5927,7 @@
     };
     applySeasonalTrayBorder();
 
-    // ================= [기존 v8.2~v8.3 핵심 패치 기능 유지] =================
+    // ================= [기존 v8.2~v8.5 크롭/사진/식단확정 핵심 패치 기능 유지] =================
     window.cropAutoBright = false;
 
     const stageArea = document.getElementById('cropStageArea');
@@ -6270,9 +6622,10 @@
       });
     }
 
+    renderTray();
     renderTrayPhotosStrip();
     renderArchiveGrid();
   })();
 </script>
-<!-- ================= [패치 v8.5 END] ================= -->
+<!-- ================= [패치 v8.6 END] ================= -->
 </body></html>
