@@ -8744,7 +8744,7 @@
 
 <!-- ================= [패치 v9.7 START] ================= -->
 <style>
-  /* 1. 사파리 및 홈화면 웹앱 전체에서 두 손가락 핀치 줌 허용 */
+  /* 사파리 및 홈화면 웹앱 전체에서 기본 두 손가락 핀치 줌 허용 */
   html, body {
     touch-action: pan-x pan-y pinch-zoom !important;
     -webkit-text-size-adjust: 100% !important;
@@ -8755,215 +8755,17 @@
   #shoppingListModal, #shoppingTreeContainer {
     touch-action: pan-x pan-y pinch-zoom !important;
   }
-  /* 장보기 내부 확대/축소 래퍼: 하드웨어 가속 및 부드러운 보간 */
-  #shoppingZoomInner {
-    transform-origin: 0 0;
-    will-change: zoom, transform;
-    transition: zoom 0.06s cubic-bezier(0.22, 1, 0.36, 1);
-  }
 </style>
 <script>
-(function applyPatchV97() {
-  // [1] 메타 뷰포트 강제 갱신 (사파리 & 홈화면 추가 웹앱 모두 손가락 확대 허용)
-  function unlockViewportPinchZoomV97() {
-    var meta = document.querySelector('meta[name="viewport"]');
-    if (!meta) {
-      meta = document.createElement("meta");
-      meta.name = "viewport";
-      document.head.appendChild(meta);
-    }
-    meta.setAttribute("content", "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover");
+(function applyPatchV97Clean() {
+  var meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.name = "viewport";
+    document.head.appendChild(meta);
   }
-  unlockViewportPinchZoomV97();
-
-  // iOS Safari / 홈화면 웹앱에서 gesturestart 기본 차단 해제
-  document.addEventListener("gesturestart", function(e) {
-    // 크롭창 내부가 아닐 때는 핀치 제스처 허용
-    var vp = document.getElementById("cropViewport");
-    if (vp && vp.contains(e.target)) return;
-  }, { passive: true });
-
-  // [2] 장보기 체크창 전용 초부드러운 핀치 줌(두 손가락 확대/축소) 및 원터치 배율 컨트롤
-  var SHOP_ZOOM_KEY = "sejong_shopping_zoom_scale_v1";
-  window.shoppingZoomScaleV97 = 1.0;
-  try {
-    var savedZ = parseFloat(localStorage.getItem(SHOP_ZOOM_KEY));
-    if (!isNaN(savedZ) && savedZ >= 0.9 && savedZ <= 2.2) {
-      window.shoppingZoomScaleV97 = savedZ;
-    }
-  } catch (e) {}
-
-  window.isShoppingPinchingV97 = false;
-
-  function saveShoppingZoomScaleV97() {
-    try {
-      localStorage.setItem(SHOP_ZOOM_KEY, String(window.shoppingZoomScaleV97));
-    } catch (e) {}
-  }
-
-  // 장보기 모달 상단에 배율 조절 바 추가
-  function ensureShoppingZoomHeaderBarV97() {
-    var modal = document.getElementById("shoppingListModal");
-    if (!modal) return;
-    var headerBox = modal.querySelector(".bg-teal-50\\/90");
-    if (!headerBox || document.getElementById("shoppingZoomControlBar")) return;
-
-    var zoomBar = document.createElement("div");
-    zoomBar.id = "shoppingZoomControlBar";
-    zoomBar.className = "mt-1.5 flex items-center justify-between bg-teal-100/70 px-2.5 py-1 rounded-lg border border-teal-200 text-[11px] font-extrabold text-teal-950";
-    zoomBar.innerHTML =
-      '<span class="flex items-center gap-1">🔎 <span>두손가락 확대 / 글자크기</span></span>' +
-      '<div class="flex items-center gap-1">' +
-        '<button type="button" onclick="stepShoppingZoomV97(-0.15)" class="bg-white hover:bg-teal-50 border border-teal-300 text-teal-900 font-black px-2 py-0.5 rounded shadow-2xs active:scale-95">－축소</button>' +
-        '<button type="button" id="shoppingZoomPctBtn" onclick="resetShoppingZoomV97()" class="bg-white border border-teal-200 text-teal-800 font-extrabold px-2 py-0.5 rounded min-w-[46px] text-center">100%</button>' +
-        '<button type="button" onclick="stepShoppingZoomV97(0.15)" class="bg-white hover:bg-teal-50 border border-teal-300 text-teal-900 font-black px-2 py-0.5 rounded shadow-2xs active:scale-95">＋확대</button>' +
-      '</div>';
-    headerBox.appendChild(zoomBar);
-  }
-
-  // 장보기 체크창에 현재 배율 즉시 적용 (CSS zoom과 폰트/체크박스 스케일 동시 대응)
-  window.applyShoppingZoomScaleV97 = function(scaleVal, isPinchingNow) {
-    var clamped = Math.max(0.9, Math.min(2.2, Number(scaleVal.toFixed(3))));
-    window.shoppingZoomScaleV97 = clamped;
-
-    var pctBtn = document.getElementById("shoppingZoomPctBtn");
-    if (pctBtn) {
-      pctBtn.innerText = Math.round(clamped * 100) + "%";
-    }
-
-    var container = document.getElementById("shoppingTreeContainer");
-    if (!container) return;
-
-    var inner = document.getElementById("shoppingZoomInner");
-    if (!inner) {
-      inner = document.createElement("div");
-      inner.id = "shoppingZoomInner";
-      inner.className = "space-y-2.5";
-      while (container.firstChild) {
-        inner.appendChild(container.firstChild);
-      }
-      container.appendChild(inner);
-    }
-
-    inner.style.transition = isPinchingNow ? "none" : "zoom 0.12s ease-out, transform 0.12s ease-out";
-
-    // iOS Safari 및 안드로이드 크롬 모두에서 줄바꿈과 스크롤이 자연스러운 zoom 적용
-    if ("zoom" in inner.style) {
-      inner.style.zoom = String(clamped);
-    } else {
-      inner.style.transform = "scale(" + clamped + ")";
-      inner.style.width = (100 / clamped) + "%";
-    }
-  };
-
-  window.stepShoppingZoomV97 = function(delta) {
-    window.applyShoppingZoomScaleV97(window.shoppingZoomScaleV97 + delta, false);
-    saveShoppingZoomScaleV97();
-  };
-
-  window.resetShoppingZoomV97 = function() {
-    window.applyShoppingZoomScaleV97(1.0, false);
-    saveShoppingZoomScaleV97();
-  };
-
-  // renderShoppingTreeModal 호출 시 자동으로 내부 줌 래퍼 유지 및 배율 적용
-  var _prevRenderShoppingTreeV97 = window.renderShoppingTreeModal;
-  window.renderShoppingTreeModal = function() {
-    ensureShoppingZoomHeaderBarV97();
-    var container = document.getElementById("shoppingTreeContainer");
-    var prevScrollTop = container ? container.scrollTop : 0;
-
-    if (_prevRenderShoppingTreeV97) _prevRenderShoppingTreeV97();
-
-    // 멀티터치(두 손가락 확대) 중에는 체크박스 탭/롱프레스가 작동하지 않도록 가드 주입
-    window.applyShoppingZoomScaleV97(window.shoppingZoomScaleV97, false);
-    if (container) container.scrollTop = prevScrollTop;
-  };
-
-  // 장보기 체크창(#shoppingTreeContainer) 두 손가락 부드러운 핀치 줌 제스처 장착
-  function attachSmoothPinchToShoppingContainerV97() {
-    var container = document.getElementById("shoppingTreeContainer");
-    if (!container || container.getAttribute("data-pinch-bound") === "1") return;
-    container.setAttribute("data-pinch-bound", "1");
-
-    var startDist = 0;
-    var startScale = 1.0;
-    var startScrollTop = 0;
-    var startCenterY = 0;
-    var rafId = null;
-
-    function getDist(t1, t2) {
-      return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-    }
-    function getMidY(t1, t2) {
-      return (t1.clientY + t2.clientY) / 2;
-    }
-
-    container.addEventListener("touchstart", function(e) {
-      if (e.touches.length >= 2) {
-        window.isShoppingPinchingV97 = true;
-        startDist = getDist(e.touches[0], e.touches[1]);
-        startScale = window.shoppingZoomScaleV97 || 1.0;
-        startScrollTop = container.scrollTop;
-        var rect = container.getBoundingClientRect();
-        startCenterY = getMidY(e.touches[0], e.touches[1]) - rect.top;
-      }
-    }, { passive: true });
-
-    container.addEventListener("touchmove", function(e) {
-      if (e.touches.length >= 2 && startDist > 15) {
-        // 두 손가락으로 장보기 창 내부를 확대할 때만 브라우저 기본 줌과 충돌하지 않게 처리
-        e.preventDefault();
-        window.isShoppingPinchingV97 = true;
-        var curDist = getDist(e.touches[0], e.touches[1]);
-        var rawRatio = curDist / startDist;
-        // 감도를 부드럽게 보간 (0.85 감쇠)
-        var dampedRatio = 1 + (rawRatio - 1) * 0.85;
-        var nextScale = Math.max(0.9, Math.min(2.2, startScale * dampedRatio));
-
-        if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(function() {
-          var prevScale = window.shoppingZoomScaleV97;
-          window.applyShoppingZoomScaleV97(nextScale, true);
-          // 확대 중심점(손가락 사이) 위치에 맞춰 스크롤 자연스럽게 보정
-          var scaleRatio = window.shoppingZoomScaleV97 / startScale;
-          container.scrollTop = Math.max(0, (startScrollTop + startCenterY) * scaleRatio - startCenterY);
-        });
-      }
-    }, { passive: false });
-
-    var endPinch = function(e) {
-      if (!e.touches || e.touches.length < 2) {
-        if (window.isShoppingPinchingV97) {
-          saveShoppingZoomScaleV97();
-          setTimeout(function() {
-            window.isShoppingPinchingV97 = false;
-          }, 180);
-        }
-        startDist = 0;
-      }
-    };
-
-    container.addEventListener("touchend", endPinch, { passive: true });
-    container.addEventListener("touchcancel", endPinch, { passive: true });
-
-    // 두 손가락 터치 시작 시 하위 체크박스 pointerdown 롱프레스/탭 이벤트 무효화
-    container.addEventListener("pointerdown", function(e) {
-      if (window.isShoppingPinchingV97 && !e.isPrimary) {
-        e.stopPropagation();
-      }
-    }, true);
-  }
-
-  ensureShoppingZoomHeaderBarV97();
-  attachSmoothPinchToShoppingContainerV97();
-
-  var _prevOpenShoppingModalV97 = window.openShoppingListModal;
-  window.openShoppingListModal = async function() {
-    ensureShoppingZoomHeaderBarV97();
-    attachSmoothPinchToShoppingContainerV97();
-    if (_prevOpenShoppingModalV97) return await _prevOpenShoppingModalV97();
-  };
+  meta.setAttribute("content", "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover");
+  try { localStorage.removeItem("sejong_shopping_zoom_scale_v1"); } catch (e) {}
 })();
 </script>
 <!-- ================= [패치 v9.7 END] ================= -->
