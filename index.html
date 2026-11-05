@@ -7602,4 +7602,343 @@
   })();
 </script>
 <!-- ================= [패치 v9.3 END] ================= -->
+
+<!-- ================= [패치 v9.4 START] ================= -->
+<style>
+  /* 1. 식판 좌하단 '총 0종' 숨김 & 식판 내 사진 썸네일 영역 숨김 (자리 확보) */
+  #totalSummaryAdmin {
+    display: none !important;
+  }
+  #attachedPreview {
+    display: none !important;
+  }
+  /* 식판 하단 4개 버튼 영역 전체 폭 균등 활용 */
+  #adminActionBtns {
+    width: 100% !important;
+    margin-left: 0 !important;
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 5px !important;
+  }
+  #adminActionBtns > button {
+    width: 100% !important;
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+    text-align: center !important;
+    justify-content: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+  }
+</style>
+<script>
+  (function applyPatchV94() {
+    // [1] 일자 선택 우측 배지('총 0종, 👶 0') 업데이트 및 좌하단 '총 0종' 숨김
+    const _prevRenderTrayV94 = renderTray;
+    renderTray = function() {
+      if (_prevRenderTrayV94) _prevRenderTrayV94();
+
+      let kidsCnt = 0;
+      (currentTrayIds || []).forEach(function(id) {
+        const item = (masterBasket || []).find(function(d) { return d.id === id; });
+        if (item && (item.cat === '어린이반찬' || (item.name && item.name.includes('👶')))) {
+          kidsCnt++;
+        }
+      });
+
+      const kb = document.getElementById('kidsBadge');
+      if (kb) {
+        kb.innerText = '총 ' + (currentTrayIds ? currentTrayIds.length : 0) + '종, 👶 ' + kidsCnt;
+        kb.className = 'text-[11px] bg-emerald-50 text-emerald-800 px-2 py-1 rounded-md font-extrabold whitespace-nowrap shrink-0';
+      }
+
+      const sumAdmin = document.getElementById('totalSummaryAdmin');
+      if (sumAdmin) sumAdmin.classList.add('hidden');
+    };
+
+    // [2] 식판에 모으기 썸네일 스트립 비활성화 (지난 식단 관리의 사진은 그대로 유지)
+    renderTrayPhotosStrip = function() {
+      const box = document.getElementById('attachedPreview');
+      if (box) {
+        box.className = 'hidden';
+        box.innerHTML = '';
+      }
+    };
+
+    // [3] 현재 선택된 일자의 저장된 사진 DataURL 조회 헬퍼
+    function getExistingPhotoForCurrentDateV94() {
+      const selDateStr = normalizeCompactDateStr(document.getElementById('currentDate')?.value || getCurrentWeekSundayString());
+
+      // 1순위: 지난 식단 관리(archiveList)에 저장된 해당 일자 사진 확인
+      const matchedArch = (archiveList || []).find(function(a) {
+        return a && normalizeCompactDateStr(a.date) === selDateStr;
+      });
+      if (matchedArch) {
+        if (Array.isArray(matchedArch.photoIds) && matchedArch.photoIds.length > 0) {
+          const pid = matchedArch.photoIds[0];
+          if (pid && !String(pid).startsWith('default_') && dbPhotoStore[pid]) {
+            return { photoId: pid, dataUrl: dbPhotoStore[pid] };
+          }
+        }
+        if (matchedArch.photoId && !String(matchedArch.photoId).startsWith('default_') && dbPhotoStore[matchedArch.photoId]) {
+          return { photoId: matchedArch.photoId, dataUrl: dbPhotoStore[matchedArch.photoId] };
+        }
+      }
+
+      // 2순위: 현재 식판 상태(currentSavedPhotoIds / currentSavedPhotoId) 확인
+      if (Array.isArray(currentSavedPhotoIds) && currentSavedPhotoIds.length > 0) {
+        const pid = currentSavedPhotoIds[0];
+        if (pid && !String(pid).startsWith('default_') && dbPhotoStore[pid]) {
+          return { photoId: pid, dataUrl: dbPhotoStore[pid] };
+        }
+      }
+      if (currentSavedPhotoId && !String(currentSavedPhotoId).startsWith('default_') && dbPhotoStore[currentSavedPhotoId]) {
+        return { photoId: currentSavedPhotoId, dataUrl: dbPhotoStore[currentSavedPhotoId] };
+      }
+
+      return null;
+    }
+
+    // [4] 크롭창 노란 점선 사각틀을 뷰포트 정중앙(Center)에 배치하는 헬퍼
+    window.centerYellowCropBoxV94 = function() {
+      const vp = document.getElementById('cropViewport');
+      const box = document.getElementById('yellowCropBox');
+      if (!vp || !box) return { left: 24, top: 24, w: 230, h: 156 };
+      const vpW = vp.clientWidth || 288;
+      const vpH = vp.clientHeight || 224;
+      const bW = Math.min(236, Math.round(vpW * 0.82));
+      const bH = Math.min(160, Math.round(vpH * 0.74));
+      const left = Math.max(4, Math.round((vpW - bW) / 2));
+      const top = Math.max(4, Math.round((vpH - bH) / 2));
+      box.style.left = left + 'px';
+      box.style.top = top + 'px';
+      box.style.width = bW + 'px';
+      box.style.height = bH + 'px';
+      return { left: left, top: top, w: bW, h: bH };
+    };
+
+    // 이미지를 크롭창 정중앙 노란 점선틀에 맞춰 로드하는 함수
+    window.loadImageDataUrlToCropStageV94 = function(dataUrl) {
+      return new Promise(function(resolve) {
+        const tImg = new Image();
+        tImg.onload = function() {
+          const centeredBox = window.centerYellowCropBoxV94();
+          const fitScale = Math.max(centeredBox.w / tImg.naturalWidth, centeredBox.h / tImg.naturalHeight);
+          const item = {
+            src: dataUrl,
+            imgW: tImg.naturalWidth,
+            imgH: tImg.naturalHeight,
+            cropX: 0,
+            cropY: 0,
+            cropScale: Number(fitScale.toFixed(4)),
+            rotation: 0,
+            boxLeft: centeredBox.left,
+            boxTop: centeredBox.top,
+            boxW: centeredBox.w,
+            boxH: centeredBox.h,
+            centeredOnce: true
+          };
+          multiUploadQueue = [item];
+          window.multiUploadQueue = multiUploadQueue;
+          activeQueueIdx = 0;
+          loadQueueItemToStage(0);
+          resolve(item);
+        };
+        tImg.src = dataUrl;
+      });
+    };
+
+    // [5] 크롭창 UI 개편: 상단 '회전, 자동밝기' 중앙 정렬 & 하단 '삭제/설정취소', '바로저장'
+    const stageArea = document.getElementById('cropStageArea');
+    if (stageArea) {
+      const controlBar = stageArea.querySelector('.flex.justify-between.items-center');
+      if (controlBar) {
+        controlBar.className = 'flex justify-center items-center gap-3 bg-slate-50 px-2 py-1.5 rounded-lg border border-slate-200 text-[11.5px] whitespace-nowrap';
+        controlBar.innerHTML =
+          '<button type="button" onclick="rotatePhotoCrop(90)" class="bg-white hover:bg-slate-100 border border-slate-300 text-slate-800 font-extrabold px-3.5 py-1 rounded-lg shadow-2xs active:scale-95 transition">↻ 회전</button>' +
+          '<button type="button" id="magicBrightBtn" onclick="togglePhotoAutoBright()" class="bg-white hover:bg-amber-50 border border-slate-300 text-slate-800 font-extrabold px-3.5 py-1 rounded-lg shadow-2xs active:scale-95 transition flex items-center gap-1">' +
+            '<span>🪄</span><span>자동밝기</span>' +
+          '</button>';
+      }
+
+      const bottomBtnGrid = stageArea.querySelector('.grid.grid-cols-2');
+      if (bottomBtnGrid) {
+        bottomBtnGrid.innerHTML =
+          '<button type="button" onclick="deleteOrCancelPhotoCropV94()" class="bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 font-extrabold py-2.5 rounded-xl text-xs transition active:scale-95">삭제/설정취소</button>' +
+          '<button type="button" id="savePhotoDbBtn" onclick="savePhotoToDb()" class="bg-pink-500 hover:bg-pink-600 border border-pink-400 text-white font-extrabold py-2.5 rounded-xl text-xs shadow-sm transition active:scale-95">바로저장</button>';
+      }
+    }
+
+    // 파일 선택(갤러리/카메라) 시에도 항상 노란 점선틀을 센터에 배치하고 이미지를 로드
+    startCropProcess = async function(event) {
+      const files = Array.from(event.target.files || []);
+      if (files.length === 0) return;
+      const file = files[0];
+      cropRotation = 0;
+      window.cropAutoBright = false;
+      const magicBtn = document.getElementById('magicBrightBtn');
+      if (magicBtn) {
+        magicBtn.className = 'bg-white hover:bg-amber-50 border border-slate-300 text-slate-800 font-extrabold px-3.5 py-1 rounded-lg shadow-2xs active:scale-95 transition flex items-center gap-1';
+        magicBtn.innerHTML = '<span>🪄</span><span>자동밝기</span>';
+      }
+
+      document.getElementById('cropStageArea').classList.remove('hidden');
+      document.getElementById('photoUploadModal').classList.remove('hidden');
+
+      await new Promise(function(r) { requestAnimationFrame(r); });
+
+      const dataUrl = await new Promise(function(resolve) {
+        const r = new FileReader();
+        r.onload = function(ev) { resolve(ev.target.result); };
+        r.readAsDataURL(file);
+      });
+
+      await window.loadImageDataUrlToCropStageV94(dataUrl);
+    };
+
+    // [6] '사진등록/삭제' 버튼 터치 시: 저장된 사진이 있으면 크롭창으로 즉시 불러오고, 없으면 갤러리 선택창 호출
+    openPhotoUploadModal = async function() {
+      if (!isLeader) {
+        await showCustomAlert('사진 등록/삭제는 관리자(팀장)만 가능합니다.', '🔒');
+        return;
+      }
+      cropRotation = 0;
+      window.cropAutoBright = false;
+      const magicBtn = document.getElementById('magicBrightBtn');
+      if (magicBtn) {
+        magicBtn.className = 'bg-white hover:bg-amber-50 border border-slate-300 text-slate-800 font-extrabold px-3.5 py-1 rounded-lg shadow-2xs active:scale-95 transition flex items-center gap-1';
+        magicBtn.innerHTML = '<span>🪄</span><span>자동밝기</span>';
+      }
+
+      document.getElementById('cropStageArea').classList.remove('hidden');
+      document.getElementById('photoUploadModal').classList.remove('hidden');
+
+      await new Promise(function(r) { requestAnimationFrame(r); });
+      window.centerYellowCropBoxV94();
+
+      const existing = getExistingPhotoForCurrentDateV94();
+      if (existing && existing.dataUrl) {
+        await window.loadImageDataUrlToCropStageV94(existing.dataUrl);
+      } else {
+        multiUploadQueue = [];
+        window.multiUploadQueue = [];
+        const imgEl = document.getElementById('cropTargetImg');
+        if (imgEl) imgEl.src = '';
+        const gInput = document.getElementById('inputGallery');
+        if (gInput) { gInput.value = ''; gInput.click(); }
+      }
+    };
+
+    // [7] 크롭창 하단 '삭제/설정취소' 기능 (해당 건의 저장된 사진 삭제 후 나가기)
+    window.deleteOrCancelPhotoCropV94 = async function() {
+      const existing = getExistingPhotoForCurrentDateV94();
+      const selDateStr = normalizeCompactDateStr(document.getElementById('currentDate')?.value || getCurrentWeekSundayString());
+
+      if (existing && existing.photoId) {
+        const removedPhotoId = existing.photoId;
+        if (dbPhotoStore && dbPhotoStore[removedPhotoId]) {
+          delete dbPhotoStore[removedPhotoId];
+        }
+        currentSavedPhotoIds = [];
+        currentSavedPhotoId = 'default_4';
+
+        if (weeklyPlanMap && weeklyPlanMap[selDateStr]) {
+          weeklyPlanMap[selDateStr].photoIds = [];
+          weeklyPlanMap[selDateStr].photoId = 'default_4';
+          if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+        }
+
+        const updatedArchives = [];
+        if (Array.isArray(archiveList)) {
+          archiveList.forEach(function(arch) {
+            if (!arch) return;
+            const isSameDate = (normalizeCompactDateStr(arch.date) === selDateStr);
+            const hasRemoved = (arch.photoId === removedPhotoId) || (Array.isArray(arch.photoIds) && arch.photoIds.includes(removedPhotoId));
+            if (isSameDate || hasRemoved) {
+              arch.photoIds = [];
+              arch.photoId = 'default_4';
+              updatedArchives.push(arch);
+            }
+          });
+        }
+
+        multiUploadQueue = [];
+        window.multiUploadQueue = [];
+        const imgEl = document.getElementById('cropTargetImg');
+        if (imgEl) imgEl.src = '';
+
+        closePhotoUploadModal();
+        renderTray();
+        renderArchiveGrid();
+
+        if (db) {
+          setCloudStatusLamp('saving');
+          try {
+            const promises = [syncCurrentStateToDb()];
+            if (!String(removedPhotoId).startsWith('default_')) {
+              promises.push(db.collection('photos').doc(String(removedPhotoId)).delete().catch(function() {}));
+            }
+            updatedArchives.forEach(function(arch) {
+              promises.push(db.collection('archives').doc(String(arch.id)).set(arch, { merge: true }));
+            });
+            await Promise.all(promises);
+            setCloudStatusLamp('connected');
+          } catch (e) {
+            console.error(e);
+            setCloudStatusLamp('disconnected');
+          }
+        } else {
+          await syncCurrentStateToDb();
+        }
+      } else {
+        multiUploadQueue = [];
+        window.multiUploadQueue = [];
+        const imgEl = document.getElementById('cropTargetImg');
+        if (imgEl) imgEl.src = '';
+        closePhotoUploadModal();
+      }
+    };
+
+    // 바로저장 버튼 문구 유지 보강
+    const _prevSavePhotoToDbV94 = savePhotoToDb;
+    savePhotoToDb = async function() {
+      await _prevSavePhotoToDbV94();
+      const btn = document.getElementById('savePhotoDbBtn');
+      if (btn) btn.innerText = '바로저장';
+    };
+
+    // [8] 식판에 모으기 하단 버튼 4개 순서대로 배치: [사진등록/삭제] [식단삭제] [식단확정] [장보기]
+    window.openShoppingListModal = async function() {
+      await showCustomAlert('🛒 장보기 기능 자리가 준비되었습니다.\n다음 단계에서 세부 기능을 연결합니다.', '🛒');
+    };
+
+    const actionBtnsWrap = document.getElementById('adminActionBtns');
+    if (actionBtnsWrap) {
+      actionBtnsWrap.innerHTML =
+        '<button type="button" onclick="openPhotoUploadModal()" class="bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-extrabold py-1.5 rounded-lg text-[11px] transition active:scale-95 whitespace-nowrap shadow-2xs">' +
+          '사진등록/삭제' +
+        '</button>' +
+        '<button type="button" id="deleteMenuBtn" onclick="deleteCurrentDateMenu()" class="bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 font-extrabold py-1.5 rounded-lg text-[11px] transition active:scale-95 whitespace-nowrap shadow-2xs">' +
+          '식단삭제' +
+        '</button>' +
+        '<button type="button" onclick="confirmMenuToGrid()" class="bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold py-1.5 rounded-lg text-[11.5px] shadow-2xs transition active:scale-95 whitespace-nowrap">' +
+          '식단확정' +
+        '</button>' +
+        '<button type="button" id="shoppingListBtn" onclick="openShoppingListModal()" class="bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-extrabold py-1.5 rounded-lg text-[11.5px] shadow-2xs transition active:scale-95 whitespace-nowrap">' +
+          '장보기' +
+        '</button>';
+    }
+
+    // applySeasonalTrayBorder 호출 시에도 하단 버튼 스타일이 덮어써지지 않도록 보호
+    const _prevApplySeasonalBorderV94 = applySeasonalTrayBorder;
+    applySeasonalTrayBorder = function(dateStr) {
+      if (_prevApplySeasonalBorderV94) _prevApplySeasonalBorderV94(dateStr);
+      const confirmBtn = document.querySelector('#adminActionBtns button[onclick*="confirmMenuToGrid"]');
+      if (confirmBtn) {
+        confirmBtn.className = 'bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold py-1.5 rounded-lg text-[11.5px] shadow-2xs transition active:scale-95 whitespace-nowrap';
+      }
+    };
+
+    renderTray();
+    renderArchiveGrid();
+  })();
 </body></html>
