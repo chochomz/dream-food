@@ -8769,4 +8769,240 @@
 })();
 </script>
 <!-- ================= [패치 v9.7 END] ================= -->
+
+<!-- ================= [패치 v10.0 START] ================= -->
+<script>
+(function applyPatchV100() {
+  var SHOPPING_STORAGE_KEY = "sejong_shopping_trees_v1";
+
+  function getActiveCleanDateV100() {
+    var curEl = document.getElementById("currentDate");
+    return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+  }
+
+  function loadShoppingTreesMapV100() {
+    try {
+      var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
+      return raw ? (JSON.parse(raw) || {}) : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveShoppingTreesMapV100(mapObj) {
+    try {
+      localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(mapObj));
+    } catch (e) {}
+  }
+
+  // [장보기 완료] 시 미체크 재료 및 미체크 메뉴를 식판·반찬바구니·지난식단관리에서 자동 삭제하고 확정 반영
+  window.completeShoppingAndCommit = async function() {
+    var cleanDate = getActiveCleanDateV100();
+    var treesMap = loadShoppingTreesMapV100();
+    var tree = treesMap[cleanDate];
+
+    if (!tree || !Array.isArray(tree.groups)) {
+      await showCustomAlert("장보기 목록 데이터가 없습니다.", "⚠️");
+      return;
+    }
+
+    // 1. 체크된 항목과 미체크(삭제 대상) 항목 사전 집계
+    var keptMenuGroups = [];
+    var deletedMenuIds = [];
+    var deletedMenuNames = [];
+    var deletedIngredientCount = 0;
+    var checkedCommonItems = [];
+
+    tree.groups.forEach(function(group) {
+      var allItems = Array.isArray(group.items) ? group.items : [];
+      var checkedItems = allItems.filter(function(it) { return Boolean(it && it.checked); });
+      var uncheckedCount = allItems.length - checkedItems.length;
+      deletedIngredientCount += uncheckedCount;
+
+      if (group.isCommon || group.id === "common_group") {
+        checkedCommonItems = checkedItems;
+      } else {
+        if (checkedItems.length > 0) {
+          keptMenuGroups.push({
+            id: group.id,
+            name: group.name,
+            isCommon: false,
+            locked: Boolean(group.locked),
+            items: checkedItems
+          });
+        } else {
+          // 하위 재료가 하나도 체크되지 않은 메뉴는 식판 및 반찬바구니 삭제 대상
+          deletedMenuIds.push(String(group.id));
+          deletedMenuNames.push(group.name || group.id);
+        }
+      }
+    });
+
+    var confirmMsg = "장보기를 완료하시겠습니까?\n" +
+      "• 유지되는 메뉴: " + keptMenuGroups.length + "종\n" +
+      "• 미체크 자동삭제 메뉴: " + deletedMenuIds.length + "종\n" +
+      "• 미체크 자동삭제 재료: " + deletedIngredientCount + "개\n\n" +
+      "※ 체크되지 않은 재료와 메뉴는 식판·반찬바구니·지난식단관리에서 자동 삭제됩니다.";
+
+    var ok = await showCustomConfirm(confirmMsg, "✅");
+    if (!ok) return;
+
+    // 2. 반찬 바구니(masterBasket)에서 미체크 메뉴 삭제 & 유지된 메뉴는 체크된 재료만 남기도록 업데이트
+    if (deletedMenuIds.length > 0) {
+      masterBasket = (masterBasket || []).filter(function(d) {
+        return d && deletedMenuIds.indexOf(String(d.id)) === -1;
+      });
+    }
+
+    var menuIngSummaryLines = [];
+    var updatedDishIds = [];
+    var modifiedBasketDishes = [];
+
+    keptMenuGroups.forEach(function(kGroup) {
+      updatedDishIds.push(kGroup.id);
+      var checkedNames = kGroup.items.map(function(it) { return it.name; }).filter(Boolean);
+      if (checkedNames.length > 0) {
+        menuIngSummaryLines.push("• " + kGroup.name.replace("(👶)", "") + ": " + checkedNames.join(", "));
+      }
+      var dishObj = (masterBasket || []).find(function(d) { return String(d.id) === String(kGroup.id); });
+      if (dishObj) {
+        dishObj.note = checkedNames.join(", ");
+        modifiedBasketDishes.push(dishObj);
+      }
+    });
+
+    var commonNames = checkedCommonItems.map(function(it) { return it.name; }).filter(Boolean);
+    var finalRawIngredients = menuIngSummaryLines.join("\n");
+    var finalSupplies = commonNames.join(", ");
+
+    // 3. 장보기 트리(shoppingTree)에서도 미체크 메뉴·재료를 모두 제거하고 체크된 항목만 보존
+    var cleanedGroups = keptMenuGroups.slice();
+    cleanedGroups.push({
+      id: "common_group",
+      name: "공통재료",
+      isCommon: true,
+      locked: checkedCommonItems.length > 0,
+      items: checkedCommonItems
+    });
+
+    var cleanedTree = {
+      date: cleanDate,
+      groups: cleanedGroups,
+      updatedAt: Date.now()
+    };
+    treesMap[cleanDate] = cleanedTree;
+    saveShoppingTreesMapV100(treesMap);
+
+    // 4. 식판에 모으기(currentTrayIds) 및 주간 계획(weeklyPlanMap) 업데이트
+    currentTrayIds = updatedDishIds.slice();
+    var firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || "default_4");
+    if (weeklyPlanMap) {
+      weeklyPlanMap[cleanDate] = {
+        trayIds: currentTrayIds.slice(),
+        photoId: firstPhotoId,
+        photoIds: (currentSavedPhotoIds || []).slice(),
+        shoppingCompleted: true,
+        updatedAt: Date.now()
+      };
+      if (typeof saveLocalWeeklyPlans === "function") saveLocalWeeklyPlans();
+    }
+
+    // 5. 지난 식단 관리(archiveList) 업데이트 (해당 일자의 기존 데이터를 교체)
+    var existingArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
+    var oldArchIdsToDelete = [];
+    (archiveList || []).forEach(function(a) {
+      if (a && normalizeCompactDateStr(a.date) === cleanDate) {
+        oldArchIdsToDelete.push(String(a.id));
+      }
+    });
+
+    var firstMain = (masterBasket || []).find(function(d) { return currentTrayIds.indexOf(d.id) !== -1 && d.cat === "메인반찬"; }) ||
+                    (masterBasket || []).find(function(d) { return d.id === currentTrayIds[0]; });
+    var newArchId = existingArch ? String(existingArch.id) : String(Date.now());
+
+    var updatedArchive = {
+      id: newArchId,
+      date: cleanDate,
+      title: (firstMain ? firstMain.name.replace("(👶)", "") : "공동체") + " 식단",
+      season: existingArch && existingArch.season ? existingArch.season : (typeof inferSeasonFromDateStr === "function" ? inferSeasonFromDateStr(cleanDate) : "가을"),
+      menuType: existingArch && existingArch.menuType ? existingArch.menuType : "육류",
+      dishIds: currentTrayIds.slice(),
+      headcount: existingArch && existingArch.headcount ? String(existingArch.headcount).replace(/\s*\(기준\)/g, "").trim() : "300명",
+      leftoverNote: existingArch && existingArch.leftoverNote ? existingArch.leftoverNote : "장보기 완료",
+      rawIngredients: finalRawIngredients,
+      supplies: finalSupplies,
+      shoppingTree: cleanedTree,
+      shoppingCompletedAt: Date.now(),
+      likes: existingArch && existingArch.likes ? existingArch.likes : 9,
+      photoId: existingArch && existingArch.photoId && String(existingArch.photoId).indexOf("default_") !== 0 ? existingArch.photoId : firstPhotoId,
+      photoIds: existingArch && Array.isArray(existingArch.photoIds) && existingArch.photoIds.length > 0 ? existingArch.photoIds : (currentSavedPhotoIds || []).slice(),
+      createdAt: Date.now()
+    };
+
+    archiveList = (archiveList || []).filter(function(a) {
+      return !(a && normalizeCompactDateStr(a.date) === cleanDate);
+    });
+    if (currentTrayIds.length > 0 || commonNames.length > 0) {
+      archiveList.unshift(updatedArchive);
+    }
+
+    // 로컬 고속 캐시 갱신
+    try {
+      localStorage.setItem("sejong_fast_basket_cache_v1", JSON.stringify(masterBasket));
+      localStorage.setItem("sejong_fast_archive_cache_v1", JSON.stringify(archiveList));
+    } catch (e) {}
+
+    // 모달 닫기 및 화면 갱신
+    var modal = document.getElementById("shoppingListModal");
+    if (modal) modal.classList.add("hidden");
+    renderTray();
+    renderBasket();
+    renderArchiveGrid();
+
+    // 6. Firebase 클라우드 DB 동기화 (삭제된 반찬 DB 제거 + 수정된 반찬 저장 + 아카이브 갱신)
+    if (db) {
+      setCloudStatusLamp("saving");
+      try {
+        var promises = [];
+        deletedMenuIds.forEach(function(delId) {
+          promises.push(db.collection("basket").doc(String(delId)).delete().catch(function() {}));
+        });
+        modifiedBasketDishes.forEach(function(dObj) {
+          promises.push(db.collection("basket").doc(String(dObj.id)).set(dObj, { merge: true }).catch(function() {}));
+        });
+        oldArchIdsToDelete.forEach(function(oldId) {
+          if (String(oldId) !== String(newArchId) || (currentTrayIds.length === 0 && commonNames.length === 0)) {
+            promises.push(db.collection("archives").doc(String(oldId)).delete().catch(function() {}));
+          }
+        });
+        if (currentTrayIds.length > 0 || commonNames.length > 0) {
+          promises.push(db.collection("archives").doc(String(newArchId)).set(updatedArchive));
+        }
+        promises.push(syncCurrentStateToDb());
+        await Promise.all(promises);
+        setCloudStatusLamp("connected");
+      } catch (err) {
+        console.error(err);
+        setCloudStatusLamp("disconnected");
+      }
+    } else {
+      await syncCurrentStateToDb();
+    }
+
+    // 모달 내부 메모리 트리도 최신화될 수 있도록 오픈 시 로컬스토리지 재로드 연결
+    await showCustomAlert(
+      "[" + cleanDate + "] 장보기 완료!\n" +
+      "체크된 메뉴(" + keptMenuGroups.length + "종)만 최종 반영되었으며, 미체크 메뉴(" + deletedMenuIds.length + "종)와 미체크 재료(" + deletedIngredientCount + "개)는 식판 및 반찬바구니에서 자동 삭제되었습니다.",
+      "🎉"
+    );
+  };
+
+  // 장보기 모달을 다시 열 때 localStorage의 정리된 트리를 즉시 반영하도록 보강
+  var _prevOpenShoppingV100 = window.openShoppingListModal;
+  window.openShoppingListModal = async function() {
+    if (_prevOpenShoppingV100) return await _prevOpenShoppingV100();
+  };
+})();
+</script>
+<!-- ================= [패치 v10.0 END] ================= -->
 </body></html>
