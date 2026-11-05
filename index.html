@@ -7402,4 +7402,204 @@
   })();
 </script>
 <!-- ================= [패치 v9.2 END] ================= -->
+
+<!-- ================= [패치 v9.3 START] ================= -->
+<script>
+  (function applyFastTrayLoadPatchV93() {
+    const BASKET_CACHE_KEY = 'sejong_fast_basket_cache_v1';
+    const ARCHIVE_CACHE_KEY = 'sejong_fast_archive_cache_v1';
+    const LAST_DATE_KEY = 'sejong_fast_last_date_v1';
+
+    // 1. Firebase 자체 IndexedDB 오프라인/고속 캐시 활성화 (지원 브라우저)
+    if (typeof db !== 'undefined' && db && typeof db.enablePersistence === 'function') {
+      try {
+        db.enablePersistence({ synchronizeTabs: true }).catch(function() {});
+      } catch (e) {}
+    }
+
+    // 2. 로컬 캐시에서 반찬 바구니, 주간 계획, 지난 식단 즉시 복원 함수 (0.01초 소요)
+    function restoreInstantCacheToMemory() {
+      try {
+        const rawBasket = localStorage.getItem(BASKET_CACHE_KEY);
+        if (rawBasket) {
+          const parsedBasket = JSON.parse(rawBasket);
+          if (Array.isArray(parsedBasket) && parsedBasket.length > 0) {
+            masterBasket = parsedBasket;
+          }
+        }
+      } catch (e) {}
+
+      try {
+        const rawArch = localStorage.getItem(ARCHIVE_CACHE_KEY);
+        if (rawArch) {
+          const parsedArch = JSON.parse(rawArch);
+          if (Array.isArray(parsedArch) && parsedArch.length > 0 && (!archiveList || archiveList.length === 0)) {
+            archiveList = parsedArch;
+          }
+        }
+      } catch (e) {}
+
+      if (typeof loadLocalWeeklyPlans === 'function') loadLocalWeeklyPlans();
+
+      const todayWeek = getCurrentWeekSundayString();
+      const savedDate = localStorage.getItem(LAST_DATE_KEY);
+      const activeDate = normalizeCompactDateStr(
+        (document.getElementById('currentDate') && document.getElementById('currentDate').value) ||
+        savedDate ||
+        todayWeek
+      ) || todayWeek;
+
+      populateDateDropdownOptions(activeDate);
+
+      // 현재 날짜의 식판 메뉴 ID 즉시 매핑
+      if (weeklyPlanMap && weeklyPlanMap[activeDate] && Array.isArray(weeklyPlanMap[activeDate].trayIds) && weeklyPlanMap[activeDate].trayIds.length > 0) {
+        currentTrayIds = [...weeklyPlanMap[activeDate].trayIds];
+        if (Array.isArray(weeklyPlanMap[activeDate].photoIds)) {
+          currentSavedPhotoIds = weeklyPlanMap[activeDate].photoIds.filter(function(id) { return id && !String(id).startsWith('default_'); }).slice(0, 5);
+        }
+        currentSavedPhotoId = weeklyPlanMap[activeDate].photoId || currentSavedPhotoIds[0] || 'default_4';
+      } else if (Array.isArray(archiveList)) {
+        const matchedArch = archiveList.find(function(a) { return a && normalizeCompactDateStr(a.date) === activeDate; });
+        if (matchedArch && Array.isArray(matchedArch.dishIds)) {
+          currentTrayIds = [...matchedArch.dishIds];
+          currentSavedPhotoId = matchedArch.photoId || 'default_4';
+        }
+      }
+    }
+
+    // 3. 바구니 및 식단 데이터가 갱신될 때마다 로컬 캐시도 자동 저장
+    function saveBasketCacheToLocal() {
+      try {
+        if (Array.isArray(masterBasket) && masterBasket.length > 0) {
+          localStorage.setItem(BASKET_CACHE_KEY, JSON.stringify(masterBasket));
+        }
+      } catch (e) {}
+    }
+
+    function saveArchiveCacheToLocal() {
+      try {
+        if (Array.isArray(archiveList)) {
+          localStorage.setItem(ARCHIVE_CACHE_KEY, JSON.stringify(archiveList));
+        }
+      } catch (e) {}
+    }
+
+    const _origRenderTrayV93 = renderTray;
+    renderTray = function() {
+      _origRenderTrayV93();
+      saveBasketCacheToLocal();
+      const curD = document.getElementById('currentDate');
+      if (curD && curD.value) {
+        try { localStorage.setItem(LAST_DATE_KEY, normalizeCompactDateStr(curD.value)); } catch (e) {}
+      }
+    };
+
+    const _origRenderArchiveGridV93 = renderArchiveGrid;
+    renderArchiveGrid = function() {
+      _origRenderArchiveGridV93();
+      saveArchiveCacheToLocal();
+    };
+
+    // 4. Firebase 실시간 구독 순서 최적화: 텍스트(식판/바구니) 최우선 로드 + 고용량 사진(photos)은 후순위 비동기 로드
+    initFirebaseRealtime = async function() {
+      if (!db) {
+        setCloudStatusLamp('disconnected');
+        return;
+      }
+      try {
+        setCloudStatusLamp('saving');
+
+        // 1순위: 현재 식판 상태(currentState) & 반찬 바구니(basket) 동시 즉시 구독
+        db.collection('settings').doc('currentState').onSnapshot(async function(doc) {
+          if (!doc.exists) {
+            await syncCurrentStateToDb();
+          } else {
+            const data = doc.data();
+            if (Array.isArray(data.basketSnapshot) && data.basketSnapshot.length > 0 && masterBasket.length === 0) {
+              masterBasket = data.basketSnapshot;
+              saveBasketCacheToLocal();
+            }
+            if (data.weeklyPlans && typeof data.weeklyPlans === 'object') {
+              weeklyPlanMap = Object.assign({}, weeklyPlanMap, data.weeklyPlans);
+              saveLocalWeeklyPlans();
+            }
+            const todayWeek = getCurrentWeekSundayString();
+            const activeDate = hasInitializedTodayWeek ? (document.getElementById('currentDate').value || todayWeek) : todayWeek;
+            const cleanActive = normalizeCompactDateStr(activeDate);
+            populateDateDropdownOptions(cleanActive);
+
+            if (weeklyPlanMap[cleanActive] && Array.isArray(weeklyPlanMap[cleanActive].trayIds)) {
+              currentTrayIds = [...weeklyPlanMap[cleanActive].trayIds];
+              if (Array.isArray(weeklyPlanMap[cleanActive].photoIds)) {
+                currentSavedPhotoIds = weeklyPlanMap[cleanActive].photoIds.filter(function(id) { return id && !String(id).startsWith('default_'); }).slice(0, 5);
+              }
+              currentSavedPhotoId = weeklyPlanMap[cleanActive].photoId || currentSavedPhotoIds[0] || data.photoId || 'default_4';
+            } else {
+              currentTrayIds = data.trayIds || [];
+              currentSavedPhotoId = data.photoId || 'default_4';
+            }
+            renderTray();
+          }
+          setCloudStatusLamp('connected');
+        }, function(err) {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
+        });
+
+        db.collection('basket').onSnapshot(async function(snap) {
+          if (snap.empty) {
+            if (defaultBasketSeed && defaultBasketSeed.length > 0) {
+              const batch = db.batch();
+              defaultBasketSeed.forEach(function(item) { batch.set(db.collection('basket').doc(item.id), item); });
+              await batch.commit();
+            }
+          } else {
+            masterBasket = snap.docs.map(function(doc) { return doc.data(); });
+            saveBasketCacheToLocal();
+            renderTray();
+            renderArchiveGrid();
+          }
+          setCloudStatusLamp('connected');
+        }, function(err) {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
+        });
+
+        // 2순위: 지난 식단 기록(archives) 구독
+        db.collection('archives').orderBy('createdAt', 'desc').onSnapshot(async function(snap) {
+          if (!snap.empty) {
+            archiveList = snap.docs.map(function(doc) { return doc.data(); });
+            saveArchiveCacheToLocal();
+            renderArchiveGrid();
+          }
+          setCloudStatusLamp('connected');
+        }, function(err) {
+          console.error(err);
+          setCloudStatusLamp('disconnected');
+        });
+
+        // 3순위: 고용량 Base64 이미지가 들어있는 photos 컬렉션은 식판 렌더링을 막지 않도록 150ms 뒤 백그라운드 구독
+        setTimeout(function() {
+          db.collection('photos').onSnapshot(function(snap) {
+            snap.forEach(function(doc) { dbPhotoStore[doc.id] = doc.data().dataUrl; });
+            if (typeof renderTrayPhotosStrip === 'function') renderTrayPhotosStrip();
+            renderArchiveGrid();
+            setCloudStatusLamp('connected');
+          }, function(err) {
+            console.error(err);
+          });
+        }, 150);
+
+      } catch (err) {
+        setCloudStatusLamp('disconnected');
+      }
+    };
+
+    // 5. 페이지 로드(새로고침) 즉시 로컬 캐시 복원 및 식판 즉시 렌더링 실행
+    restoreInstantCacheToMemory();
+    renderTray();
+    renderArchiveGrid();
+  })();
+</script>
+<!-- ================= [패치 v9.3 END] ================= -->
 </body></html>
