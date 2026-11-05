@@ -5196,7 +5196,9 @@
 
 
 
-<!-- ================= [패치 v8.7 START] ================= -->
+
+
+<!-- ================= [패치 v8.8 START] ================= -->
 <link rel="apple-touch-icon" href="hlogo.png">
 <link rel="icon" type="image/png" href="hlogo.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -5204,7 +5206,25 @@
 <meta name="mobile-web-app-capable" content="yes">
 
 <style>
-  /* [신규 v8.7] 1. 식판에 모으기 & 반찬 바구니: 내부는 현 상태 그대로 유지하고 외곽 테두리+상단 둥근바만 3D 입체 모양 적용 */
+  /* [신규 v8.8] 세부창 우측 상단 '세부사항 수정가능' 테두리색(청록색)으로 천천히 깜박이는 애니메이션 */
+  @keyframes slowTealBlink {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.28;
+      transform: scale(0.98);
+    }
+  }
+  .slow-teal-blink {
+    animation: slowTealBlink 2.4s ease-in-out infinite !important;
+    background-color: rgba(240, 253, 250, 0.95) !important;
+    color: #0d9488 !important; /* 세부창 테두리색(teal) 계열 */
+    border: 1.5px solid #2dd4bf !important;
+  }
+
+  /* [v8.7 유지] 1. 식판에 모으기 & 반찬 바구니: 외곽 테두리+상단 둥근바만 3D 입체 모양 적용 */
   #trayCardBox {
     position: relative !important;
     margin-top: 12px !important;
@@ -5283,7 +5303,6 @@
     display: block !important;
   }
 
-  /* [신규 v8.7] 1-1) 식판에 모으기 내부 메뉴 칩이 창 바깥으로 나가지 않도록 보호 & 괄호 위치에서부터 2열 배치 */
   #currentTray {
     max-width: 100% !important;
     overflow: hidden !important;
@@ -5316,7 +5335,7 @@
     font-weight: 900 !important;
   }
 
-  /* [v8.5 유지] "반찬등록/삭제/불러오기" 풀다운 메뉴: 버튼과 동일한 가로 사이즈(100%) + 연한 초록색 배경 */
+  /* [v8.5 유지] "반찬등록/삭제/불러오기" 풀다운 메뉴 */
   #basketSlideDropdown {
     width: 100% !important;
     min-width: 100% !important;
@@ -5353,7 +5372,7 @@
     user-select: none !important;
   }
 
-  /* 지난 식단 상세창 상하 크기 확대 & 폰트 2열 줄바꿈 방지 & 텍스트 복사 원천 차단 */
+  /* 지난 식단 상세창 상하 크기 확대 & 폰트 2열 줄바꿈 방지 & 입력칸 수정 원활 지원 */
   #archiveModal > div {
     max-height: 95dvh !important;
     min-height: 80dvh !important;
@@ -5361,7 +5380,7 @@
     flex-direction: column !important;
     justify-content: space-between !important;
   }
-  #archiveModal, #archiveModal * {
+  #archiveModal, #archiveModal *:not(input):not(textarea) {
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
     user-select: none !important;
@@ -5375,6 +5394,7 @@
   }
   #archiveModal input, #archiveModal textarea {
     font-size: 11.5px !important;
+    -webkit-touch-callout: none !important;
   }
   #archiveModal input {
     white-space: nowrap !important;
@@ -5448,7 +5468,7 @@
 </div>
 
 <script>
-  // ================= [패치 v8.7] 3D 테두리 / 식판 괄호 위치 2열 배치 / '지난 식단 관리' & 우측상단 식수인원 & 월·일 굵게 =================
+  // ================= [패치 v8.8] 세부창 '세부사항 수정가능' 깜박임 & '식단 삭제' 연동 + '지난 식단 관리 (0개)' 카운트 =================
 
   window.newlyAddedTrayDishId = null;
   window.trayHighlightLockUntil = 0;
@@ -5472,14 +5492,12 @@
     }
   }
 
-  // [신규 v8.7] 지난 식단 일자('2026년 11월8일(2주)')를 다 표시하되 '월, 일' 문자 사이즈만 굵고 크게 포맷팅하는 함수
   function formatArchiveDateWithBoldMonthDay(dateStr, query) {
     const raw = String(dateStr || '').trim();
     if (!raw) return '';
     if (query && query.length >= 2 && raw.includes(query)) {
       return highlightTextWithYellow(raw, query);
     }
-    // 예: "2026년 11월8일(2주)" -> 년도와 (0주)는 기본, "11월8일"만 크고 굵게
     const m = raw.match(/^(\d{4}년\s*)(\d{1,2}월\s*\d{1,2}일)(.*)$/);
     if (m) {
       return '<span class="font-medium text-[10px] text-teal-700/90">' + m[1] + '</span>' +
@@ -5509,6 +5527,168 @@
       });
     }
   }
+
+  // [신규 v8.8] 세부창에서 수정한 내용을 닫기 전에도 자동 보존하는 함수
+  window.saveArchiveModalEditsIfNeeded = async function() {
+    if (!selectedArchiveId) return;
+    const item = archiveList.find(function(a) { return a && String(a.id) === String(selectedArchiveId); });
+    if (!item) return;
+
+    const newDate = (document.getElementById('archModalDate')?.value || item.date || '').trim();
+    const newTitle = (document.getElementById('archModalTitle')?.value || item.title || '').trim();
+    const newSeason = document.getElementById('archEditSeason')?.value || item.season || '가을';
+    const newType = document.getElementById('archEditType')?.value || item.menuType || '육류';
+    const newHc = (document.getElementById('archEditHeadcount')?.value || '').replace(/\s*\(기준\)/g, '').trim();
+    const newLo = (document.getElementById('archEditLeftover')?.value || '').trim();
+    const newIng = (document.getElementById('archEditRawIng')?.value || '').trim();
+    const newSup = (document.getElementById('archEditSupplies')?.value || '').trim();
+
+    const isChanged =
+      item.date !== newDate ||
+      item.title !== newTitle ||
+      item.season !== newSeason ||
+      item.menuType !== newType ||
+      (item.headcount || '') !== newHc ||
+      (item.leftoverNote || '') !== newLo ||
+      (item.rawIngredients || '') !== newIng ||
+      (item.supplies || '') !== newSup;
+
+    if (isChanged) {
+      item.date = newDate;
+      item.title = newTitle;
+      item.season = newSeason;
+      item.menuType = newType;
+      item.headcount = newHc;
+      item.leftoverNote = newLo;
+      item.rawIngredients = newIng;
+      item.supplies = newSup;
+      renderArchiveGrid();
+      if (db) {
+        db.collection('archives').doc(String(item.id)).set(item, { merge: true }).catch(function() {});
+      }
+    }
+  };
+
+  // [신규 v8.8] 지난 식단 세부창(#archiveModal) 하단 중앙의 '식단 삭제' 실행 함수
+  // (해당 식단 기록 + 달력의 예정/완료/확정 + 주간계획 + 현재 식판/사진 + 클라우드 DB 모두 동시 삭제)
+  window.deleteArchiveFromModal = async function() {
+    if (!isLeader) {
+      await showCustomAlert('식단 삭제는 관리자(팀장)만 가능합니다.', '🔒');
+      return;
+    }
+    const item = archiveList.find(function(a) { return a && String(a.id) === String(selectedArchiveId); });
+    if (!item) return;
+
+    const modalDateVal = document.getElementById('archModalDate') ? document.getElementById('archModalDate').value : item.date;
+    const cleanDate = normalizeCompactDateStr(modalDateVal || item.date);
+
+    const ok = await showCustomConfirm('[' + cleanDate + ']\n이 식단을 삭제할까요?\n(지난 식단 관리 및 달력의 예정·완료·확정 등 모든 관련 사항이 함께 삭제됩니다)', '🗑️');
+    if (!ok) return;
+
+    // 1) 삭제 목록(deletedDatesSet & localStorage)에 등록하여 재등장 방지
+    if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet) {
+      deletedDatesSet.add(cleanDate);
+      if (typeof saveDeletedDatesToLocal === 'function') saveDeletedDatesToLocal();
+    }
+    try {
+      const savedDel = JSON.parse(localStorage.getItem('sejong_deleted_dates') || '[]');
+      if (Array.isArray(savedDel) && !savedDel.includes(cleanDate)) {
+        savedDel.push(cleanDate);
+        localStorage.setItem('sejong_deleted_dates', JSON.stringify(savedDel));
+      }
+    } catch (e) {}
+
+    // 2) archiveList에서 해당 항목 및 동일 일자 식단 모두 제거 (삭제할 문서 ID와 사진 ID 수집)
+    const targetArchIds = [String(item.id)];
+    const targetPhotoIds = [];
+    if (item.photoId && !String(item.photoId).startsWith('default_')) targetPhotoIds.push(String(item.photoId));
+    if (Array.isArray(item.photoIds)) {
+      item.photoIds.forEach(function(pid) {
+        if (pid && !String(pid).startsWith('default_') && !targetPhotoIds.includes(String(pid))) {
+          targetPhotoIds.push(String(pid));
+        }
+      });
+    }
+
+    archiveList = (archiveList || []).filter(function(a) {
+      if (!a) return false;
+      const isTarget = String(a.id) === String(item.id) || normalizeCompactDateStr(a.date) === cleanDate;
+      if (isTarget) {
+        if (!targetArchIds.includes(String(a.id))) targetArchIds.push(String(a.id));
+        if (a.photoId && !String(a.photoId).startsWith('default_') && !targetPhotoIds.includes(String(a.photoId))) {
+          targetPhotoIds.push(String(a.photoId));
+        }
+        return false;
+      }
+      return true;
+    });
+
+    // 3) 주간 계획(weeklyPlanMap)에서 해당 일자 제거 (달력의 예정/완료/확정 표시 완전 제거)
+    if (weeklyPlanMap) {
+      delete weeklyPlanMap[cleanDate];
+      delete weeklyPlanMap[item.date];
+      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    }
+
+    // 4) 만약 현재 메인 화면 '식판에 모으기'가 삭제한 일자와 같다면 식판과 첨부 사진도 즉시 초기화
+    const currentSelectedDate = normalizeCompactDateStr(document.getElementById('currentDate')?.value || '');
+    const isCurrentDateDeleted = (currentSelectedDate === cleanDate);
+    if (isCurrentDateDeleted) {
+      currentTrayIds = [];
+      currentSavedPhotoIds = [];
+      currentSavedPhotoId = 'default_4';
+    }
+
+    // 로컬 사진 메모리 정리
+    targetPhotoIds.forEach(function(pid) {
+      if (dbPhotoStore && dbPhotoStore[pid]) delete dbPhotoStore[pid];
+    });
+
+    // 5) 모달 닫기 및 전체 UI(식판, 사진 스트립, 지난 식단 관리 목록 및 카운트, 달력) 즉시 갱신
+    document.getElementById('archiveModal').classList.add('hidden');
+    selectedArchiveId = null;
+
+    renderTray();
+    renderTrayPhotosStrip();
+    renderArchiveGrid();
+
+    const calModal = document.getElementById('customCalendarModal');
+    if (calModal && !calModal.classList.contains('hidden')) {
+      renderCustomScrollCalendar();
+    }
+
+    // 6) Firebase 클라우드에서도 모든 관련 데이터 동시 삭제
+    if (db) {
+      setCloudStatusLamp('saving');
+      try {
+        const promises = [];
+        targetArchIds.forEach(function(aid) {
+          promises.push(db.collection('archives').doc(String(aid)).delete().catch(function() {}));
+        });
+        targetPhotoIds.forEach(function(pid) {
+          promises.push(db.collection('photos').doc(String(pid)).delete().catch(function() {}));
+        });
+        const stateUpdate = {
+          weeklyPlans: weeklyPlanMap,
+          updatedAt: Date.now()
+        };
+        if (isCurrentDateDeleted) {
+          stateUpdate.date = cleanDate;
+          stateUpdate.trayIds = [];
+          stateUpdate.photoId = 'default_4';
+          stateUpdate.photoIds = [];
+        }
+        promises.push(db.collection('settings').doc('currentState').set(stateUpdate, { merge: true }));
+        await Promise.all(promises);
+        setCloudStatusLamp('connected');
+      } catch (err) {
+        console.error(err);
+        setCloudStatusLamp('disconnected');
+      }
+    }
+
+    await showCustomAlert('[' + cleanDate + ']\n식단과 달력의 관련 표시(예정·완료·확정)가 모두 삭제되었습니다.', '✅');
+  };
 
   // PWA 동적 매니페스트 생성
   (function injectDynamicPwaManifest() {
@@ -5598,16 +5778,52 @@
     openAddToHomeModal();
   }
 
-  (function applyPatchV87() {
-    // [2] '지난 식단 기록' 타이틀을 '지난 식단 관리'로 수정하고 우측 '전체보기' 창 크기에 맞춰 확대
+  (function applyPatchV88() {
+    // [1] 지난 식단 세부창(#archiveModal) 상단 오른쪽 '세부사항 수정가능' 깜박임 배지 및 하단 3버튼(취소후 돌아가기 / 식단 삭제 / 식판에 올리기) 구성
+    const archModal = document.getElementById('archiveModal');
+    if (archModal) {
+      const topBanner = archModal.querySelector('.relative.h-16');
+      if (topBanner && !document.getElementById('archEditableBlinkBadge')) {
+        const blinkBadge = document.createElement('span');
+        blinkBadge.id = 'archEditableBlinkBadge';
+        blinkBadge.className = 'slow-teal-blink absolute top-1.5 right-1.5 text-[9.5px] px-2 py-0.5 rounded-md font-extrabold shadow-2xs pointer-events-none z-10 whitespace-nowrap';
+        blinkBadge.innerText = '세부사항 수정가능';
+        topBanner.appendChild(blinkBadge);
+      }
+
+      const bottomBtnBar = archModal.querySelector('.p-2.bg-slate-50.border-t');
+      if (bottomBtnBar) {
+        bottomBtnBar.className = 'p-2 bg-slate-50 border-t border-slate-200 grid grid-cols-3 gap-1.5 shrink-0';
+        bottomBtnBar.innerHTML =
+          '<button type="button" onclick="closeArchiveModal()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold py-1.5 rounded-xl text-[11px] whitespace-nowrap transition active:scale-95">' +
+            '취소후 돌아가기' +
+          '</button>' +
+          '<button type="button" id="archModalDeleteBtn" onclick="deleteArchiveFromModal()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 font-extrabold py-1.5 rounded-xl text-[11px] whitespace-nowrap transition active:scale-95">' +
+            '식단 삭제' +
+          '</button>' +
+          '<button type="button" onclick="loadArchiveToCurrentTray()" class="bg-teal-600 hover:bg-teal-700 border border-teal-500 text-white font-extrabold py-1.5 rounded-xl text-[11px] whitespace-nowrap shadow-2xs transition active:scale-95">' +
+            '식판에 올리기' +
+          '</button>';
+      }
+    }
+
+    // 세부창 닫을 때 수정사항이 있으면 자동 반영되도록 closeArchiveModal 보강
+    closeArchiveModal = function() {
+      saveArchiveModalEditsIfNeeded();
+      const modal = document.getElementById('archiveModal');
+      if (modal) modal.classList.add('hidden');
+    };
+
+    // [2] '지난 식단 관리' 오른쪽 옆에 카운트 개수 '(0개)' 회색 문구 배치
     const archiveTriggerBtn = document.getElementById('archiveFilterTriggerBtn');
     if (archiveTriggerBtn && archiveTriggerBtn.parentNode) {
       const headerRow = archiveTriggerBtn.parentNode;
       const h2El = headerRow.querySelector('h2');
       if (h2El) {
-        h2El.textContent = '지난 식단 관리';
-        // 우측 전체보기 버튼(px-2.5 py-1)의 전체 높이와 시각적 크기에 맞춘 굵은 타이틀
-        h2El.className = 'text-[15px] font-black text-slate-800 tracking-tight leading-none py-1 flex items-center';
+        h2El.className = 'text-[15px] font-black text-slate-800 tracking-tight leading-none py-1 flex items-baseline gap-1.5';
+        h2El.innerHTML =
+          '<span>지난 식단 관리</span>' +
+          '<span id="archiveTotalCountText" class="text-xs font-bold text-slate-400 tracking-normal">(0개)</span>';
       }
     }
 
@@ -5658,7 +5874,7 @@
       }
     }, { passive: true });
 
-    // [1-1] 식판에 모으기 렌더링: 창 바깥으로 나가지 않도록 하고, 괄호 '(' 위치에서부터 자연스럽게 2열로 떨어지도록 구성
+    // 식판에 모으기 렌더링 유지
     renderTray = function() {
       const tray = document.getElementById('currentTray');
       if (!tray) return;
@@ -5676,8 +5892,6 @@
         const style = catStyles[item.cat] ? catStyles[item.cat].badge : 'bg-slate-50 text-slate-800 border-slate-200';
         const isNeon = window.newlyAddedTrayDishId && String(id) === String(window.newlyAddedTrayDishId);
 
-        // 반찬 이름 안에 괄호 '(' 가 있으면 첫 괄호 위치를 기준으로 앞부분과 뒷부분(괄호~준비kg)을 분리하여
-        // 공간이 좁아 2열이 될 때 반드시 괄호 '(' 위치에서부터 2열로 내려가도록 inline-block 처리
         const rawName = String(item.name || '');
         const parenIdx = rawName.indexOf('(');
         let mainNamePart = rawName;
@@ -5725,7 +5939,6 @@
       renderTrayPhotosStrip();
     };
 
-    // 반찬 바구니 렌더링 유지
     renderBasket = function() {
       Object.keys(catStyles).forEach(function(cat) {
         const btn = document.getElementById('tab-' + cat);
@@ -5820,16 +6033,22 @@
       }
     };
 
-    // [2] 지난 식단 관리 카드 렌더링: 식수인원('300명')을 상단 '계절·일품/간편' 라인 오른쪽으로 이동 배치 + '년도 월 일(0주)' 전체 표시(월·일만 굵게)
+    // [2] 지난 식단 관리 카드 렌더링 + 상단 '(0개)' 회색 카운트 실시간 업데이트
     renderArchiveGrid = function() {
       stripStandardSuffixFromArchives();
+      if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.size > 0 && Array.isArray(archiveList)) {
+        archiveList = archiveList.filter(function(a) {
+          return !(a && deletedDatesSet.has(normalizeCompactDateStr(a.date)));
+        });
+      }
+
       const filter = document.getElementById('archiveFilter') ? document.getElementById('archiveFilter').value : '전체';
       const query = getActiveSearchQuery();
       const grid = document.getElementById('archiveGrid');
       if (!grid) return;
       grid.innerHTML = '';
 
-      const filtered = archiveList
+      const filtered = (archiveList || [])
         .filter(function(a) {
           const passFilter = (filter === '전체' || a.season === filter || a.menuType === filter);
           if (!passFilter) return false;
@@ -5857,6 +6076,12 @@
           return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
         });
 
+      // '지난 식단 관리' 오른쪽 옆에 (0개) 회색 카운트 갱신
+      const countEl = document.getElementById('archiveTotalCountText');
+      if (countEl) {
+        countEl.textContent = '(' + filtered.length + '개)';
+      }
+
       filtered.forEach(function(item) {
         const namesRaw = (item.dishIds || []).map(function(id) {
           const found = masterBasket.find(function(d) { return d.id === id; });
@@ -5867,7 +6092,6 @@
         const mainMenuTitleRaw = getMainMenuDisplayTitle(item);
         const cleanHc = item.headcount ? String(item.headcount).replace(/\s*\(기준\)/g, '').trim() : '';
 
-        // 식수인원 배지: 상단 '계절·메뉴분류' 라인의 오른쪽(top-1.5 right-1.5)에 배치
         const topRightHcBadge = cleanHc
           ? '<span class="absolute top-1.5 right-1.5 bg-amber-50/95 text-amber-900 border border-amber-200 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold shadow-2xs whitespace-nowrap">' + cleanHc + '</span>'
           : '';
@@ -5875,7 +6099,6 @@
         const mainMenuTitleHtml = highlightTextWithYellow(mainMenuTitleRaw, query);
         const titleHtml = highlightTextWithYellow(item.title || '', query);
         const namesHtml = highlightTextWithYellow(namesRaw, query);
-        // '년도 월 일(0주)' 전체가 다 표시되며 '월, 일'만 굵고 크게 포맷팅
         const formattedDateHtml = formatArchiveDateWithBoldMonthDay(item.date || '', query);
 
         const mediaAreaHtml = firstPhotoSrc
@@ -6682,15 +6905,13 @@
       }
     };
 
-    const archModal = document.getElementById('archiveModal');
+    // 세부창 내부 입력칸(input, textarea)은 자유롭게 터치하여 수정할 수 있도록 보장하고 컨텍스트 메뉴만 차단
     if (archModal) {
-      ['contextmenu', 'selectstart', 'dragstart', 'copy', 'cut'].forEach(function(evtName) {
-        archModal.addEventListener(evtName, function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          return false;
-        }, { capture: true });
-      });
+      archModal.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }, { capture: true });
 
       const inputs = archModal.querySelectorAll('input, textarea');
       inputs.forEach(function(inp) {
@@ -6698,17 +6919,8 @@
         inp.setAttribute('autocorrect', 'off');
         inp.setAttribute('autocapitalize', 'off');
         inp.setAttribute('spellcheck', 'false');
-
-        let touchStartTime = 0;
-        inp.addEventListener('touchstart', function() {
-          touchStartTime = Date.now();
-        }, { passive: true });
-
-        inp.addEventListener('touchend', function(e) {
-          if (Date.now() - touchStartTime > 320) {
-            e.preventDefault();
-            inp.blur();
-          }
+        inp.addEventListener('change', function() {
+          saveArchiveModalEditsIfNeeded();
         });
       });
     }
@@ -6718,5 +6930,5 @@
     renderArchiveGrid();
   })();
 </script>
-<!-- ================= [패치 v8.7 END] ================= -->
+<!-- ================= [패치 v8.8 END] ================= -->
 </body></html>
