@@ -7839,9 +7839,9 @@
 <!-- ================= [패치 v9.9 END] ================= -->
 
 
-<!-- ================= [패치 v10.0 START] ================= -->
+<!-- ================= [패치 v10.1 START] ================= -->
 <style>
-  /* [1] 장보기 체크리스트: 좌측 여백 최소화 & 깔끔한 체크박스/플러스 버튼 */
+  /* [장보기 체크리스트] 좌측 여백 최소화 & 깔끔한 체크박스/플러스 버튼 */
   #shoppingListModal, #shoppingListModal *:not(input):not(textarea) {
     -webkit-touch-callout: none !important;
     -webkit-user-select: none !important;
@@ -7893,7 +7893,7 @@
     border-color: #cbd5e1 !important;
   }
 
-  /* [2-1] 지난 식단 상세창: 텍스트 복사 방지, 입력창 터치 시 자동 확대/이동 원천 차단 (두 손가락 핀치줌은 허용) */
+  /* [지난 식단 상세창] 텍스트 복사 방지, 입력창 터치 시 자동 확대/이동 원천 차단 (두 손가락 핀치줌은 허용) */
   #archiveModal,
   #archiveModal * {
     -webkit-touch-callout: none !important;
@@ -7903,57 +7903,224 @@
     -webkit-user-select: none !important;
     user-select: none !important;
   }
-  /* iOS/모바일에서 input/textarea 포커스 시 16px 미만이면 화면이 강제 확대/점프하는 현상 방지 */
-  #archiveModal input[type="text"],
-  #archiveModal textarea {
-    font-size: 16px !important;
-    line-height: 1.25 !important;
-    transform-origin: left center;
+
+  /* [3번 요구사항] 상세창 내 모든 입력창: ... 말줄임표 제거 & 문자열이 길어지면 밑으로 한 칸씩 자동 줄바꿈 확장 */
+  #archiveModal input,
+  #archiveModal textarea,
+  .arch-auto-expand-field {
+    font-size: 16px !important; /* 모바일 포커스 자동 확대 방지 */
+    line-height: 1.3 !important;
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    text-overflow: clip !important;
+    overflow: hidden !important;
+    resize: none !important;
     -webkit-user-select: text !important;
     user-select: text !important;
+    box-sizing: border-box !important;
   }
+  /* 상세창 내 시각적 폰트 밸런스 유지 (확대 방지용 16px을 유지하되 패딩/행간 최적화) */
   #archModalDate, #archModalTitle {
-    padding-top: 3px !important;
-    padding-bottom: 3px !important;
+    padding: 4px 8px !important;
+    min-height: 30px !important;
   }
-  #archExtraFieldsBox input[type="text"],
-  #archExtraFieldsBox textarea {
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
+  #archExtraFieldsBox textarea,
+  #archExtraFieldsBox input {
+    padding: 4px 8px !important;
+    min-height: 28px !important;
   }
 
-  /* [2-1] 상세창 내 식판 메뉴 목록: 한눈에 보이도록 높이 제한 해제 + 연한 핑크색 배경 & 핑크 테두리 */
+  /* [4번 요구사항] 상세창 중간 식판 메뉴 목록: 외곽 프레임 테두리(연한 핑크)는 유지하고, 내부 각 메뉴들의 테두리는 완전 삭제 */
   #archModalDishes {
     max-height: none !important;
     overflow: visible !important;
-    background-color: #fdf2f8 !important; /* 연한 핑크 배경 */
-    border: 2px solid #f9a8d4 !important; /* 핑크 테두리 */
+    background-color: #fdf2f8 !important; /* 연한 핑크 배경 유지 */
+    border: 2px solid #f9a8d4 !important; /* 중간 프레임 테두리 유지 */
     border-radius: 12px !important;
-    padding: 6px 8px !important;
+    padding: 7px 10px !important;
     display: flex !important;
     flex-wrap: wrap !important;
-    gap: 4px !important;
+    align-items: center !important;
+    gap: 4px 10px !important;
   }
   #archModalDishes span {
-    background-color: #ffffff !important;
-    border: 1px solid #fbcfe8 !important;
+    background-color: transparent !important; /* 개별 배경 제거 */
+    border: none !important;                  /* 개별 테두리 완전 삭제 */
+    box-shadow: none !important;              /* 개별 그림자 제거 */
     color: #831843 !important;
-    font-size: 11.5px !important;
+    font-size: 12px !important;
     font-weight: 800 !important;
-    padding: 2px 7px !important;
-    border-radius: 8px !important;
-    white-space: nowrap !important;
-    box-shadow: 0 1px 1px rgba(219, 39, 119, 0.06) !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    white-space: normal !important;
+    word-break: keep-all !important;
+    line-height: 1.35 !important;
   }
 </style>
 
 <script>
-(function applyCleanUpgradeV10() {
+(function applyCleanUpgradeV101() {
   const MSG_MENU_CONFIRMED = '식단이 확정 되었습니다.';
   const MSG_SHOPPING_DONE  = '장보기 완료되어 수정이 안됩니다.';
-  function smileAlertV10(msg) {
+  function smileAlertV101(msg) {
     return showCustomAlert(msg, '😊');
   }
+
+  // =========================================================================
+  // [2번 요구사항] 식판에 모으기 메뉴 순서 자동 정렬 엔진
+  //  항상 위부터: 밥/국(1) -> 메인반찬(2) -> 어린이반찬(3) -> 일반/김치(4) -> 사이드메뉴(5) 순
+  // =========================================================================
+  const CATEGORY_SORT_ORDER = {
+    '밥/국': 1,
+    '메인반찬': 2,
+    '어린이반찬': 3,
+    '일반/김치': 4,
+    '사이드메뉴': 5
+  };
+
+  window.sortTrayIdsByCategoryOrder = function(idArray) {
+    if (!Array.isArray(idArray) || idArray.length <= 1) return idArray;
+    const indexed = idArray.map(function(id, idx) {
+      const dish = (masterBasket || []).find(function(d) { return String(d.id) === String(id); });
+      const rank = (dish && CATEGORY_SORT_ORDER[dish.cat]) ? CATEGORY_SORT_ORDER[dish.cat] : 99;
+      return { id: id, rank: rank, origIdx: idx };
+    });
+    indexed.sort(function(a, b) {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      return a.origIdx - b.origIdx;
+    });
+    const sorted = indexed.map(function(x) { return x.id; });
+    idArray.length = 0;
+    sorted.forEach(function(id) { idArray.push(id); });
+    return idArray;
+  };
+
+  // renderTray 호출 시마다 항상 밥/국 -> 메인 -> 어린이 -> 일반/김치 -> 사이드 순으로 자동 정렬 보장
+  const _origRenderTrayBeforeSortV101 = renderTray;
+  renderTray = function() {
+    if (Array.isArray(currentTrayIds) && currentTrayIds.length > 1) {
+      window.sortTrayIdsByCategoryOrder(currentTrayIds);
+    }
+    if (_origRenderTrayBeforeSortV101) _origRenderTrayBeforeSortV101();
+  };
+
+  // =========================================================================
+  // [1번 요구사항] 반찬 바구니에서 '+담기'를 누르면 제외할 때처럼 '식판에 올릴까요.?' 여부 확인
+  // =========================================================================
+  let pendingTrayConfirmModeV101 = 'remove'; // 'remove' | 'add'
+  let pendingTrayTargetDishIdV101 = null;
+
+  function ensureConfirmModalPromptElV101() {
+    const modal = document.getElementById('removeTrayConfirmModal');
+    if (!modal) return null;
+    let promptEl = document.getElementById('removeTrayPromptText');
+    if (!promptEl) {
+      const pTags = modal.querySelectorAll('p');
+      if (pTags.length >= 2) {
+        promptEl = pTags[1];
+        promptEl.id = 'removeTrayPromptText';
+      }
+    }
+    return promptEl;
+  }
+
+  // 식판에서 제외할 때: '식판에서 제외 할까요.?'
+  requestRemoveFromTray = function(id) {
+    if (!isLeader) {
+      smileAlertV101(MSG_MENU_CONFIRMED);
+      return;
+    }
+    pendingTrayConfirmModeV101 = 'remove';
+    pendingTrayTargetDishIdV101 = id;
+    pendingRemoveDishId = id;
+
+    const item = (masterBasket || []).find(function(d) { return d.id === id; });
+    const nameEl = document.getElementById('removeTrayTargetName');
+    if (nameEl) nameEl.innerText = item ? ('[' + item.name + ']') : '';
+
+    const promptEl = ensureConfirmModalPromptElV101();
+    if (promptEl) promptEl.innerText = '식판에서 제외 할까요.?';
+
+    const modal = document.getElementById('removeTrayConfirmModal');
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  // 반찬 바구니에서 담을 때: '식판에 올릴까요.?'
+  window.requestAddToTrayV101 = function(id) {
+    if (!isLeader) {
+      smileAlertV101(MSG_MENU_CONFIRMED);
+      return;
+    }
+    pendingTrayConfirmModeV101 = 'add';
+    pendingTrayTargetDishIdV101 = id;
+    pendingRemoveDishId = id;
+
+    const item = (masterBasket || []).find(function(d) { return d.id === id; });
+    const nameEl = document.getElementById('removeTrayTargetName');
+    if (nameEl) nameEl.innerText = item ? ('[' + item.name + ']') : '';
+
+    const promptEl = ensureConfirmModalPromptElV101();
+    if (promptEl) promptEl.innerText = '식판에 올릴까요.?';
+
+    const modal = document.getElementById('removeTrayConfirmModal');
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  // 예(Y) / 아니오(N) 클릭 처리 (올리기 & 제외하기 통합 처리)
+  confirmRemoveFromTray = async function(isYes) {
+    const modal = document.getElementById('removeTrayConfirmModal');
+    if (modal) modal.classList.add('hidden');
+
+    const targetId = pendingTrayTargetDishIdV101 || pendingRemoveDishId;
+    const mode = pendingTrayConfirmModeV101;
+    pendingTrayTargetDishIdV101 = null;
+    pendingRemoveDishId = null;
+
+    if (!isYes || !targetId) return;
+
+    if (mode === 'add') {
+      if (!currentTrayIds.includes(targetId)) {
+        currentTrayIds.push(targetId);
+      }
+      window.sortTrayIdsByCategoryOrder(currentTrayIds);
+      window.newlyAddedTrayDishId = targetId;
+      window.trayHighlightLockUntil = Date.now() + 650;
+
+      renderTray();
+      renderArchiveGrid();
+
+      const trayBox = document.getElementById('trayCardBox');
+      if (trayBox) {
+        requestAnimationFrame(function() {
+          trayBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+      await syncCurrentStateToDb();
+    } else {
+      await removeFromTray(targetId);
+    }
+  };
+
+  // 반찬 바구니 아이템 터치 시: 이미 담겨있으면 '식판에서 제외 할까요.?', 안 담겨있으면 '식판에 올릴까요.?' 실행
+  toggleDishInTray = async function(id) {
+    if (!isLeader) {
+      return await smileAlertV101(MSG_MENU_CONFIRMED);
+    }
+    const sInput = document.getElementById('basketSearch');
+    const hadSearch = sInput && sInput.value.trim().length > 0;
+    if (hadSearch) {
+      sInput.value = '';
+      renderBasket();
+      renderArchiveGrid();
+    }
+
+    if (currentTrayIds.includes(id)) {
+      requestRemoveFromTray(id);
+    } else {
+      window.requestAddToTrayV101(id);
+    }
+  };
 
   // =========================================================================
   // 파트 1: 메뉴 세부사항 설정(조리방법 및 기타내용) <-> 장보기 필요한 설명 양방향 동기화
@@ -7973,16 +8140,15 @@
     } catch (e) {}
   }
 
-  function getActiveCleanDateV10() {
+  function getActiveCleanDateV101() {
     const curEl = document.getElementById('currentDate');
     return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
   }
 
-  // 식판 메뉴 클릭 -> '메뉴 세부사항 설정' 저장 시 장보기 트리의 '필요한 설명(memo)'에도 즉시 반영
   saveDishDetail = async function() {
     if (!isLeader) {
       closeDishDetailModal();
-      return await smileAlertV10(MSG_MENU_CONFIRMED);
+      return await smileAlertV101(MSG_MENU_CONFIRMED);
     }
     const item = (masterBasket || []).find(function(d) { return d.id === editingDishId; });
     if (item) {
@@ -7995,13 +8161,11 @@
         item.note = pVal;
         item.price = isNaN(Number(pVal)) ? 0 : Number(pVal);
       }
-      // 최대 2열 정리하여 조리방법 및 기타내용(recipe)에 저장
       const rawRecipe = document.getElementById('detailRecipe').value || '';
       const twoLineRecipe = rawRecipe.split(/\r?\n/).slice(0, 2).join('\n').trim();
       item.recipe = twoLineRecipe;
 
-      // 현재 날짜의 장보기 트리에도 해당 메뉴 설명(memo) 즉시 동기화
-      const cleanDate = getActiveCleanDateV10();
+      const cleanDate = getActiveCleanDateV101();
       if (shoppingTreesMap[cleanDate] && Array.isArray(shoppingTreesMap[cleanDate].groups)) {
         const g = shoppingTreesMap[cleanDate].groups.find(function(grp) { return String(grp.id) === String(item.id); });
         if (g) {
@@ -8021,10 +8185,9 @@
     await syncCurrentStateToDb();
   };
 
-  // 식판에서 메뉴 세부사항 모달을 열 때 장보기에서 입력한 설명이 있으면 최신 값 표시
-  const _origOpenDishDetailModalV10 = openDishDetailModal;
+  const _origOpenDishDetailModalV101 = openDishDetailModal;
   openDishDetailModal = function(id) {
-    _origOpenDishDetailModalV10(id);
+    _origOpenDishDetailModalV101(id);
     const item = (masterBasket || []).find(function(d) { return d.id === id; });
     if (!item) return;
     const priceEl = document.getElementById('detailPrice');
@@ -8033,7 +8196,7 @@
     }
     const recipeEl = document.getElementById('detailRecipe');
     if (recipeEl) {
-      const cleanDate = getActiveCleanDateV10();
+      const cleanDate = getActiveCleanDateV101();
       const tree = shoppingTreesMap[cleanDate];
       const grp = tree && Array.isArray(tree.groups) ? tree.groups.find(function(g) { return String(g.id) === String(id); }) : null;
       if (grp && typeof grp.memo === 'string' && grp.memo.trim().length > 0) {
@@ -8045,12 +8208,9 @@
   };
 
   // =========================================================================
-  // 파트 2: 장보기 체크리스트 v10.0
-  //  1) 가로 트리/체크박스 왼쪽 여백 최소화 + 체크 시 '수정, ✕' 버튼 숨김
-  //  2) '필요한 설명 입력' (+ 터치 시 1열 우선 표시 -> 길어지거나 엔터 시 2열까지만) + 세부사항(recipe) 저장 연동
-  //  3) 우측 상단 '+재료' 왼쪽에 '잠금/해제' 버튼 신설 (기존 길게누르기 잠금/해제 완전 삭제)
+  // 파트 2: 장보기 체크리스트 v10.1
   // =========================================================================
-  function parseIngredientsFromTextV10(str) {
+  function parseIngredientsFromTextV101(str) {
     if (!str) return [];
     return String(str)
       .split(/[,/\n]+/)
@@ -8058,7 +8218,7 @@
       .filter(function(s) { return s.length > 0 && s !== '기본 조리' && s !== '적당량'; });
   }
 
-  function ensureShoppingTreeForDateV10(cleanDate) {
+  function ensureShoppingTreeForDateV101(cleanDate) {
     const matchedArch = (archiveList || []).find(function(a) {
       return a && normalizeCompactDateStr(a.date) === cleanDate;
     });
@@ -8070,6 +8230,8 @@
     const activeDishIds = (currentTrayIds && currentTrayIds.length > 0)
       ? currentTrayIds.slice()
       : (matchedArch && Array.isArray(matchedArch.dishIds) ? matchedArch.dishIds.slice() : []);
+
+    window.sortTrayIdsByCategoryOrder(activeDishIds);
 
     const existingTree = shoppingTreesMap[cleanDate];
     const newGroups = [];
@@ -8096,7 +8258,7 @@
       } else {
         const initItems = [];
         if (dish) {
-          const parsedNote = parseIngredientsFromTextV10(dish.note);
+          const parsedNote = parseIngredientsFromTextV101(dish.note);
           if (parsedNote.length > 0) {
             parsedNote.forEach(function(txt, idx) {
               initItems.push({ id: 'ing_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 5), name: txt, checked: false });
@@ -8130,7 +8292,7 @@
     } else {
       const commonItems = [];
       if (matchedArch) {
-        const supArr = parseIngredientsFromTextV10(matchedArch.supplies);
+        const supArr = parseIngredientsFromTextV101(matchedArch.supplies);
         supArr.forEach(function(txt, idx) {
           commonItems.push({ id: 'com_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 5), name: txt, checked: false });
         });
@@ -8169,7 +8331,7 @@
       if (!isConfirmed) return;
     }
 
-    const cleanDate = getActiveCleanDateV10();
+    const cleanDate = getActiveCleanDateV101();
     const badgeEl = document.getElementById('shoppingModalDateBadge');
     if (badgeEl) badgeEl.innerText = cleanDate;
 
@@ -8177,7 +8339,7 @@
     window.activeEditIngTargetV10 = null;
     window.activeMemoGroupIdV10 = null;
 
-    ensureShoppingTreeForDateV10(cleanDate);
+    ensureShoppingTreeForDateV101(cleanDate);
     renderShoppingTreeModal();
     document.getElementById('shoppingListModal').classList.remove('hidden');
   };
@@ -8188,14 +8350,13 @@
     if (modal) modal.classList.add('hidden');
   };
 
-  // [1-3] 우측 상단 잠금/해제 원터치 토글 함수
   window.toggleShoppingGroupLockV10 = function(groupId) {
     if (!isLeader) {
-      smileAlertV10(MSG_SHOPPING_DONE);
+      smileAlertV101(MSG_SHOPPING_DONE);
       return;
     }
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
     const group = (tree.groups || []).find(function(g) { return String(g.id) === String(groupId); });
     if (!group) return;
     group.locked = !group.locked;
@@ -8206,7 +8367,7 @@
   };
 
   window.openInlineAddIngredientV10 = function(groupId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
     window.activeEditIngTargetV10 = null;
     window.activeAddInputGroupIdV10 = (window.activeAddInputGroupIdV10 === groupId) ? null : groupId;
     renderShoppingTreeModal();
@@ -8217,7 +8378,7 @@
   };
 
   window.submitInlineAddIngredientV10 = function(groupId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
     const inp = document.getElementById('inlineAddIngInput_' + groupId);
     if (!inp) return;
     const rawVal = String(inp.value || '').trim();
@@ -8226,8 +8387,8 @@
       renderShoppingTreeModal();
       return;
     }
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
     const group = tree.groups.find(function(g) { return g.id === groupId; });
     if (group && !group.locked) {
       const parts = rawVal.split(/[,]+/).map(function(s) { return s.trim(); }).filter(Boolean);
@@ -8245,7 +8406,7 @@
   };
 
   window.openEditShoppingIngredientV10 = function(groupId, itemId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
     window.activeAddInputGroupIdV10 = null;
     if (window.activeEditIngTargetV10 && window.activeEditIngTargetV10.groupId === groupId && window.activeEditIngTargetV10.itemId === itemId) {
       window.activeEditIngTargetV10 = null;
@@ -8260,12 +8421,12 @@
   };
 
   window.saveEditedShoppingIngredientV10 = function(groupId, itemId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
     const inp = document.getElementById('inlineEditIngInput_' + itemId);
     if (!inp) return;
     const newName = String(inp.value || '').trim();
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
     const group = tree.groups.find(function(g) { return g.id === groupId; });
     if (group && !group.locked && newName) {
       const target = (group.items || []).find(function(it) { return it.id === itemId; });
@@ -8277,9 +8438,9 @@
   };
 
   window.deleteShoppingIngredientItemV10 = function(groupId, itemId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
     const group = tree.groups.find(function(g) { return g.id === groupId; });
     if (!group || group.locked) return;
     group.items = group.items.filter(function(it) { return it.id !== itemId; });
@@ -8287,7 +8448,6 @@
     renderShoppingTreeModal();
   };
 
-  // [1-2] 필요한 설명 입력: 1열 우선 오픈 -> 글자가 길어지거나 엔터 시 최대 2열까지만 자동 조절
   window.adjustMemoRowsOneToTwoV10 = function(taEl) {
     if (!taEl) return;
     let val = String(taEl.value || '');
@@ -8305,7 +8465,7 @@
   };
 
   window.toggleGroupMemoEditorV10 = function(groupId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
     window.activeMemoGroupIdV10 = (window.activeMemoGroupIdV10 === groupId) ? null : groupId;
     renderShoppingTreeModal();
     setTimeout(function() {
@@ -8317,12 +8477,11 @@
     }, 25);
   };
 
-  // 필요한 설명 저장 시: 장보기 트리 + 반찬 바구니(masterBasket)의 '조리방법 및 기타내용(recipe)'에 즉시 저장 연동
   window.saveGroupMemoV10 = async function(groupId) {
-    if (!isLeader) { smileAlertV10(MSG_SHOPPING_DONE); return; }
+    if (!isLeader) { smileAlertV101(MSG_SHOPPING_DONE); return; }
     const ta = document.getElementById('groupMemoTextarea_' + groupId);
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
     const group = tree.groups.find(function(g) { return g.id === groupId; });
     if (group && ta) {
       const lines = String(ta.value || '').split(/\r?\n/).slice(0, 2);
@@ -8330,7 +8489,6 @@
       group.memo = cleanMemo;
       saveShoppingTreesToLocal();
 
-      // 공통재료가 아닌 일반 식판 메뉴인 경우 '메뉴 세부사항 설정(recipe)'에 동시 저장
       if (!group.isCommon && group.id !== 'common_group') {
         const dishObj = (masterBasket || []).find(function(d) { return String(d.id) === String(group.id); });
         if (dishObj) {
@@ -8351,8 +8509,8 @@
   window.renderShoppingTreeModal = function() {
     const container = document.getElementById('shoppingTreeContainer');
     if (!container) return;
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
     container.innerHTML = '';
 
     (tree.groups || []).forEach(function(group) {
@@ -8364,7 +8522,6 @@
       card.className = 'w-full max-w-full overflow-hidden box-border rounded-xl border px-1.5 py-1.5 shadow-2xs transition ' +
         (isLocked ? 'shop-group-locked border-slate-300' : (isCommon ? 'bg-amber-50/40 border-amber-200' : 'bg-white border-slate-200'));
 
-      // 상단 헤더: 좌측 메뉴명 + 우측 [잠금/해제] 버튼 & [+재료] 버튼
       const headerRow = document.createElement('div');
       headerRow.className = 'w-full max-w-full overflow-hidden flex items-center justify-between gap-1 pb-1 border-b whitespace-nowrap ' +
         (isLocked ? 'border-slate-200' : (isCommon ? 'border-amber-200/70' : 'border-slate-100'));
@@ -8379,7 +8536,6 @@
       const rightActionWrap = document.createElement('div');
       rightActionWrap.className = 'flex items-center gap-1 shrink-0';
 
-      // [1-3] '+재료' 왼쪽 옆에 언제든지 잠금/해제할 수 있는 버튼 배치
       const lockToggleBtn = document.createElement('button');
       lockToggleBtn.type = 'button';
       if (isLocked) {
@@ -8411,7 +8567,6 @@
       headerRow.appendChild(rightActionWrap);
       card.appendChild(headerRow);
 
-      // 인라인 재료 추가 입력창
       if (!isLocked && window.activeAddInputGroupIdV10 === group.id) {
         const addInputRow = document.createElement('div');
         addInputRow.className = 'mt-1 w-full flex items-center gap-1 bg-slate-50 p-1 rounded-lg border border-teal-300 box-border';
@@ -8441,7 +8596,6 @@
         card.appendChild(addInputRow);
       }
 
-      // [1-1] 가로 트리와 체크박스 왼쪽 여백 최소화 (pl-0, gap-1)
       const treeList = document.createElement('div');
       treeList.className = 'mt-1 pl-0 space-y-0.5 w-full max-w-full overflow-hidden box-border';
 
@@ -8506,7 +8660,6 @@
           return;
         }
 
-        // 왼쪽 터치 영역 (여백 최소화: ├ 기호와 체크박스를 왼쪽으로 바짝 붙임)
         const leftTouchArea = document.createElement('div');
         leftTouchArea.className = 'flex items-center gap-1 min-w-0 flex-1 overflow-hidden ' + (isLocked ? 'cursor-not-allowed' : 'cursor-pointer');
 
@@ -8530,7 +8683,7 @@
         leftTouchArea.onclick = function(e) {
           e.stopPropagation();
           if (!isLeader) {
-            smileAlertV10(MSG_SHOPPING_DONE);
+            smileAlertV101(MSG_SHOPPING_DONE);
             return;
           }
           if (group.locked) return;
@@ -8541,7 +8694,6 @@
 
         itemRow.appendChild(leftTouchArea);
 
-        // [1-1] 체크가 완료(item.checked === true)되면 '수정, ✕' 버튼이 사라져 재료 문자가 우측 끝까지 넓게 보이도록 함
         if (!isLocked && !item.checked) {
           const btnGroup = document.createElement('div');
           btnGroup.className = 'flex items-center gap-1 shrink-0 ml-0.5';
@@ -8572,7 +8724,6 @@
         treeList.appendChild(itemRow);
       });
 
-      // [1-2] 최하위 카테고리: '필요한 설명 입력' (+ 터치 시 1열 우선 나오고 길어지거나 줄바꿈 시 최대 2열)
       const memoRow = document.createElement('div');
       memoRow.className = 'w-full max-w-full overflow-hidden pt-[2px] box-border';
 
@@ -8596,7 +8747,6 @@
 
       memoRow.appendChild(memoTriggerLine);
 
-      // 2번째 줄이 있는 경우 표시
       if (hasMemoText && memoLinesArr.length > 1 && window.activeMemoGroupIdV10 !== group.id) {
         const subMemoDiv = document.createElement('div');
         subMemoDiv.className = 'pl-6 pr-1 text-[11px] font-semibold text-teal-700/90 leading-snug truncate cursor-pointer';
@@ -8681,10 +8831,10 @@
   };
 
   window.completeShoppingAndCommit = async function() {
-    if (!isLeader) return await smileAlertV10(MSG_SHOPPING_DONE);
+    if (!isLeader) return await smileAlertV101(MSG_SHOPPING_DONE);
 
-    const cleanDate = getActiveCleanDateV10();
-    const tree = ensureShoppingTreeForDateV10(cleanDate);
+    const cleanDate = getActiveCleanDateV101();
+    const tree = ensureShoppingTreeForDateV101(cleanDate);
 
     if (!tree || !Array.isArray(tree.groups)) {
       await showCustomAlert('장보기 목록 데이터가 없습니다.', '⚠️');
@@ -8761,6 +8911,8 @@
         modifiedBasketDishes.push(dishObj);
       }
     });
+
+    window.sortTrayIdsByCategoryOrder(updatedDishIds);
 
     const commonNames = checkedCommonItems.map(function(it) { return it.name; }).filter(Boolean);
     const finalRawIngredients = menuIngSummaryLines.join('\n');
@@ -8886,11 +9038,10 @@
 
   // =========================================================================
   // 파트 3: 지난 식단관리 기능 및 디자인 개선
-  //  1) 상세창 텍스트 복사 차단 & 입력창 터치 시 확대/이동 방지 + 식판 메뉴 연한 핑크 박스 한눈에 보기
-  //  2) 다른 기능 사용 후 지난 식단 터치 시 청록(Teal) 테두리 선택이 안 되는 현상 완벽 수정
-  //  3) 봄, 여름, 가을, 겨울 계절별 연한 배경색 적용
+  //  - [3번 요구사항] 상세창 문자열이 길어지면 ... 대신 창이 밑으로 한 칸씩 내려가는 기능
+  //  - [4번 요구사항] 중간 식판 메뉴 프레임 테두리는 유지, 각 메뉴 개별 테두리는 삭제
   // =========================================================================
-  const seasonThemeMapV10 = {
+  const seasonThemeMapV101 = {
     '봄': {
       cardBg: 'bg-pink-50/65',
       cardBorder: 'border-pink-200/90',
@@ -8925,22 +9076,76 @@
     }
   };
 
-  function getSeasonThemeV10(season) {
-    return seasonThemeMapV10[season] || seasonThemeMapV10['가을'];
+  function getSeasonThemeV101(season) {
+    return seasonThemeMapV101[season] || seasonThemeMapV101['가을'];
   }
 
-  // [2-3] 상세창의 봄/여름/가을/겨울 버튼에도 연한 계절 배경색 상시 적용
+  // [3번 요구사항] 상세창 내부의 단일 줄 <input>들을 자동으로 밑으로 한 칸씩 내려가는 <textarea rows="1">로 변환 및 높이 자동 조절
+  function convertArchModalInputsToAutoExpandV101() {
+    const fieldIds = ['archModalDate', 'archModalTitle', 'archEditHeadcount', 'archEditLeftover', 'archEditSupplies', 'archEditRawIng'];
+    fieldIds.forEach(function(fid) {
+      const el = document.getElementById(fid);
+      if (!el) return;
+      if (el.tagName === 'INPUT') {
+        const ta = document.createElement('textarea');
+        ta.id = el.id;
+        ta.rows = 1;
+        ta.className = el.className + ' arch-auto-expand-field block';
+        ta.value = el.value || '';
+        el.parentNode.replaceChild(ta, el);
+      } else if (el.tagName === 'TEXTAREA') {
+        el.rows = 1;
+        el.classList.add('arch-auto-expand-field', 'block');
+      }
+    });
+
+    fieldIds.forEach(function(fid) {
+      const ta = document.getElementById(fid);
+      if (!ta) return;
+      ta.setAttribute('autocomplete', 'off');
+      ta.setAttribute('autocorrect', 'off');
+      ta.setAttribute('autocapitalize', 'off');
+      ta.setAttribute('spellcheck', 'false');
+      ta.oninput = function() {
+        window.autoResizeArchFieldV101(ta);
+      };
+      ta.onchange = function() {
+        window.autoResizeArchFieldV101(ta);
+        if (typeof saveArchiveModalEditsIfNeeded === 'function') {
+          saveArchiveModalEditsIfNeeded();
+        }
+      };
+    });
+  }
+
+  window.autoResizeArchFieldV101 = function(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    const scH = el.scrollHeight;
+    el.style.height = Math.max(28, scH) + 'px';
+  };
+
+  window.autoResizeAllArchModalFieldsV101 = function() {
+    const fieldIds = ['archModalDate', 'archModalTitle', 'archEditHeadcount', 'archEditLeftover', 'archEditSupplies', 'archEditRawIng'];
+    fieldIds.forEach(function(fid) {
+      const el = document.getElementById(fid);
+      if (el) window.autoResizeArchFieldV101(el);
+    });
+  };
+
+  convertArchModalInputsToAutoExpandV101();
+
   selectCustomArchSeason = function(seasonVal) {
     const modal = document.getElementById('archiveModal');
     if (!isLeader && modal && !modal.classList.contains('hidden')) {
-      smileAlertV10(MSG_MENU_CONFIRMED);
+      smileAlertV101(MSG_MENU_CONFIRMED);
       return;
     }
     const hiddenEl = document.getElementById('archEditSeason');
     if (hiddenEl) hiddenEl.value = seasonVal;
     document.querySelectorAll('.arch-season-btn').forEach(function(btn) {
       const bSeason = btn.getAttribute('data-season');
-      const th = getSeasonThemeV10(bSeason);
+      const th = getSeasonThemeV101(bSeason);
       if (bSeason === seasonVal) {
         btn.className = 'arch-season-btn py-1 rounded ' + th.btnActive;
       } else {
@@ -8950,13 +9155,12 @@
     const seasonBadgeEl = document.getElementById('archModalSeason');
     const typeVal = document.getElementById('archEditType') ? document.getElementById('archEditType').value : '육류';
     if (seasonBadgeEl) {
-      const activeTh = getSeasonThemeV10(seasonVal);
+      const activeTh = getSeasonThemeV101(seasonVal);
       seasonBadgeEl.className = 'absolute top-1.5 left-1.5 ' + activeTh.badge + ' text-[9.5px] px-1.5 py-0.5 rounded font-extrabold shadow-2xs';
       seasonBadgeEl.innerText = seasonVal + ' · ' + typeVal;
     }
   };
 
-  // [2-2] 어떤 기능을 사용하다가 눌러도 100% 청록 테두리가 즉시 선택되도록 개선
   window.highlightArchiveCard = function(archId) {
     highlightedArchiveId = String(archId);
     const grid = document.getElementById('archiveGrid');
@@ -8965,7 +9169,7 @@
     Array.from(grid.children).forEach(function(cardEl) {
       const cid = cardEl.getAttribute('data-arch-id');
       const cSeason = cardEl.getAttribute('data-arch-season') || '가을';
-      const th = getSeasonThemeV10(cSeason);
+      const th = getSeasonThemeV101(cSeason);
 
       if (cid === highlightedArchiveId) {
         cardEl.className = th.cardBg + ' rounded-2xl shadow-md border-[3.5px] border-teal-500 ring-2 ring-teal-200/90 overflow-hidden cursor-pointer transition select-none';
@@ -8975,7 +9179,6 @@
     });
   };
 
-  // 카드 터치 시 즉시 청록 테두리 선택 + 450ms 길게 누르면 상세창 오픈
   window.attachSingleTapAndLongPress = function(cardEl, archId) {
     let pressTimer = null;
     let startX = 0, startY = 0;
@@ -8991,7 +9194,6 @@
       startX = e.clientX;
       startY = e.clientY;
 
-      // 터치하는 즉시 청록색 선택 테두리 반영 (다른 기능 사용 직후나 검색창 클리어와 무관하게 100% 동작)
       window.highlightArchiveCard(archId);
 
       if (pressTimer) clearTimeout(pressTimer);
@@ -9025,7 +9227,6 @@
     };
   };
 
-  // [2-2 & 2-3] 지난 식단 그리드 렌더링 (봄/여름/가을/겨울 연한 배경색 + 청록 테두리 유지)
   renderArchiveGrid = function() {
     stripStandardSuffixFromArchives();
     if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.size > 0 && Array.isArray(archiveList)) {
@@ -9077,7 +9278,10 @@
     }
 
     filtered.forEach(function(item) {
-      const namesRaw = (item.dishIds || []).map(function(id) {
+      const sortedDishIds = Array.isArray(item.dishIds) ? item.dishIds.slice() : [];
+      window.sortTrayIdsByCategoryOrder(sortedDishIds);
+
+      const namesRaw = sortedDishIds.map(function(id) {
         const found = (masterBasket || []).find(function(d) { return d.id === id; });
         return found ? found.name : id;
       }).filter(Boolean).join(', ');
@@ -9086,7 +9290,7 @@
       const mainMenuTitleRaw = getMainMenuDisplayTitle(item);
       const cleanHc = item.headcount ? String(item.headcount).replace(/\s*\(기준\)/g, '').trim() : '';
       const seasonVal = item.season || '가을';
-      const th = getSeasonThemeV10(seasonVal);
+      const th = getSeasonThemeV101(seasonVal);
 
       const topRightHcBadge = cleanHc
         ? '<span class="absolute top-1.5 right-1.5 bg-white/95 text-slate-800 border border-slate-200 text-[10px] px-1.5 py-0.5 rounded-md font-extrabold shadow-2xs whitespace-nowrap">' + cleanHc + '</span>'
@@ -9138,8 +9342,12 @@
     } catch (e) {}
   };
 
-  // [2-1] 지난 식단 상세창 오픈: 연한 핑크 배경 메뉴 박스 + 복사/확대 이동 방지
+  // [3번 & 4번 요구사항] 지난 식단 상세창 오픈:
+  //  - 중간 식판 메뉴 프레임은 연한 핑크 테두리 유지 + 내부 각 메뉴들의 테두리는 삭제하여 깔끔하게 확인만 가능
+  //  - 모든 입력칸은 글자가 길어지면 ... 없이 밑으로 한 칸씩 자동 확장
   openArchiveModal = function(id) {
+    convertArchModalInputsToAutoExpandV101();
+
     selectedArchiveId = String(id);
     const item = (archiveList || []).find(function(a) { return String(a.id) === selectedArchiveId; });
     if (!item) return;
@@ -9171,12 +9379,11 @@
     document.getElementById('archModalDate').value = item.date || '';
     document.getElementById('archModalTitle').value = item.title || '';
 
-    // 계절 및 메뉴타입 버튼 설정 (팀원일 때도 초기 오픈 시에는 정상 렌더링되도록 임시 허용)
     const hiddenSeasonEl = document.getElementById('archEditSeason');
     if (hiddenSeasonEl) hiddenSeasonEl.value = item.season || '가을';
     document.querySelectorAll('.arch-season-btn').forEach(function(btn) {
       const bSeason = btn.getAttribute('data-season');
-      const th = getSeasonThemeV10(bSeason);
+      const th = getSeasonThemeV101(bSeason);
       btn.className = (bSeason === (item.season || '가을'))
         ? 'arch-season-btn py-1 rounded ' + th.btnActive
         : 'arch-season-btn py-1 rounded ' + th.btnInactive;
@@ -9184,7 +9391,7 @@
 
     const seasonBadgeEl = document.getElementById('archModalSeason');
     if (seasonBadgeEl) {
-      const activeTh = getSeasonThemeV10(item.season || '가을');
+      const activeTh = getSeasonThemeV101(item.season || '가을');
       seasonBadgeEl.className = 'absolute top-1.5 left-1.5 ' + activeTh.badge + ' text-[9.5px] px-1.5 py-0.5 rounded font-extrabold shadow-2xs';
       seasonBadgeEl.innerText = (item.season || '가을') + ' · ' + (item.menuType || '육류');
     }
@@ -9203,19 +9410,22 @@
     const ingEl = document.getElementById('archEditRawIng'); if (ingEl) ingEl.value = item.rawIngredients || '';
     const supEl = document.getElementById('archEditSupplies'); if (supEl) supEl.value = item.supplies || '';
 
-    // [2-1] 식판에 올라왔던 메뉴들 목록: 연한 핑크색 배경 + 테두리 안에 한눈에 모두 보이도록 표시
+    // [4번 요구사항] 중간 프레임 테두리는 그대로 두고, 내부 각 메뉴들의 테두리는 삭제하여 깔끔하게 확인만 가능
     const dishBox = document.getElementById('archModalDishes');
     if (dishBox) {
       dishBox.innerHTML = '';
-      const dishIds = item.dishIds || [];
-      if (dishIds.length === 0) {
-        dishBox.innerHTML = '<span class="text-xs text-pink-700 font-bold">등록된 식판 메뉴가 없습니다.</span>';
+      const sortedDishIds = Array.isArray(item.dishIds) ? item.dishIds.slice() : [];
+      window.sortTrayIdsByCategoryOrder(sortedDishIds);
+
+      if (sortedDishIds.length === 0) {
+        dishBox.innerHTML = '<span>등록된 식판 메뉴가 없습니다.</span>';
       } else {
-        dishIds.forEach(function(dId) {
+        sortedDishIds.forEach(function(dId, idx) {
           const d = (masterBasket || []).find(function(x) { return x.id === dId; });
-          const chip = document.createElement('span');
-          chip.textContent = d ? (d.name + (d.kg ? ' (' + d.kg + ')' : '')) : dId;
-          dishBox.appendChild(chip);
+          const span = document.createElement('span');
+          const labelStr = d ? (d.name + (d.kg ? ' (' + d.kg + ')' : '')) : dId;
+          span.textContent = (idx < sortedDishIds.length - 1) ? (labelStr + ' ·') : labelStr;
+          dishBox.appendChild(span);
         });
       }
     }
@@ -9232,10 +9442,27 @@
         inputs.forEach(function(inp) { inp.readOnly = false; });
       }
       archModal.classList.remove('hidden');
+
+      // 모달이 열린 직후 모든 텍스트창 높이를 문자열 길이에 맞춰 밑으로 한 칸씩 자동 확장
+      requestAnimationFrame(function() {
+        window.autoResizeAllArchModalFieldsV101();
+      });
+      setTimeout(function() {
+        window.autoResizeAllArchModalFieldsV101();
+      }, 40);
     }
   };
 
-  // 상세창 내부 복사/컨텍스트 메뉴 및 포커스 점프 방지 이벤트 강화
+  // 지난 식단에서 '식판에 올리기' 실행 시에도 카테고리 순서대로 자동 정렬하여 반영
+  const _origLoadArchiveToTrayV101 = loadArchiveToCurrentTray;
+  loadArchiveToCurrentTray = async function() {
+    if (!isLeader) return await smileAlertV101(MSG_MENU_CONFIRMED);
+    await _origLoadArchiveToTrayV101();
+    window.sortTrayIdsByCategoryOrder(currentTrayIds);
+    renderTray();
+    await syncCurrentStateToDb();
+  };
+
   const archModalEl = document.getElementById('archiveModal');
   if (archModalEl) {
     ['copy', 'cut', 'contextmenu', 'selectstart'].forEach(function(evtName) {
@@ -9256,7 +9483,6 @@
           inp.blur();
           return;
         }
-        // 모바일 브라우저가 포커스 시 임의로 스크롤/화면을 이동시키는 현상 방지
         e.stopPropagation();
       }, { passive: false });
     });
@@ -9267,6 +9493,6 @@
   renderArchiveGrid();
 })();
 </script>
-<!-- ================= [패치 v10.0 END] ================= -->
+<!-- ================= [패치 v10.1 END] ================= -->
 
 </body></html>
