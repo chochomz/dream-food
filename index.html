@@ -7072,15 +7072,18 @@
   <div id="shoppingModalInnerCard" class="relative bg-white rounded-2xl w-[94vw] max-w-sm min-h-[80dvh] max-h-[94dvh] flex flex-col justify-between overflow-hidden shadow-2xl border-[4px] border-teal-400 box-border">
     <div class="bg-teal-50/90 px-2.5 py-2 border-b border-teal-200 shrink-0 w-full box-border">
       <div class="flex items-center justify-between gap-1 w-full">
-        <h3 class="text-[14px] font-black text-teal-950 truncate">장보기 체크리스트</h3>
+        <div class="flex items-center gap-1 min-w-0">
+          <span class="text-sm leading-none">🛒</span>
+          <h3 class="text-[14px] font-black text-teal-950 truncate">장보기 체크리스트</h3>
+        </div>
         <span id="shoppingModalDateBadge" class="text-[10.5px] font-extrabold text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200 shrink-0"></span>
       </div>
     </div>
 
     <div id="shoppingTreeContainer" class="p-1.5 space-y-1.5 overflow-y-auto overflow-x-hidden overscroll-contain flex-1 bg-slate-50/50 w-full box-border"></div>
 
-    <!-- 풀업 슬라이드 메뉴 (반찬등록 메뉴 스타일 동일, 이모지·임의문구 없음) -->
-    <div id="shoppingSharePullupMenu" class="hidden absolute bottom-[52px] left-1/2 -translate-x-1/2 w-44 bg-emerald-50 rounded-xl shadow-xl border border-emerald-300 py-0.5 z-40 overflow-hidden">
+    <!-- 풀업 슬라이드 메뉴 (우측 '결과 공유' 버튼 바로 위로 올라옴, 이모지·임의문구 없음) -->
+    <div id="shoppingSharePullupMenu" class="hidden absolute bottom-[52px] right-2 w-44 bg-emerald-50 rounded-xl shadow-xl border border-emerald-300 py-0.5 z-40 overflow-hidden">
       <button type="button" onclick="openOrderSharePreview('image', 'light')" class="w-full px-3 py-2 text-left text-xs font-bold text-slate-800 hover:bg-emerald-100/80 active:bg-emerald-200/70 border-b border-emerald-200/80 block transition">
         이미지 저장 (초경량)
       </button>
@@ -7095,17 +7098,17 @@
       </button>
     </div>
 
-    <!-- 하단 버튼 바 (단 1줄만 고정) -->
+    <!-- 하단 버튼 바: 순서 [임시저장 닫기] / [✅ 장보기 완료] / [결과 공유 (식단확정 핑크색)] -->
     <div id="shoppingModalFooterBar" class="p-2 bg-white border-t border-slate-200 grid grid-cols-3 gap-1.5 shrink-0 w-full box-border relative z-30">
       <button type="button" onclick="closeShoppingListModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-extrabold py-2 rounded-xl text-[11px] whitespace-nowrap transition active:scale-95">
         임시저장 닫기
       </button>
-      <button type="button" id="shoppingShareTriggerBtn" onclick="toggleShoppingSharePullup(event)" class="bg-slate-800 hover:bg-slate-900 border border-slate-700 text-white font-extrabold py-2 rounded-xl text-[11px] shadow-2xs whitespace-nowrap transition active:scale-95 flex items-center justify-center gap-1">
+      <button type="button" id="shoppingCompleteActionBtn" onclick="completeShoppingAndCommit()" class="bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-[11px] shadow-2xs whitespace-nowrap transition active:scale-95">
+        ✅ 장보기 완료
+      </button>
+      <button type="button" id="shoppingShareTriggerBtn" onclick="toggleShoppingSharePullup(event)" class="bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold py-2 rounded-xl text-[11px] shadow-2xs whitespace-nowrap transition active:scale-95 flex items-center justify-center gap-1">
         <span>결과 공유</span>
         <span id="shoppingShareArrow" class="text-[9px] transition-transform duration-200">▲</span>
-      </button>
-      <button type="button" id="shoppingCompleteActionBtn" onclick="completeShoppingAndCommit()" class="bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-[11px] shadow-2xs whitespace-nowrap transition active:scale-95">
-        장보기 완료
       </button>
     </div>
   </div>
@@ -7126,18 +7129,19 @@
           <button type="button" id="tabQual_high" onclick="switchOrderImageQuality('high')" class="py-1 rounded-lg border transition">고화질</button>
         </div>
         <div class="flex items-center justify-between bg-white px-2 py-0.5 rounded border border-teal-200 text-[10.5px]">
-          <span id="orderPreviewSpecText" class="font-bold text-slate-600">해상도</span>
+          <span id="orderPreviewSpecText" class="font-bold text-slate-600">JPG 해상도</span>
           <span id="orderPreviewSizeBadge" class="font-extrabold text-teal-800">0 KB</span>
         </div>
       </div>
     </div>
 
-    <div class="p-2 overflow-y-auto overscroll-contain flex-1 bg-slate-50 flex flex-col items-center justify-start">
-      <div id="orderPreviewImageWrap" class="w-full bg-white rounded-lg border border-slate-200 overflow-hidden flex items-center justify-center">
-        <img id="orderPreviewImgTag" src="" alt="주문서 미리보기" class="w-full h-auto block select-none">
+    <!-- 상하가 절대 잘리지 않도록 스크롤 컨테이너 내부에 여유 있게 배치 -->
+    <div id="orderPreviewScrollBody" class="p-2.5 overflow-y-auto overscroll-contain flex-1 bg-slate-100 block">
+      <div id="orderPreviewImageWrap" class="w-full bg-white rounded-lg border border-slate-300 shadow-2xs overflow-visible">
+        <img id="orderPreviewImgTag" src="" alt="주문서 미리보기" class="w-full h-auto object-contain block select-none">
       </div>
-      <div id="orderPreviewTextWrap" class="hidden w-full bg-white rounded-lg border border-slate-200 p-2.5 box-border">
-        <pre id="orderPreviewTextContent" class="text-[12.5px] font-bold text-slate-800 m-0 leading-snug whitespace-pre-wrap break-all" style="font-family: 'Pretendard', sans-serif; line-height: 1.28;"></pre>
+      <div id="orderPreviewTextWrap" class="hidden w-full bg-white rounded-lg border border-slate-300 p-3 box-border">
+        <pre id="orderPreviewTextContent" class="text-[12.5px] font-bold text-slate-800 m-0 leading-snug whitespace-pre-wrap break-all" style="font-family: 'Pretendard', sans-serif; line-height: 1.3;"></pre>
       </div>
     </div>
 
@@ -7145,7 +7149,7 @@
       <button type="button" onclick="closeShoppingOrderPreviewModal()" class="bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 font-extrabold py-2 rounded-xl text-xs transition active:scale-95">
         취소
       </button>
-      <button type="button" id="orderPreviewConfirmBtn" onclick="confirmAndExecuteOrderShare()" class="bg-teal-600 hover:bg-teal-700 border border-teal-500 text-white font-extrabold py-2 rounded-xl text-xs shadow-2xs transition active:scale-95">
+      <button type="button" id="orderPreviewConfirmBtn" onclick="confirmAndExecuteOrderShare()" class="bg-pink-500 hover:bg-pink-600 border-2 border-pink-400 text-white font-extrabold py-2 rounded-xl text-xs shadow-2xs transition active:scale-95">
         확정
       </button>
     </div>
@@ -9552,7 +9556,7 @@
     });
   }
 
-  // ================= [v10.2 슬림 확장: 결과 공유 & 당겨서 새로고침] =================
+  // ================= [v10.2 슬림 확장: JPG 주문서 공유 & 당겨서 새로고침] =================
   window.openInlineAddIngredientV103 = window.openInlineAddIngredientV10;
   window.openEditShoppingIngredientV103 = window.openEditShoppingIngredientV10;
   window.deleteShoppingIngredientItemV103 = window.deleteShoppingIngredientItemV10;
@@ -9577,7 +9581,6 @@
     if (_baseCloseShopV102) _baseCloseShopV102();
   };
 
-  // 장보기 완료 시 창을 닫지 않고 유지하며 결과 공유 풀업 메뉴를 자동 오픈
   var _baseCompleteShopV102 = window.completeShoppingAndCommit;
   window.completeShoppingAndCommit = async function() {
     var cleanDate = getActiveCleanDateV101();
@@ -9590,7 +9593,6 @@
       return;
     }
     await _baseCompleteShopV102();
-    // 완료 후 모달을 다시 열린 상태로 유지하고 트리 갱신 및 풀업 오픈
     var modal = document.getElementById('shoppingListModal');
     if (modal) modal.classList.remove('hidden');
     if (shoppingTreesMap[cleanDate]) {
@@ -9686,7 +9688,6 @@
     return { cleanDate: cleanDate, displayDate: displayDate, totalItemsCount: totalItemsCount, groups: groupsOut };
   }
 
-  // 문자 복사용: ● 둥근 메뉴 기호 + 상하 여백 최소화
   function buildCompactOrderText(payload) {
     var lines = [
       '세종꿈의교회',
@@ -9704,9 +9705,9 @@
   }
 
   var QUALITY_PRESETS = {
-    light:    { label: '초경량', baseWidth: 440, quality: 0.56 },
-    standard: { label: '표준',   baseWidth: 600, quality: 0.76 },
-    high:     { label: '고화질', baseWidth: 820, quality: 0.92 }
+    light:    { label: '초경량', baseWidth: 460, quality: 0.58 },
+    standard: { label: '표준',   baseWidth: 620, quality: 0.78 },
+    high:     { label: '고화질', baseWidth: 840, quality: 0.92 }
   };
 
   function wrapCanvasLines(ctx, text, maxWidth) {
@@ -9722,16 +9723,20 @@
     return res;
   }
 
+  // [JPG 전용 & 상하 잘림 완벽 방지 렌더링]
   function renderCompactOrderCanvas(payload, qualityKey) {
     var preset = QUALITY_PRESETS[qualityKey] || QUALITY_PRESETS.standard;
-    var BASE_W = 440, scale = preset.baseWidth / BASE_W, padX = 10, contentMaxW = BASE_W - padX * 2 - 18;
+    var BASE_W = 440, scale = preset.baseWidth / BASE_W, padX = 14, contentMaxW = BASE_W - padX * 2 - 20;
     var mCtx = document.createElement('canvas').getContext('2d');
 
-    var totalBaseH = 5 + 30 + 4 + 17 + 17 + 5;
-    var preparedGroups = [];
+    var topPad = 14;    // 상단 잘림 방지 안전 여백
+    var bottomPad = 18; // 하단 잘림 방지 안전 여백
+    var headerH = 32 + 16 + 18 + 10; // 로고(32) + 날짜(16) + 부제목(18) + 구분선(10)
+    var totalBaseH = topPad + headerH;
 
+    var preparedGroups = [];
     payload.groups.forEach(function(g) {
-      totalBaseH += 17.5;
+      totalBaseH += 19; // ● 메뉴이름 줄 높이
       var treeRows = [], totalChildren = g.items.length + g.memoLines.length, childIdx = 0;
 
       mCtx.font = '800 13px Pretendard, sans-serif';
@@ -9739,7 +9744,7 @@
         childIdx++;
         var wrapped = wrapCanvasLines(mCtx, itName, contentMaxW);
         treeRows.push({ branch: childIdx === totalChildren ? '└' : '├', lines: wrapped, isMemo: false });
-        totalBaseH += wrapped.length * 15.5;
+        totalBaseH += wrapped.length * 16.5;
       });
 
       mCtx.font = '700 12px Pretendard, sans-serif';
@@ -9747,82 +9752,96 @@
         childIdx++;
         var wrapped = wrapCanvasLines(mCtx, mLine, contentMaxW);
         treeRows.push({ branch: childIdx === totalChildren ? '└' : '├', lines: wrapped, isMemo: true });
-        totalBaseH += wrapped.length * 14.5;
+        totalBaseH += wrapped.length * 15.5;
       });
 
-      totalBaseH += 1.5;
+      totalBaseH += 3;
       preparedGroups.push({ name: g.name, rows: treeRows });
     });
-    totalBaseH += 5;
 
-    var outW = Math.round(BASE_W * scale), outH = Math.round(totalBaseH * scale);
+    totalBaseH += bottomPad;
+
+    var outW = Math.round(BASE_W * scale), outH = Math.ceil(totalBaseH * scale);
     var canvas = document.createElement('canvas');
     canvas.width = outW; canvas.height = outH;
     var ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
+    ctx.textBaseline = 'top'; // 폰트 베이스라인을 top으로 고정하여 위아래 잘림 원천 차단
 
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, BASE_W, totalBaseH);
-    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1; ctx.strokeRect(0.5, 0.5, BASE_W - 1, totalBaseH - 1);
+    // 흰색 배경 및 외곽 테두리
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, BASE_W, totalBaseH);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(1, 1, BASE_W - 2, totalBaseH - 2);
 
-    var curY = 5;
+    var curY = topPad;
+
+    // 1. 최상단 로고 + 타이틀 중앙 정렬
     var logoImg = document.getElementById('printLogoImg') || document.querySelector('header img[src*="tlogo"]');
     var titleImg = document.getElementById('printTitleImg') || document.querySelector('header img[src*="ttitle"]');
     if (logoImg && logoImg.complete && logoImg.naturalWidth > 0 && titleImg && titleImg.complete && titleImg.naturalWidth > 0) {
-      var lH = 20, lW = (logoImg.naturalWidth / logoImg.naturalHeight) * lH;
-      var tH = 22, tW = (titleImg.naturalWidth / titleImg.naturalHeight) * tH;
+      var lH = 22, lW = (logoImg.naturalWidth / logoImg.naturalHeight) * lH;
+      var tH = 24, tW = (titleImg.naturalWidth / titleImg.naturalHeight) * tH;
       var boxW = lW + 8, startX = (BASE_W - (boxW + 6 + tW)) / 2;
-      ctx.strokeStyle = '#cbd5e1'; ctx.strokeRect(startX, curY, boxW, lH + 4);
-      try { ctx.drawImage(logoImg, startX + 4, curY + 2, lW, lH); ctx.drawImage(titleImg, startX + boxW + 6, curY + 1, tW, tH); } catch (e) {}
+      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+      ctx.strokeRect(startX, curY, boxW, lH + 4);
+      try {
+        ctx.drawImage(logoImg, startX + 4, curY + 2, lW, lH);
+        ctx.drawImage(titleImg, startX + boxW + 6, curY + 1, tW, tH);
+      } catch (e) {}
     } else {
-      ctx.fillStyle = '#0f172a'; ctx.font = '900 16px Pretendard, sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('세종꿈의교회', BASE_W / 2, curY + 18);
+      ctx.fillStyle = '#0f172a'; ctx.font = '900 17px Pretendard, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('세종꿈의교회', BASE_W / 2, curY + 4);
     }
     curY += 30;
 
+    // 2. 밑줄 긋기
     ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.moveTo(padX, curY); ctx.lineTo(BASE_W - padX, curY); ctx.stroke();
-    curY += 14;
+    curY += 6;
 
+    // 3. 날짜 (중앙정렬)
     ctx.fillStyle = '#0f766e'; ctx.font = '900 13.5px Pretendard, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(payload.displayDate, BASE_W / 2, curY);
-    curY += 16;
+    curY += 17;
 
-    ctx.fillStyle = '#0f172a'; ctx.font = '900 14px Pretendard, sans-serif';
+    // 4. - 식품 주문 내역 ( 총 00 품목 ) -
+    ctx.fillStyle = '#0f172a'; ctx.font = '900 14px Pretendard, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('- 식품 주문 내역 ( 총 ' + payload.totalItemsCount + ' 품목 ) -', BASE_W / 2, curY);
-    curY += 5;
+    curY += 18;
 
     ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padX, curY); ctx.lineTo(BASE_W - padX, curY); ctx.stroke();
-    curY += 2;
+    curY += 5;
 
+    // 5. 트리구조 본문 나열
     ctx.textAlign = 'left';
     preparedGroups.forEach(function(grp) {
-      ctx.fillStyle = '#0f172a'; ctx.font = '900 13px Pretendard, sans-serif';
-      ctx.fillText('● ' + grp.name, padX + 2, curY + 13);
-      curY += 17.5;
+      ctx.fillStyle = '#0f172a'; ctx.font = '900 13.5px Pretendard, sans-serif';
+      ctx.fillText('● ' + grp.name, padX + 2, curY + 2);
+      curY += 19;
 
       grp.rows.forEach(function(row) {
-        var stepH = row.isMemo ? 14.5 : 15.5;
+        var stepH = row.isMemo ? 15.5 : 16.5;
         row.lines.forEach(function(lineStr, lIdx) {
           if (lIdx === 0) {
-            ctx.fillStyle = '#94a3b8'; ctx.font = '700 11px monospace';
-            ctx.fillText(row.branch, padX + 6, curY + 11.5);
+            ctx.fillStyle = '#94a3b8'; ctx.font = '700 11.5px monospace';
+            ctx.fillText(row.branch, padX + 6, curY + 1);
           }
           ctx.fillStyle = row.isMemo ? '#0f766e' : '#1e293b';
           ctx.font = (row.isMemo ? '700 12px' : '800 13px') + ' Pretendard, sans-serif';
-          ctx.fillText(lineStr, padX + 18, curY + 12);
+          ctx.fillText(lineStr, padX + 19, curY + 1);
           curY += stepH;
         });
       });
-      curY += 1.5;
+      curY += 3;
     });
 
-    var dataUrl = canvas.toDataURL('image/webp', preset.quality), ext = 'webp', mime = 'image/webp';
-    if (!dataUrl || dataUrl.indexOf('data:image/webp') !== 0) {
-      dataUrl = canvas.toDataURL('image/jpeg', preset.quality); ext = 'jpg'; mime = 'image/jpeg';
-    }
+    // 무조건 JPG(image/jpeg) 포맷으로 생성
+    var dataUrl = canvas.toDataURL('image/jpeg', preset.quality);
     var kbStr = (Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75) / 1024).toFixed(1) + ' KB';
-    return { dataUrl: dataUrl, width: outW, height: outH, kbStr: kbStr, ext: ext, mime: mime, preset: preset };
+    return { dataUrl: dataUrl, width: outW, height: outH, kbStr: kbStr, ext: 'jpg', mime: 'image/jpeg', preset: preset };
   }
 
   var curShareMode = 'image', curQualKey = 'standard', curImgObj = null, curTextStr = '', curPayload = null;
@@ -9838,7 +9857,7 @@
     if (!curPayload) curPayload = extractOrderSharePayload();
     curImgObj = renderCompactOrderCanvas(curPayload, qualityKey);
     var imgTag = document.getElementById('orderPreviewImgTag'); if (imgTag) imgTag.src = curImgObj.dataUrl;
-    var specEl = document.getElementById('orderPreviewSpecText'); if (specEl) specEl.innerText = curImgObj.preset.label + ' (' + curImgObj.width + '×' + curImgObj.height + 'px)';
+    var specEl = document.getElementById('orderPreviewSpecText'); if (specEl) specEl.innerText = curImgObj.preset.label + ' JPG (' + curImgObj.width + '×' + curImgObj.height + 'px)';
     var sizeEl = document.getElementById('orderPreviewSizeBadge'); if (sizeEl) sizeEl.innerText = '크기: ' + curImgObj.kbStr;
   };
 
@@ -9858,11 +9877,11 @@
     var confirmBtn = document.getElementById('orderPreviewConfirmBtn');
 
     if (mode === 'image') {
-      if (titleEl) titleEl.innerText = '이미지 저장 미리보기 (총 ' + payload.totalItemsCount + '품목)';
+      if (titleEl) titleEl.innerText = 'JPG 이미지 미리보기 (총 ' + payload.totalItemsCount + '품목)';
       if (qualBar) qualBar.classList.remove('hidden');
       if (imgWrap) imgWrap.classList.remove('hidden');
       if (txtWrap) txtWrap.classList.add('hidden');
-      if (confirmBtn) confirmBtn.innerText = '확정 (이미지 저장)';
+      if (confirmBtn) confirmBtn.innerText = '확정 (JPG 저장)';
       window.switchOrderImageQuality(qualityKey || 'standard');
     } else {
       if (titleEl) titleEl.innerText = '문자 복사 미리보기 (총 ' + payload.totalItemsCount + '품목)';
@@ -9874,7 +9893,11 @@
       var preEl = document.getElementById('orderPreviewTextContent');
       if (preEl) preEl.textContent = curTextStr;
     }
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+      modal.classList.remove('hidden');
+      var scrollBody = document.getElementById('orderPreviewScrollBody');
+      if (scrollBody) scrollBody.scrollTop = 0;
+    }
   };
 
   window.closeShoppingOrderPreviewModal = function() {
@@ -9900,12 +9923,12 @@
 
     var imgObj = curImgObj || renderCompactOrderCanvas(payload, curQualKey);
     var safeDate = payload.displayDate.replace(/[^0-9가-힣a-zA-Z_-]/g, '_');
-    var fileName = '식품주문내역_' + safeDate + '_' + imgObj.preset.label + '.' + imgObj.ext;
+    var fileName = '식품주문내역_' + safeDate + '_' + imgObj.preset.label + '.jpg';
     try {
       var parts = imgObj.dataUrl.split(','), bstr = atob(parts[1]), n = bstr.length, u8 = new Uint8Array(n);
       while (n--) u8[n] = bstr.charCodeAt(n);
-      var blob = new Blob([u8], { type: imgObj.mime });
-      var file = new File([blob], fileName, { type: imgObj.mime });
+      var blob = new Blob([u8], { type: 'image/jpeg' });
+      var file = new File([blob], fileName, { type: 'image/jpeg' });
 
       var url = URL.createObjectURL(blob), a = document.createElement('a');
       a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -9916,7 +9939,7 @@
         try { await navigator.share({ title: '식품 주문 내역 (' + payload.displayDate + ')', files: [file] }); return; }
         catch (sErr) { if (sErr && sErr.name === 'AbortError') return; }
       }
-      await showCustomAlert('[' + imgObj.preset.label + ' · ' + imgObj.kbStr + ']\n주문서 이미지가 저장되었습니다.', '✅');
+      await showCustomAlert('[' + imgObj.preset.label + ' JPG · ' + imgObj.kbStr + ']\n주문서 이미지가 저장되었습니다.', '✅');
     } catch (e) { await showCustomAlert('이미지 저장 중 오류가 발생했습니다.', '⚠️'); }
   };
 
