@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <title>세종꿈의교회 - 권한관리</title>
+  <script>
+    // [보안 게이트] 주소 직접 입력 또는 미인증 접근 시 즉시 index.html 로그인 창으로 이동
+    (function enforceStrictAdminAccess() {
+      try {
+        var verified = sessionStorage.getItem('sejong_admin_verified') === '1';
+        var leader = sessionStorage.getItem('sejong_leader') === '1';
+        var user = sessionStorage.getItem('sejong_user');
+        var navEntries = performance.getEntriesByType ? performance.getEntriesByType('navigation') : [];
+        var isDirectAddressBar = navEntries.length > 0 && navEntries[0].type === 'navigate' && !document.referrer;
+        if (!verified || !leader || !user || isDirectAddressBar) {
+          location.replace('index.html');
+        }
+      } catch (e) {
+        location.replace('index.html');
+      }
+    })();
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <style>
+    @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    body {
+      font-family: 'Pretendard', sans-serif;
+      background-color: #f8fafc;
+      color: #1e293b;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body class="max-w-md mx-auto bg-white min-h-screen shadow-md border-x border-slate-100 px-3 py-2 flex flex-col">
+
+  <!-- 최상단 헤더: 축소된 로고 + 타이틀 및 이동 버튼 -->
+  <header class="pb-2 mb-2 border-b border-slate-200 flex items-center justify-between gap-2 shrink-0">
+    <div class="flex items-center gap-1.5 whitespace-nowrap">
+      <div class="h-7 px-1 rounded-lg border border-slate-300 bg-white flex items-center justify-center shrink-0">
+        <img src="tlogo.png" alt="로고" class="h-5 w-auto object-contain">
+      </div>
+      <img src="ttitle.png" alt="타이틀" class="h-7 w-auto object-contain shrink-0">
+    </div>
+    <div class="flex items-center gap-1 shrink-0">
+      <button type="button" onclick="location.replace('index.html')" class="bg-teal-600 hover:bg-teal-700 text-white text-[11px] font-extrabold px-2.5 py-1 rounded-lg transition active:scale-95">
+        식단앱
+      </button>
+      <button type="button" onclick="adminLogout()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold px-2 py-1 rounded-lg transition active:scale-95">
+        로그아웃
+      </button>
+    </div>
+  </header>
+
+  <main id="adminDashboard" class="space-y-2.5 flex-1 flex flex-col min-h-0">
+
+    <!-- 1. 코드번호 관리 (문구 단순화 & 1줄 컴팩트 배치) -->
+    <section class="bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 space-y-2 shrink-0">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xs font-black text-slate-800">🔑 접속 코드 설정</h2>
+        <button type="button" onclick="saveBothCodes()" class="bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-extrabold px-3 py-1 rounded-lg transition active:scale-95">
+          저장
+        </button>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
+          <span class="font-extrabold text-purple-900 text-[11px] whitespace-nowrap">팀장 코드</span>
+          <input id="editAdminCode" type="password" inputmode="numeric" autocomplete="off" class="w-16 text-right font-black text-purple-950 bg-transparent focus:outline-none">
+        </div>
+        <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
+          <span class="font-extrabold text-teal-900 text-[11px] whitespace-nowrap">팀원 코드</span>
+          <input id="editMemberCode" type="password" inputmode="numeric" autocomplete="off" class="w-16 text-right font-black text-teal-950 bg-transparent focus:outline-none">
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 식당 사역팀 권한관리 -->
+    <section class="bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 flex-1 flex flex-col min-h-0 space-y-2">
+      <div class="flex items-center justify-between shrink-0">
+        <h2 class="text-xs font-black text-slate-800">👥 식당 사역팀 권한관리</h2>
+        <span id="memberCountBadge" class="text-[11px] font-extrabold text-slate-500">0명</span>
+      </div>
+
+      <!-- 입력창: 권한 -> 이름 -> 추가 순 -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <select id="newMemberRole" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-extrabold bg-white text-slate-800 focus:outline-none shrink-0">
+          <option value="member">팀원(일반권한)</option>
+          <option value="admin">팀장(관리자 권한)</option>
+        </select>
+        <input id="newMemberName" type="text" autocomplete="off" placeholder="이름" onkeydown="if(event.key==='Enter') addAuthorizedMember()" class="flex-1 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold bg-white focus:outline-none focus:border-slate-700">
+        <button type="button" onclick="addAuthorizedMember()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 transition active:scale-95">
+          추가
+        </button>
+      </div>
+
+      <!-- 명단 리스트: 팀장 / 팀원 구분, 테두리 없이 구분줄만 표시 (번호 · 이름 · 삭제) -->
+      <div class="grid grid-cols-2 gap-3 pt-1 flex-1 min-h-0 overflow-hidden">
+        <!-- 팀장(관리자 권한) 목록 -->
+        <div class="flex flex-col min-h-0">
+          <div class="pb-1 border-b-2 border-purple-300 flex items-center justify-between shrink-0">
+            <span class="text-[11px] font-black text-purple-900">팀장(관리자 권한)</span>
+            <span id="adminRoleCount" class="text-[10px] font-bold text-purple-700">0</span>
+          </div>
+          <ul id="adminListUl" class="divide-y divide-slate-200 overflow-y-auto no-scrollbar flex-1"></ul>
+        </div>
+
+        <!-- 팀원(일반권한) 목록 -->
+        <div class="flex flex-col min-h-0">
+          <div class="pb-1 border-b-2 border-teal-300 flex items-center justify-between shrink-0">
+            <span class="text-[11px] font-black text-teal-900">팀원(일반권한)</span>
+            <span id="memberRoleCount" class="text-[10px] font-bold text-teal-700">0</span>
+          </div>
+          <ul id="memberListUl" class="divide-y divide-slate-200 overflow-y-auto no-scrollbar flex-1"></ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 심플 토스트 알림 -->
+  <div id="toastMsg" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white text-xs font-extrabold px-4 py-2 rounded-full shadow-lg hidden z-50 whitespace-nowrap"></div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAPQhasWcMdHH9jzdViMEJG0CIiNqysvfE",
+      authDomain: "dream-food-97a3e.firebaseapp.com",
+      projectId: "dream-food-97a3e",
+      storageBucket: "dream-food-97a3e.firebasestorage.app",
+      messagingSenderId: "156318359524",
+      appId: "1:156318359524:web:6f01409b3e7af72abcb1f1"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let authConfig = { adminCode: '', memberCode: '', members: [] };
+
+    function showToast(msg) {
+      const el = document.getElementById('toastMsg');
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => el.classList.add('hidden'), 1800);
+    }
+
+    function loadBackupConfig() {
+      try {
+        const raw = localStorage.getItem('sejong_auth_config_backup');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            return {
+              adminCode: String(parsed.adminCode || parsed.adminPassword || ''),
+              memberCode: String(parsed.memberCode || ''),
+              members: Array.isArray(parsed.members) ? parsed.members : []
+            };
+          }
+        }
+      } catch (e) {}
+      return { adminCode: '', memberCode: '', members: [] };
+    }
+
+    function saveBackupConfig(cfg) {
+      try {
+        localStorage.setItem('sejong_auth_config_backup', JSON.stringify(cfg));
+      } catch (e) {}
+    }
+
+    function syncInputsAndList() {
+      const admEl = document.getElementById('editAdminCode');
+      const memEl = document.getElementById('editMemberCode');
+      if (admEl && document.activeElement !== admEl) admEl.value = authConfig.adminCode || '';
+      if (memEl && document.activeElement !== memEl) memEl.value = authConfig.memberCode || '';
+      renderMemberList();
+    }
+
+    function renderMemberList() {
+      const adminUl = document.getElementById('adminListUl');
+      const memberUl = document.getElementById('memberListUl');
+      if (!adminUl || !memberUl) return;
+
+      adminUl.innerHTML = '';
+      memberUl.innerHTML = '';
+
+      const members = Array.isArray(authConfig.members) ? authConfig.members : [];
+      document.getElementById('memberCountBadge').textContent = members.length + '명';
+
+      let adminNum = 0;
+      let memberNum = 0;
+
+      members.forEach((m, idx) => {
+        if (!m || !m.name) return;
+        const isAdm = m.role === 'admin';
+        const rowNum = isAdm ? (++adminNum) : (++memberNum);
+
+        const li = document.createElement('li');
+        li.className = 'py-1.5 px-0.5 flex items-center justify-between text-xs';
+
+        const leftWrap = document.createElement('div');
+        leftWrap.className = 'flex items-center gap-1.5 min-w-0';
+
+        const numSpan = document.createElement('span');
+        numSpan.className = 'text-[11px] font-bold text-slate-400 w-4 shrink-0';
+        numSpan.textContent = rowNum + '.';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'font-extrabold text-slate-800 truncate';
+        nameSpan.textContent = m.name;
+
+        leftWrap.appendChild(numSpan);
+        leftWrap.appendChild(nameSpan);
+
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'text-[11px] text-rose-500 hover:text-rose-700 font-extrabold px-1 shrink-0';
+        delBtn.textContent = '삭제';
+        delBtn.onclick = () => removeMember(idx);
+
+        li.appendChild(leftWrap);
+        li.appendChild(delBtn);
+
+        if (isAdm) {
+          adminUl.appendChild(li);
+        } else {
+          memberUl.appendChild(li);
+        }
+      });
+
+      document.getElementById('adminRoleCount').textContent = String(adminNum);
+      document.getElementById('memberRoleCount').textContent = String(memberNum);
+    }
+
+    async function saveBothCodes() {
+      const newAdminCode = document.getElementById('editAdminCode').value.trim();
+      const newMemberCode = document.getElementById('editMemberCode').value.trim();
+      if (!newAdminCode || !newMemberCode) {
+        return showToast('코드를 입력해주세요.');
+      }
+
+      authConfig.adminCode = newAdminCode;
+      authConfig.memberCode = newMemberCode;
+      saveBackupConfig(authConfig);
+
+      try {
+        await db.collection('settings').doc('authConfig').set({
+          adminCode: newAdminCode,
+          memberCode: newMemberCode
+        }, { merge: true });
+        showToast('코드가 저장되었습니다.');
+      } catch (e) {
+        showToast('로컬에 저장되었습니다.');
+      }
+    }
+
+    async function addAuthorizedMember() {
+      const role = document.getElementById('newMemberRole').value;
+      const nameInput = document.getElementById('newMemberName');
+      const name = nameInput.value.trim();
+      if (!name) return showToast('이름을 입력해주세요.');
+
+      const members = Array.isArray(authConfig.members) ? authConfig.members : [];
+      if (members.some(m => m && m.name === name)) {
+        return showToast('이미 등록된 이름입니다.');
+      }
+
+      members.push({ name: name, role: role, addedAt: Date.now() });
+      authConfig.members = members;
+      nameInput.value = '';
+      saveBackupConfig(authConfig);
+      renderMemberList();
+
+      try {
+        await db.collection('settings').doc('authConfig').set({ members: members }, { merge: true });
+        showToast('추가되었습니다.');
+      } catch (e) {}
+    }
+
+    async function removeMember(index) {
+      const members = Array.isArray(authConfig.members) ? authConfig.members : [];
+      const target = members[index];
+      if (!target) return;
+
+      const adminCount = members.filter(m => m && m.role === 'admin').length;
+      if (target.role === 'admin' && adminCount <= 1) {
+        return showToast('최소 1명의 팀장은 유지되어야 합니다.');
+      }
+
+      members.splice(index, 1);
+      authConfig.members = members;
+      saveBackupConfig(authConfig);
+      renderMemberList();
+
+      try {
+        await db.collection('settings').doc('authConfig').set({ members: members }, { merge: true });
+        showToast('삭제되었습니다.');
+      } catch (e) {}
+    }
+
+    function adminLogout() {
+      sessionStorage.clear();
+      location.replace('index.html');
+    }
+
+    function initPage() {
+      authConfig = loadBackupConfig();
+      syncInputsAndList();
+
+      db.collection('settings').doc('authConfig').onSnapshot(doc => {
+        if (doc.exists) {
+          const data = doc.data() || {};
+          authConfig = {
+            adminCode: String(data.adminCode || data.adminPassword || ''),
+            memberCode: String(data.memberCode || ''),
+            members: Array.isArray(data.members) ? data.members : []
+          };
+          saveBackupConfig(authConfig);
+          syncInputsAndList();
+        }
+      });
+    }
+
+    initPage();
+  </script>
+</body>
+</html>
