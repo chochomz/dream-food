@@ -7069,7 +7069,7 @@
 
 <!-- ================= [패치 v9.5 START] ================= -->
 <div id="shoppingListModal" onclick="if(event.target===this) closeShoppingListModal()" class="fixed inset-0 bg-slate-900/55 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-2 overscroll-none">
-  <div class="bg-white rounded-2xl w-[94vw] max-w-sm min-h-[80dvh] max-h-[94dvh] flex flex-col justify-between overflow-hidden shadow-2xl border-[4px] border-teal-400 box-border">
+  <div id="shoppingModalInnerCard" class="relative bg-white rounded-2xl w-[94vw] max-w-sm min-h-[80dvh] max-h-[94dvh] flex flex-col justify-between overflow-hidden shadow-2xl border-[4px] border-teal-400 box-border">
     <div class="bg-teal-50/90 px-2.5 py-2 border-b border-teal-200 shrink-0 w-full box-border">
       <div class="flex items-center justify-between gap-1 w-full">
         <div class="flex items-center gap-1 min-w-0">
@@ -7082,11 +7082,43 @@
 
     <div id="shoppingTreeContainer" class="p-1.5 space-y-1.5 overflow-y-auto overflow-x-hidden overscroll-contain flex-1 bg-slate-50/50 w-full box-border"></div>
 
-    <div class="p-2 bg-white border-t border-slate-200 grid grid-cols-3 gap-1.5 shrink-0 w-full box-border">
-      <button type="button" onclick="closeShoppingListModal()" class="col-span-1 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-extrabold py-2 rounded-xl text-[11.5px] whitespace-nowrap transition active:scale-95">
+    <!-- 풀업 슬라이드 메뉴 (하단 바 바로 위에 고정, 중복 생성 없음) -->
+    <div id="shoppingSharePullupMenu" class="pullup-hidden absolute bottom-[52px] left-1/2 -translate-x-1/2 w-[66%] max-w-[235px] bg-white rounded-2xl shadow-2xl border-2 border-indigo-500 overflow-hidden z-40 text-xs">
+      <div class="bg-indigo-50 px-2.5 py-1.5 border-b border-indigo-100 flex items-center justify-between">
+        <span class="font-black text-[11px] text-indigo-950">📤 결과 공유 선택</span>
+        <button type="button" onclick="closeSharePullupMenuV102(event)" class="text-slate-400 hover:text-slate-700 font-extrabold text-[11px] px-1">✕</button>
+      </div>
+      <div class="divide-y divide-slate-100 font-extrabold text-slate-800 bg-white">
+        <button type="button" onclick="openOrderSharePreviewV102('image', 'light')" class="w-full px-3 py-2 text-left hover:bg-indigo-50/70 active:bg-indigo-100/70 flex items-center justify-between transition">
+          <span>🖼️ 이미지 저장 · <b class="text-teal-700">초경량</b></span>
+          <span class="text-[9.5px] font-bold text-slate-400">카톡고속</span>
+        </button>
+        <button type="button" onclick="openOrderSharePreviewV102('image', 'standard')" class="w-full px-3 py-2 text-left hover:bg-indigo-50/70 active:bg-indigo-100/70 flex items-center justify-between transition">
+          <span>🖼️ 이미지 저장 · <b class="text-indigo-700">표준</b></span>
+          <span class="text-[9.5px] font-bold text-indigo-600">추천균형</span>
+        </button>
+        <button type="button" onclick="openOrderSharePreviewV102('image', 'high')" class="w-full px-3 py-2 text-left hover:bg-indigo-50/70 active:bg-indigo-100/70 flex items-center justify-between transition">
+          <span>🖼️ 이미지 저장 · <b class="text-rose-700">고화질</b></span>
+          <span class="text-[9.5px] font-bold text-slate-400">선명우선</span>
+        </button>
+      </div>
+      <div class="border-t-2 border-slate-200 bg-slate-50">
+        <button type="button" onclick="openOrderSharePreviewV102('text', null)" class="w-full px-3 py-2.5 text-left font-black text-slate-900 hover:bg-amber-50 active:bg-amber-100 flex items-center justify-between transition">
+          <span>📋 문자 복사</span>
+          <span class="text-[9.5px] font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded">텍스트</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 하단 고정 3버튼 바 (단 1줄만 존재) -->
+    <div id="shoppingModalFooterBar" class="p-2 bg-white border-t border-slate-200 grid grid-cols-3 gap-1.5 shrink-0 w-full box-border relative z-30">
+      <button type="button" onclick="closeShoppingListModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-extrabold py-2 rounded-xl text-[11px] whitespace-nowrap transition active:scale-95">
         임시저장 닫기
       </button>
-      <button type="button" onclick="completeShoppingAndCommit()" class="col-span-2 bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-xs shadow-sm whitespace-nowrap transition active:scale-95">
+      <button type="button" id="shoppingShareTriggerBtn" onclick="toggleSharePullupMenuV102(event)" class="bg-indigo-600 hover:bg-indigo-700 border-2 border-indigo-500 text-white font-black py-2 rounded-xl text-[11.5px] shadow-sm whitespace-nowrap transition active:scale-95 flex items-center justify-center gap-0.5">
+        <span>📤 결과 공유</span><span id="shoppingShareArrow" class="text-[9px] ml-0.5 transition-transform duration-200">▲</span>
+      </button>
+      <button type="button" id="shoppingCompleteActionBtn" onclick="completeShoppingAndCommit()" class="bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-[11.5px] shadow-sm whitespace-nowrap transition active:scale-95">
         ✅ 장보기 완료
       </button>
     </div>
@@ -8126,10 +8158,10 @@
   // 파트 1: 메뉴 세부사항 설정(조리방법 및 기타내용) <-> 장보기 필요한 설명 양방향 동기화
   // =========================================================================
   const SHOPPING_STORAGE_KEY = 'sejong_shopping_trees_v1';
-  let shoppingTreesMap = {};
+  let shoppingTreesMap = window.shoppingTreesMap = window.shoppingTreesMap || {};
   try {
     const rawShop = localStorage.getItem(SHOPPING_STORAGE_KEY);
-    if (rawShop) shoppingTreesMap = JSON.parse(rawShop) || {};
+    if (rawShop) shoppingTreesMap = window.shoppingTreesMap = JSON.parse(rawShop) || {};
   } catch (e) {
     shoppingTreesMap = {};
   }
@@ -8323,7 +8355,7 @@
   window.openShoppingListModal = async function() {
     try {
       const raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
-      if (raw) shoppingTreesMap = JSON.parse(raw) || shoppingTreesMap;
+      if (raw) shoppingTreesMap = window.shoppingTreesMap = JSON.parse(raw) || shoppingTreesMap;
     } catch (e) {}
 
     if (isLeader) {
@@ -9496,35 +9528,58 @@
 <!-- ================= [패치 v10.1 END] ================= -->
 
 
-<!-- ================= [패치 v10.2 START: 장보기 결과 공유 (초경량/표준/고화질 이미지 & 문자복사 고밀도 미리보기/확정)] ================= -->
+<!-- ================= [패치 v10.2 START: 무충돌 결과 공유 & 당겨서 새로고침] ================= -->
 <style>
-  /* 결과 공유 풀업 슬라이드 애니메이션 및 스타일 */
+  /* 메인화면 아래로 당겨서 새로고침 허용 */
+  html, body {
+    overscroll-behavior-y: auto !important;
+  }
+  /* 결과 공유 풀업 슬라이드 애니메이션 */
   #shoppingSharePullupMenu {
-    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.18s ease;
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.16s ease;
     transform-origin: bottom center;
   }
   #shoppingSharePullupMenu.pullup-hidden {
-    transform: translateY(14px) scale(0.97);
+    transform: translate(-50%, 12px) scale(0.96);
     opacity: 0;
     pointer-events: none;
+    visibility: hidden;
   }
   #shoppingSharePullupMenu.pullup-visible {
-    transform: translateY(0) scale(1);
+    transform: translate(-50%, 0) scale(1);
     opacity: 1;
     pointer-events: auto;
+    visibility: visible;
   }
-  /* 미리보기 텍스트 영역: 상하 여백 최소화 & 마트 담당자 가독성 극대화 */
+  /* 미리보기 텍스트 영역: 상하 여백 최소화 */
   #orderPreviewTextContent {
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    line-height: 1.28 !important;
+    line-height: 1.26 !important;
     letter-spacing: -0.02em !important;
     white-space: pre-wrap !important;
     word-break: break-all !important;
   }
+  /* 당겨서 새로고침 상단 인디케이터 */
+  #pullToRefreshIndicator {
+    position: fixed;
+    top: -48px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 90;
+    transition: top 0.15s ease-out, opacity 0.15s ease;
+    opacity: 0;
+    pointer-events: none;
+  }
 </style>
 
+<!-- 당겨서 새로고침 시각적 인디케이터 -->
+<div id="pullToRefreshIndicator" class="bg-slate-800/95 text-white text-xs font-extrabold px-3.5 py-1.5 rounded-full shadow-lg border border-slate-600 flex items-center gap-1.5 whitespace-nowrap">
+  <span id="ptrSpinIcon" class="inline-block transition-transform duration-150">⬇️</span>
+  <span id="ptrStatusText">아래로 당겨서 새로고침</span>
+</div>
+
 <!-- [모달] 📤 식품 주문 내역 미리보기 & 품질 비교 확정 모달 -->
-<div id="shoppingOrderPreviewModal" onclick="if(event.target===this) closeShoppingOrderPreviewModal()" class="fixed inset-0 bg-slate-900/65 backdrop-blur-[1px] z-[70] hidden flex items-center justify-center p-2.5 select-none overscroll-none">
+<div id="shoppingOrderPreviewModal" onclick="if(event.target===this) closeShoppingOrderPreviewModal()" class="fixed inset-0 bg-slate-900/65 backdrop-blur-[1px] z-[80] hidden flex items-center justify-center p-2.5 select-none overscroll-none">
   <div class="bg-white rounded-2xl w-[95vw] max-w-sm max-h-[92dvh] flex flex-col justify-between overflow-hidden shadow-2xl border-[3.5px] border-indigo-500 box-border">
     
     <!-- 상단 타이틀 & 이미지 품질 실시간 전환 탭 -->
@@ -9540,24 +9595,22 @@
       <!-- 이미지 모드일 때만 노출되는 3단계 품질 실시간 비교 탭 & 용량(KB) 배지 -->
       <div id="orderPreviewQualityBar" class="space-y-1">
         <div class="grid grid-cols-3 gap-1 text-[11px] font-extrabold">
-          <button type="button" id=" tabQual_light" onclick="switchOrderImageQuality('light')" class="py-1 rounded-lg border transition">① 초경량</button>
-          <button type="button" id=" tabQual_standard" onclick="switchOrderImageQuality('standard')" class="py-1 rounded-lg border transition">② 표준</button>
-          <button type="button" id=" tabQual_high" onclick="switchOrderImageQuality('high')" class="py-1 rounded-lg border transition">③ 고화질</button>
+          <button type="button" id="tabQual_light" onclick="switchOrderImageQuality('light')" class="py-1 rounded-lg border transition">① 초경량</button>
+          <button type="button" id="tabQual_standard" onclick="switchOrderImageQuality('standard')" class="py-1 rounded-lg border transition">② 표준</button>
+          <button type="button" id="tabQual_high" onclick="switchOrderImageQuality('high')" class="py-1 rounded-lg border transition">③ 고화질</button>
         </div>
         <div class="flex items-center justify-between bg-white px-2 py-1 rounded-lg border border-indigo-200/80 text-[10.5px]">
           <span id="orderPreviewSpecText" class="font-bold text-slate-600">해상도 계산중...</span>
-          <span id="orderPreviewSizeBadge" class="font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-200">0 KB</span>
+          <span id="orderPreviewSizeBadge" class="font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">0 KB</span>
         </div>
       </div>
     </div>
 
     <!-- 중앙 미리보기 컨테이너 (상하 여백 없이 촘촘한 주문 내역 확인) -->
     <div class="p-2 overflow-y-auto overscroll-contain flex-1 bg-slate-100/80 flex flex-col items-center justify-start">
-      <!-- 이미지 미리보기 박스 -->
       <div id="orderPreviewImageWrap" class="w-full bg-white rounded-lg shadow-sm border border-slate-300 overflow-hidden flex items-center justify-center">
         <img id="orderPreviewImgTag" src="" alt="주문서 이미지 미리보기" class="w-full h-auto block select-none">
       </div>
-      <!-- 문자 복사 미리보기 박스 -->
       <div id="orderPreviewTextWrap" class="hidden w-full bg-white rounded-lg shadow-sm border border-slate-300 p-2.5 box-border">
         <pre id="orderPreviewTextContent" class="text-[12.5px] font-bold text-slate-900 m-0"></pre>
       </div>
@@ -9577,17 +9630,17 @@
 </div>
 
 <script>
-(function applyShoppingSharePatchV102() {
+(function applyCleanUnifiedPatchV102() {
   const SHOPPING_STORAGE_KEY = 'sejong_shopping_trees_v1';
   const MSG_SHOPPING_DONE = '장보기 완료되어 수정이 안됩니다.';
 
-  // [1] v9.9의 무효화된 V103 참조 찌꺼기를 실제 V10 함수에 정확히 연결 (불필요 공회전 제거)
+  // 1) v9.9의 V103 오타 참조 연결 보정
   window.openInlineAddIngredientV103 = window.openInlineAddIngredientV10;
   window.openEditShoppingIngredientV103 = window.openEditShoppingIngredientV10;
   window.deleteShoppingIngredientItemV103 = window.deleteShoppingIngredientItemV10;
   window.toggleGroupMemoEditorV103 = window.toggleGroupMemoEditorV10;
 
-  // 현재 날짜에 대한 장보기 완료 여부 상태 추적
+  // 장보기 완료 일자 기록 맵
   window.shoppingCompletedDatesMapV102 = window.shoppingCompletedDatesMapV102 || {};
 
   function getActiveCleanDateV102() {
@@ -9595,14 +9648,47 @@
     return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
   }
 
-  // 날짜 표시에서 '(2주)' 같은 주차 표기를 제거하여 '2026년 11월8일' 형태로 깔끔하게 반환
   function formatPureDateWithoutWeekV102(dateStr) {
     return String(dateStr || '').replace(/\s*\(\d+주\)/g, '').trim();
   }
 
-  // 해당 일자의 장보기가 완료된 상태인지 확인
+  // v10.1의 메모리(window.shoppingTreesMap)와 localStorage를 항상 일치시켜 읽는 통합 헬퍼
+  function getSyncedShoppingTreeV102(cleanDate) {
+    if (window.shoppingTreesMap && window.shoppingTreesMap[cleanDate]) {
+      return window.shoppingTreesMap[cleanDate];
+    }
+    try {
+      const rawMap = JSON.parse(localStorage.getItem(SHOPPING_STORAGE_KEY) || '{}');
+      if (rawMap && rawMap[cleanDate]) {
+        if (window.shoppingTreesMap) window.shoppingTreesMap[cleanDate] = rawMap[cleanDate];
+        return rawMap[cleanDate];
+      }
+    } catch (e) {}
+    const matchedArch = (archiveList || []).find(function(a) {
+      return a && normalizeCompactDateStr(a.date) === cleanDate;
+    });
+    if (matchedArch && matchedArch.shoppingTree) {
+      if (window.shoppingTreesMap) window.shoppingTreesMap[cleanDate] = matchedArch.shoppingTree;
+      return matchedArch.shoppingTree;
+    }
+    return null;
+  }
+
+  function setSyncedShoppingTreeV102(cleanDate, treeObj) {
+    if (window.shoppingTreesMap) {
+      window.shoppingTreesMap[cleanDate] = treeObj;
+    }
+    try {
+      const rawMap = JSON.parse(localStorage.getItem(SHOPPING_STORAGE_KEY) || '{}');
+      rawMap[cleanDate] = treeObj;
+      localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(rawMap));
+    } catch (e) {}
+  }
+
   function isShoppingCompletedForDateV102(cleanDate) {
     if (window.shoppingCompletedDatesMapV102[cleanDate]) return true;
+    const tree = getSyncedShoppingTreeV102(cleanDate);
+    if (tree && tree.shoppingCompleted) return true;
     if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap && weeklyPlanMap[cleanDate] && weeklyPlanMap[cleanDate].shoppingCompleted) {
       return true;
     }
@@ -9615,69 +9701,18 @@
     return false;
   }
 
-  // [2] 장보기 모달(#shoppingListModal) 하단 바를 3버튼 + 풀업 슬라이드 메뉴 구조로 업그레이드
-  function upgradeShoppingModalFooterV102() {
-    const modal = document.getElementById('shoppingListModal');
-    if (!modal) return;
-    const innerCard = modal.firstElementChild;
-    if (!innerCard) return;
-
-    innerCard.classList.add('relative');
-
-    // 풀업 슬라이드 메뉴 삽입 (하단 바 바로 위에 위치)
-    if (!document.getElementById('shoppingSharePullupMenu')) {
-      const pullup = document.createElement('div');
-      pullup.id = 'shoppingSharePullupMenu';
-      pullup.className = 'pullup-hidden absolute bottom-[54px] left-1/2 -translate-x-1/2 w-[62%] max-w-[230px] bg-white rounded-2xl shadow-2xl border-2 border-indigo-400 overflow-hidden z-40 text-xs';
-      pullup.innerHTML =
-        '<div class="bg-indigo-50/90 px-2.5 py-1.5 border-b border-indigo-100 flex items-center justify-between">' +
-          '<span class="font-black text-[11px] text-indigo-950">📤 결과 공유 방식 선택</span>' +
-          '<button type="button" onclick="closeSharePullupMenuV102()" class="text-slate-400 hover:text-slate-700 font-bold text-[11px] px-1">✕</button>' +
-        '</div>' +
-        '<div class="divide-y divide-slate-100 font-extrabold text-slate-800">' +
-          '<button type="button" onclick="openOrderSharePreviewV102(\'image\', \'light\')" class="w-full px-3 py-2 text-left hover:bg-indigo-50/60 active:bg-indigo-100/60 flex items-center justify-between transition">' +
-            '<span>🖼️ 이미지 저장 · <b class="text-teal-700">초경량</b></span>' +
-            '<span class="text-[9.5px] font-bold text-slate-400">카톡고속</span>' +
-          '</button>' +
-          '<button type="button" onclick="openOrderSharePreviewV102(\'image\', \'standard\')" class="w-full px-3 py-2 text-left hover:bg-indigo-50/60 active:bg-indigo-100/60 flex items-center justify-between transition">' +
-            '<span>🖼️ 이미지 저장 · <b class="text-indigo-700">표준</b></span>' +
-            '<span class="text-[9.5px] font-bold text-indigo-500">추천균형</span>' +
-          '</button>' +
-          '<button type="button" onclick="openOrderSharePreviewV102(\'image\', \'high\')" class="w-full px-3 py-2 text-left hover:bg-indigo-50/60 active:bg-indigo-100/60 flex items-center justify-between transition">' +
-            '<span>🖼️ 이미지 저장 · <b class="text-rose-700">고화질</b></span>' +
-            '<span class="text-[9.5px] font-bold text-slate-400">선명우선</span>' +
-          '</button>' +
-        '</div>' +
-        '<div class="border-t-2 border-slate-200 bg-slate-50/70">' +
-          '<button type="button" onclick="openOrderSharePreviewV102(\'text\', null)" class="w-full px-3 py-2.5 text-left font-black text-slate-900 hover:bg-amber-50/80 active:bg-amber-100/70 flex items-center justify-between transition">' +
-            '<span>📋 문자 복사</span>' +
-            '<span class="text-[9.5px] font-extrabold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded">텍스트</span>' +
-          '</button>' +
-        '</div>';
-      innerCard.appendChild(pullup);
-    }
-
-    // 하단 버튼 바를 3개 버튼(임시저장 닫기 / 결과 공유 / 장보기 완료)으로 교체
-    const footerBar = innerCard.lastElementChild;
-    if (footerBar) {
-      footerBar.className = 'p-2 bg-white border-t border-slate-200 grid grid-cols-3 gap-1.5 shrink-0 w-full box-border relative z-30';
-      footerBar.innerHTML =
-        '<button type="button" onclick="closeShoppingListModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-extrabold py-2 rounded-xl text-[11px] whitespace-nowrap transition active:scale-95">' +
-          '임시저장 닫기' +
-        '</button>' +
-        '<button type="button" id="shoppingShareTriggerBtn" onclick="toggleSharePullupMenuV102(event)" class="bg-indigo-600 hover:bg-indigo-700 border-2 border-indigo-500 text-white font-black py-2 rounded-xl text-[11.5px] shadow-sm whitespace-nowrap transition active:scale-95 flex items-center justify-center gap-0.5">' +
-          '<span>📤 결과 공유</span><span id="shoppingShareArrow" class="text-[9px] ml-0.5 transition-transform">▲</span>' +
-        '</button>' +
-        '<button type="button" id="shoppingCompleteActionBtn" onclick="completeShoppingAndCommit()" class="bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-[11.5px] shadow-sm whitespace-nowrap transition active:scale-95">' +
-          '✅ 장보기 완료' +
-        '</button>';
-    }
+  function hasCheckedItemsInTreeV102(tree) {
+    if (!tree || !Array.isArray(tree.groups)) return false;
+    return tree.groups.some(function(g) {
+      return Array.isArray(g.items) && g.items.some(function(it) { return Boolean(it && it.checked); });
+    });
   }
 
-  upgradeShoppingModalFooterV102();
-
-  // 풀업 메뉴 열기/닫기 제어
-  window.closeSharePullupMenuV102 = function() {
+  // =========================================================================
+  // [기능 1] 풀업 슬라이드 메뉴 열기/닫기 제어
+  // =========================================================================
+  window.closeSharePullupMenuV102 = function(e) {
+    if (e) { e.stopPropagation(); }
     const menu = document.getElementById('shoppingSharePullupMenu');
     const arrow = document.getElementById('shoppingShareArrow');
     if (menu) {
@@ -9698,22 +9733,24 @@
       return;
     }
 
-    // 장보기 완료 후 진행 구조 체크
     const cleanDate = getActiveCleanDateV102();
-    const tree = getCurrentShoppingTreeDataV102(cleanDate);
-    const hasAnyChecked = checkIfTreeHasCheckedItemsV102(tree);
+    const tree = getSyncedShoppingTreeV102(cleanDate);
+    const hasChecked = hasCheckedItemsInTreeV102(tree);
     const isCompleted = isShoppingCompletedForDateV102(cleanDate);
 
+    // 아직 장보기 완료 전인 경우 안내 및 즉시 완료 연동
     if (!isCompleted) {
-      if (!hasAnyChecked) {
+      if (!hasChecked) {
         await showCustomAlert('먼저 장보기 체크리스트에서 주문할 재료를 체크(✓)한 후\n[✅ 장보기 완료]를 눌러주세요.', '🛒');
         return;
       }
-      const goComplete = await showCustomConfirm('결과 공유는 [✅ 장보기 완료] 후에 진행됩니다.\n지금 바로 장보기 완료 처리를 먼저 진행할까요?', '🛒');
-      if (goComplete) {
-        await window.completeShoppingAndCommit(true);
+      if (isLeader) {
+        const goComplete = await showCustomConfirm('결과 공유는 [✅ 장보기 완료] 확정 후에 진행됩니다.\n지금 바로 장보기 완료 처리를 진행할까요?', '🛒');
+        if (goComplete) {
+          await window.completeShoppingAndCommit();
+        }
+        return;
       }
-      return;
     }
 
     menu.classList.remove('pullup-hidden');
@@ -9722,7 +9759,7 @@
     if (arrow) arrow.style.transform = 'rotate(180deg)';
   };
 
-  // 장보기 모달 내부 클릭 시 풀업 메뉴 자동 닫기
+  // 장보기 모달 내부 다른 곳 터치 시 풀업 메뉴 닫기
   const shopModalEl = document.getElementById('shoppingListModal');
   if (shopModalEl) {
     shopModalEl.addEventListener('pointerdown', function(e) {
@@ -9742,12 +9779,20 @@
     if (_origCloseShoppingListModalV102) _origCloseShoppingListModalV102();
   };
 
-  // [3] [✅ 장보기 완료] 실행 시 모달을 닫지 않고 유지하여 바로 [📤 결과 공유]를 누를 수 있게 개선
-  window.completeShoppingAndCommit = async function(autoOpenShareMenuAfter) {
+  const _origOpenShoppingListModalV102 = window.openShoppingListModal;
+  window.openShoppingListModal = async function() {
+    window.closeSharePullupMenuV102();
+    if (_origOpenShoppingListModalV102) return await _origOpenShoppingListModalV102();
+  };
+
+  // =========================================================================
+  // [기능 2] [✅ 장보기 완료] 실행 시 창을 닫지 않고 유지 + 자동으로 [결과 공유] 슬라이드 오픈
+  // =========================================================================
+  window.completeShoppingAndCommit = async function() {
     if (!isLeader) return await showCustomAlert(MSG_SHOPPING_DONE, '😊');
 
     const cleanDate = getActiveCleanDateV102();
-    const tree = getCurrentShoppingTreeDataV102(cleanDate);
+    const tree = getSyncedShoppingTreeV102(cleanDate);
 
     if (!tree || !Array.isArray(tree.groups)) {
       await showCustomAlert('장보기 목록 데이터가 없습니다.', '⚠️');
@@ -9759,12 +9804,12 @@
     let deletedIngredientCount = 0;
     let checkedCommonItems = [];
     let commonMemo = '';
-    let totalCheckedItemsCount = 0;
+    let totalCheckedCount = 0;
 
     tree.groups.forEach(function(group) {
       const allItems = Array.isArray(group.items) ? group.items : [];
       const checkedItems = allItems.filter(function(it) { return Boolean(it && it.checked); });
-      totalCheckedItemsCount += checkedItems.length;
+      totalCheckedCount += checkedItems.length;
       deletedIngredientCount += (allItems.length - checkedItems.length);
 
       if (group.isCommon || group.id === 'common_group') {
@@ -9786,17 +9831,17 @@
       }
     });
 
-    if (totalCheckedItemsCount === 0) {
+    if (totalCheckedCount === 0) {
       await showCustomAlert('체크(✓)된 재료가 하나도 없습니다.\n주문할 재료들을 먼저 체크해 주세요.', '☑️');
       return;
     }
 
     const confirmMsg = [
       '장보기를 완료하시겠습니까?',
-      '• 확정 주문 품목: 총 ' + totalCheckedItemsCount + '품목 (' + keptMenuGroups.length + '종 메뉴)',
+      '• 확정 주문 품목: 총 ' + totalCheckedCount + '품목 (' + keptMenuGroups.length + '종 메뉴)',
       '• 미체크 정리: 메뉴 ' + deletedMenuIds.length + '종 / 재료 ' + deletedIngredientCount + '개 제외',
       '',
-      '※ 완료 후 바로 [📤 결과 공유]에서 주문서 미리보기 및 공유가 가능합니다.'
+      '※ 완료 후 바로 [📤 결과 공유]에서 미리보기 및 저장/복사를 할 수 있습니다.'
     ].join('\n');
 
     const ok = await showCustomConfirm(confirmMsg, '✅');
@@ -9856,12 +9901,8 @@
       updatedAt: Date.now()
     };
 
-    try {
-      const rawMap = JSON.parse(localStorage.getItem(SHOPPING_STORAGE_KEY) || '{}');
-      rawMap[cleanDate] = cleanedTree;
-      localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(rawMap));
-    } catch (e) {}
-
+    // v10.1 메모리와 localStorage에 동시 반영
+    setSyncedShoppingTreeV102(cleanDate, cleanedTree);
     window.shoppingCompletedDatesMapV102[cleanDate] = true;
 
     currentTrayIds = updatedDishIds.slice();
@@ -9920,13 +9961,12 @@
       localStorage.setItem('sejong_fast_archive_cache_v1', JSON.stringify(archiveList));
     } catch (e) {}
 
-    // 모달을 닫지 않고 정돈된 장보기 트리를 즉시 다시 렌더링하여 바로 [결과 공유]를 쓸 수 있게 함
+    // 화면 갱신 (장보기 모달을 닫지 않고 정리된 목록 그대로 표시)
     renderTray();
     renderBasket();
     renderArchiveGrid();
-    if (typeof window.openShoppingListModal === 'function') {
-      // 트리 화면 갱신
-      if (typeof renderShoppingTreeModal === 'function') renderShoppingTreeModal();
+    if (typeof window.renderShoppingTreeModal === 'function') {
+      window.renderShoppingTreeModal();
     }
 
     if (db) {
@@ -9958,7 +9998,12 @@
       await syncCurrentStateToDb();
     }
 
-    // 장보기 완료 직후 자동으로 [결과 공유] 풀업 슬라이드를 펼쳐서 바로 공유할 수 있도록 유도
+    await showCustomAlert(
+      '[' + cleanDate + '] 장보기 완료!\n이제 하단 [📤 결과 공유]에서 미리보기 후 이미지 저장 또는 문자 복사를 진행하세요.',
+      '🎉'
+    );
+
+    // 안내 확인 직후 결과 공유 풀업 메뉴를 자동으로 올려서 바로 선택할 수 있게 지원
     const pullup = document.getElementById('shoppingSharePullupMenu');
     if (pullup) {
       pullup.classList.remove('pullup-hidden');
@@ -9969,38 +10014,18 @@
   };
 
   // =========================================================================
-  // [4] 장보기 주문 내역 추출 & 초밀착 고밀도 렌더링 엔진 (이미지 3종 & 문자 복사)
+  // [기능 3] 초밀착 주문 내역 데이터 추출 및 이미지/텍스트 생성 엔진
   // =========================================================================
-  function getCurrentShoppingTreeDataV102(cleanDate) {
-    try {
-      const rawMap = JSON.parse(localStorage.getItem(SHOPPING_STORAGE_KEY) || '{}');
-      if (rawMap && rawMap[cleanDate]) return rawMap[cleanDate];
-    } catch (e) {}
-    const matchedArch = (archiveList || []).find(function(a) {
-      return a && normalizeCompactDateStr(a.date) === cleanDate;
-    });
-    if (matchedArch && matchedArch.shoppingTree) return matchedArch.shoppingTree;
-    return null;
-  }
-
-  function checkIfTreeHasCheckedItemsV102(tree) {
-    if (!tree || !Array.isArray(tree.groups)) return false;
-    return tree.groups.some(function(g) {
-      return Array.isArray(g.items) && g.items.some(function(it) { return Boolean(it && it.checked); });
-    });
-  }
-
-  // 주문서에 표시할 그룹 및 재료 목록 추출 (체크된 항목 우선, 모두 완료된 상태면 전체 항목)
   function extractOrderPayloadV102() {
     const cleanDate = getActiveCleanDateV102();
     const displayDate = formatPureDateWithoutWeekV102(cleanDate);
-    const tree = getCurrentShoppingTreeDataV102(cleanDate);
+    const tree = getSyncedShoppingTreeV102(cleanDate);
 
     const groupsOut = [];
     let totalItemsCount = 0;
 
     if (tree && Array.isArray(tree.groups)) {
-      const hasChecked = checkIfTreeHasCheckedItemsV102(tree);
+      const hasChecked = hasCheckedItemsInTreeV102(tree);
       tree.groups.forEach(function(g) {
         const rawItems = Array.isArray(g.items) ? g.items : [];
         const activeItems = hasChecked
@@ -10008,7 +10033,7 @@
           : rawItems;
 
         const memoStr = (g.memo && String(g.memo).trim()) ? String(g.memo).trim() : '';
-        if (activeItems.length > 0 || memoStr) {
+        if (activeItems.length > 0) {
           totalItemsCount += activeItems.length;
           groupsOut.push({
             name: String(g.name || '').trim(),
@@ -10028,7 +10053,6 @@
     };
   }
 
-  // [문자 복사용] 상하 여백 및 빈 줄 없이 마트 담당자가 한눈에 볼 수 있는 고밀도 텍스트 생성
   function buildCompactOrderTextV102(payload) {
     const lines = [];
     lines.push('세종꿈의교회');
@@ -10050,11 +10074,10 @@
     return lines.join('\n');
   }
 
-  // [이미지 저장용] 상하 여백을 최소화하고 트리구조(├, └)로 빼곡하게 나열한 고밀도 Canvas 생성
   const QUALITY_PRESETS_V102 = {
-    light:    { label: '초경량', baseWidth: 440, quality: 0.56, desc: '초경량 (가로 440px · 압축 56%)' },
-    standard: { label: '표준',   baseWidth: 600, quality: 0.76, desc: '표준 균형 (가로 600px · 압축 76%)' },
-    high:     { label: '고화질', baseWidth: 820, quality: 0.92, desc: '고화질 (가로 820px · 압축 92%)' }
+    light:    { label: '초경량', baseWidth: 440, quality: 0.56 },
+    standard: { label: '표준',   baseWidth: 600, quality: 0.76 },
+    high:     { label: '고화질', baseWidth: 820, quality: 0.92 }
   };
 
   function wrapCanvasTextLinesV102(ctx, text, maxWidth) {
@@ -10078,33 +10101,31 @@
 
   function renderCompactOrderCanvasV102(payload, qualityKey) {
     const preset = QUALITY_PRESETS_V102[qualityKey] || QUALITY_PRESETS_V102.standard;
-    const BASE_W = 460; // 기준 설계 폭
+    const BASE_W = 460;
     const scale = preset.baseWidth / BASE_W;
 
     const measureCanvas = document.createElement('canvas');
     const mCtx = measureCanvas.getContext('2d');
+    const padX = 12;
+    const contentMaxW = BASE_W - padX * 2 - 20;
 
-    const padX = 14;
-    const contentMaxW = BASE_W - padX * 2 - 22;
-
-    // 1) 전체 높이 사전 계산 (상하 여백을 극도로 줄인 초밀착 간격)
-    let totalBaseH = 8; // 최상단 최소 여백
-    const headerLogoH = 30;
-    totalBaseH += headerLogoH + 5; // 로고+타이틀 영역
-    totalBaseH += 6;  // 밑줄 구분선
-    totalBaseH += 19; // 날짜 (중앙정렬)
-    totalBaseH += 19; // - 식품 주문 내역 ( 총 00 품목 ) -
-    totalBaseH += 7;  // 본문 시작 전 구분선
+    // 상하 여백을 최소화한 초밀착 높이 계산
+    let totalBaseH = 6;
+    const headerLogoH = 28;
+    totalBaseH += headerLogoH + 4;
+    totalBaseH += 5;
+    totalBaseH += 18;
+    totalBaseH += 18;
+    totalBaseH += 6;
 
     const preparedGroups = [];
     payload.groups.forEach(function(g) {
-      totalBaseH += 20; // 메뉴 제목 줄 높이 (초밀착)
+      totalBaseH += 19; // 메뉴 제목 줄
       const treeRows = [];
-
       const totalChildren = g.items.length + g.memoLines.length;
       let childIdx = 0;
 
-      mCtx.font = '700 13.5px Pretendard, sans-serif';
+      mCtx.font = '800 13.5px Pretendard, sans-serif';
       g.items.forEach(function(itName) {
         childIdx++;
         const isLast = (childIdx === totalChildren);
@@ -10114,10 +10135,10 @@
           lines: wrapped,
           isMemo: false
         });
-        totalBaseH += wrapped.length * 16.5;
+        totalBaseH += wrapped.length * 16;
       });
 
-      mCtx.font = '600 12.5px Pretendard, sans-serif';
+      mCtx.font = '700 12px Pretendard, sans-serif';
       g.memoLines.forEach(function(mLine) {
         childIdx++;
         const isLast = (childIdx === totalChildren);
@@ -10127,10 +10148,10 @@
           lines: wrapped,
           isMemo: true
         });
-        totalBaseH += wrapped.length * 15.5;
+        totalBaseH += wrapped.length * 15;
       });
 
-      totalBaseH += 3; // 메뉴 그룹 간 최소 간격(3px)
+      totalBaseH += 2;
       preparedGroups.push({
         name: g.name,
         isCommon: g.isCommon,
@@ -10138,9 +10159,8 @@
       });
     });
 
-    totalBaseH += 8; // 최하단 최소 여백
+    totalBaseH += 6;
 
-    // 2) 실제 고해상도/경량 스케일 캔버스 드로잉
     const outW = Math.round(BASE_W * scale);
     const outH = Math.round(totalBaseH * scale);
     const canvas = document.createElement('canvas');
@@ -10150,28 +10170,27 @@
     const ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
 
-    // 흰색 배경 및 얇은 외곽선
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, BASE_W, totalBaseH);
     ctx.strokeStyle = '#cbd5e1';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(1, 1, BASE_W - 2, totalBaseH - 2);
 
-    let curY = 8;
+    let curY = 6;
 
-    // 최상부: 로고(tlogo.png) + 타이틀(ttitle.png) 중앙 배치
+    // 상단 로고 + 타이틀 중앙 배치
     const logoImg = document.getElementById('printLogoImg') || document.querySelector('header img[src*="tlogo"]');
     const titleImg = document.getElementById('printTitleImg') || document.querySelector('header img[src*="ttitle"]');
     const hasLogo = logoImg && logoImg.complete && logoImg.naturalWidth > 0;
     const hasTitle = titleImg && titleImg.complete && titleImg.naturalWidth > 0;
 
     if (hasLogo && hasTitle) {
-      const lH = 24;
+      const lH = 22;
       const lW = (logoImg.naturalWidth / logoImg.naturalHeight) * lH;
-      const tH = 26;
+      const tH = 24;
       const tW = (titleImg.naturalWidth / titleImg.naturalHeight) * tH;
-      const gap = 8;
-      const boxW = lW + 10;
+      const gap = 7;
+      const boxW = lW + 8;
       const totalLogoW = boxW + gap + tW;
       const startX = (BASE_W - totalLogoW) / 2;
 
@@ -10179,86 +10198,83 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(startX, curY, boxW, lH + 4);
       try {
-        ctx.drawImage(logoImg, startX + 5, curY + 2, lW, lH);
+        ctx.drawImage(logoImg, startX + 4, curY + 2, lW, lH);
         ctx.drawImage(titleImg, startX + boxW + gap, curY + 1, tW, tH);
       } catch (e) {}
     } else {
       ctx.fillStyle = '#0f172a';
-      ctx.font = '900 18px Pretendard, sans-serif';
+      ctx.font = '900 17px Pretendard, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('세종꿈의교회', BASE_W / 2, curY + 20);
+      ctx.fillText('세종꿈의교회', BASE_W / 2, curY + 19);
     }
-    curY += headerLogoH + 5;
+    curY += headerLogoH + 4;
 
-    // 헤더 밑줄 긋기
+    // 밑줄 긋기
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(padX, curY);
     ctx.lineTo(BASE_W - padX, curY);
     ctx.stroke();
-    curY += 16;
+    curY += 15;
 
-    // 날짜 (중앙 정렬: 예, 2026년 11월8일)
+    // 날짜 (중앙정렬)
     ctx.fillStyle = '#0f766e';
-    ctx.font = '900 14.5px Pretendard, sans-serif';
+    ctx.font = '900 14px Pretendard, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(payload.displayDate, BASE_W / 2, curY);
-    curY += 18;
+    curY += 17;
 
-    // 바로 밑: - 식품 주문 내역 ( 총 00 품목 ) -
+    // - 식품 주문 내역 ( 총 00 품목 ) -
     ctx.fillStyle = '#0f172a';
-    ctx.font = '900 15px Pretendard, sans-serif';
+    ctx.font = '900 14.5px Pretendard, sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('- 식품 주문 내역 ( 총 ' + payload.totalItemsCount + ' 품목 ) -', BASE_W / 2, curY);
-    curY += 7;
+    curY += 6;
 
-    // 얇은 점선 구분선
     ctx.strokeStyle = '#cbd5e1';
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(padX, curY);
     ctx.lineTo(BASE_W - padX, curY);
     ctx.stroke();
-    curY += 4;
+    curY += 3;
 
-    // 본문: 메뉴 이름 + 트리 구조(├, └) 재료 목록 초밀착 나열
+    // 트리 구조 본문 나열
     ctx.textAlign = 'left';
     preparedGroups.forEach(function(grp) {
-      // 메뉴 타이틀 바 (매우 슬림한 배경 포인트)
       ctx.fillStyle = grp.isCommon ? '#fef3c7' : '#f1f5f9';
-      ctx.fillRect(padX, curY + 1, BASE_W - padX * 2, 17);
+      ctx.fillRect(padX, curY + 1, BASE_W - padX * 2, 16.5);
 
       ctx.fillStyle = grp.isCommon ? '#92400e' : '#0f172a';
-      ctx.font = '900 13.5px Pretendard, sans-serif';
+      ctx.font = '900 13px Pretendard, sans-serif';
       const prefixBullet = grp.isCommon ? '▣ ' : '■ ';
-      ctx.fillText(prefixBullet + grp.name, padX + 4, curY + 14);
-      curY += 20;
+      ctx.fillText(prefixBullet + grp.name, padX + 4, curY + 13.5);
+      curY += 19;
 
       grp.rows.forEach(function(row) {
-        const stepH = row.isMemo ? 15.5 : 16.5;
+        const stepH = row.isMemo ? 15 : 16;
         row.lines.forEach(function(lineStr, lIdx) {
           if (lIdx === 0) {
             ctx.fillStyle = '#94a3b8';
-            ctx.font = '700 12px monospace';
-            ctx.fillText(row.branch, padX + 8, curY + 12.5);
+            ctx.font = '700 11.5px monospace';
+            ctx.fillText(row.branch, padX + 6, curY + 12);
           }
           if (row.isMemo) {
             ctx.fillStyle = '#0f766e';
-            ctx.font = '700 12.5px Pretendard, sans-serif';
+            ctx.font = '700 12px Pretendard, sans-serif';
           } else {
             ctx.fillStyle = '#1e293b';
             ctx.font = '800 13.5px Pretendard, sans-serif';
           }
-          ctx.fillText(lineStr, padX + 22, curY + 13);
+          ctx.fillText(lineStr, padX + 20, curY + 12.5);
           curY += stepH;
         });
       });
 
-      curY += 3;
+      curY += 2;
     });
 
-    // WebP 우선 압축 시도 후 미지원 브라우저에서는 JPEG로 자동 전환
     let dataUrl = canvas.toDataURL('image/webp', preset.quality);
     let ext = 'webp';
     let mime = 'image/webp';
@@ -10282,10 +10298,7 @@
     };
   }
 
-  // =========================================================================
-  // [5] 미리보기 모달 오픈 / 품질 전환 시험 / 최종 확정 실행
-  // =========================================================================
-  window.currentOrderShareModeV102 = 'image'; // 'image' | 'text'
+  window.currentOrderShareModeV102 = 'image';
   window.currentOrderQualityKeyV102 = 'standard';
   window.currentRenderedImageObjV102 = null;
   window.currentRenderedTextStrV102 = '';
@@ -10293,7 +10306,7 @@
 
   function updateQualityTabButtonsUIV102(activeKey) {
     ['light', 'standard', 'high'].forEach(function(k) {
-      const btn = document.getElementById(' tabQual_' + k) || document.getElementById('tabQual_' + k);
+      const btn = document.getElementById('tabQual_' + k);
       if (!btn) return;
       if (k === activeKey) {
         btn.className = 'py-1 rounded-lg border-2 border-indigo-600 bg-indigo-600 text-white font-black shadow-2xs transition';
@@ -10387,7 +10400,6 @@
     return new Blob([u8arr], { type: mime });
   }
 
-  // 미리보기 확인 후 [✅ 확정] 클릭 시 실제 저장/공유 또는 클립보드 복사 수행
   window.confirmAndExecuteOrderShare = async function() {
     const payload = window.currentOrderPayloadV102 || extractOrderPayloadV102();
 
@@ -10414,7 +10426,6 @@
       return;
     }
 
-    // 이미지 저장 / 모바일 공유 실행
     const imgObj = window.currentRenderedImageObjV102 || renderCompactOrderCanvasV102(payload, window.currentOrderQualityKeyV102);
     const safeDate = payload.displayDate.replace(/[^0-9가-힣a-zA-Z_-]/g, '_');
     const fileName = '식품주문내역_' + safeDate + '_' + imgObj.preset.label + '.' + imgObj.ext;
@@ -10423,7 +10434,6 @@
       const blob = dataUrlToBlobV102(imgObj.dataUrl);
       const file = new File([blob], fileName, { type: imgObj.mime });
 
-      // 기기에 먼저 자동 다운로드 저장
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -10435,7 +10445,6 @@
 
       window.closeShoppingOrderPreviewModal();
 
-      // 모바일 기기에서 공유 시트(카톡 등)를 지원하면 동시에 공유 창도 호출
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
           await navigator.share({
@@ -10454,6 +10463,111 @@
       await showCustomAlert('이미지 저장 중 오류가 발생했습니다.', '⚠️');
     }
   };
+
+  // =========================================================================
+  // [기능 4] 메인화면에서 아래로 죽 긁어 내리면 새로고침 (Pull-to-Refresh)
+  // =========================================================================
+  (function setupMainPullToRefreshV102() {
+    let startY = 0;
+    let startX = 0;
+    let isPulling = false;
+    let pullDist = 0;
+    const THRESHOLD = 85; // 85px 이상 아래로 당기면 새로고침 실행
+
+    function isAnyModalOpenOrLocked() {
+      if (document.body.classList.contains('modal-scroll-locked')) return true;
+      const loginModal = document.getElementById('loginGateModal');
+      if (loginModal && !loginModal.classList.contains('hidden')) return true;
+      const shopModal = document.getElementById('shoppingListModal');
+      if (shopModal && !shopModal.classList.contains('hidden')) return true;
+      return false;
+    }
+
+    window.addEventListener('touchstart', function(e) {
+      if (e.touches.length !== 1) { isPulling = false; return; }
+      if (isAnyModalOpenOrLocked()) { isPulling = false; return; }
+
+      // 내부 스크롤 박스(#basketList 등)를 건드렸을 때는 제외
+      const basketList = document.getElementById('basketList');
+      if (basketList && basketList.contains(e.target) && basketList.scrollTop > 0) {
+        isPulling = false;
+        return;
+      }
+
+      const curScrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      if (curScrollY <= 2) {
+        startY = e.touches[0].clientY;
+        startX = e.touches[0].clientX;
+        isPulling = true;
+        pullDist = 0;
+      } else {
+        isPulling = false;
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchmove', function(e) {
+      if (!isPulling || e.touches.length !== 1) return;
+      const curScrollY = window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      if (curScrollY > 5) {
+        isPulling = false;
+        return;
+      }
+
+      const dy = e.touches[0].clientY - startY;
+      const dx = Math.abs(e.touches[0].clientX - startX);
+
+      if (dy > 15 && dy > dx * 1.5) {
+        pullDist = dy;
+        const ind = document.getElementById('pullToRefreshIndicator');
+        const icon = document.getElementById('ptrSpinIcon');
+        const txt = document.getElementById('ptrStatusText');
+        if (ind) {
+          const topPx = Math.min(22, Math.round((dy - 15) * 0.45) - 30);
+          ind.style.top = topPx + 'px';
+          ind.style.opacity = String(Math.min(1, (dy - 15) / 50));
+        }
+        if (dy >= THRESHOLD) {
+          if (icon) icon.style.transform = 'rotate(180deg)';
+          if (txt) txt.innerText = '손을 떼면 새로고침 됩니다';
+        } else {
+          if (icon) icon.style.transform = 'rotate(0deg)';
+          if (txt) txt.innerText = '아래로 당겨서 새로고침';
+        }
+      } else if (dy < 0) {
+        pullDist = 0;
+      }
+    }, { passive: true });
+
+    function endPullTouch() {
+      if (!isPulling) return;
+      isPulling = false;
+      const ind = document.getElementById('pullToRefreshIndicator');
+      const icon = document.getElementById('ptrSpinIcon');
+      const txt = document.getElementById('ptrStatusText');
+
+      if (pullDist >= THRESHOLD) {
+        if (ind) {
+          ind.style.top = '18px';
+          ind.style.opacity = '1';
+        }
+        if (icon) icon.innerText = '🔄';
+        if (txt) txt.innerText = '새로고침 중...';
+        if (navigator.vibrate) { try { navigator.vibrate(30); } catch (err) {} }
+        setTimeout(function() {
+          location.reload();
+        }, 150);
+      } else {
+        if (ind) {
+          ind.style.top = '-48px';
+          ind.style.opacity = '0';
+        }
+      }
+      pullDist = 0;
+    }
+
+    window.addEventListener('touchend', endPullTouch, { passive: true });
+    window.addEventListener('touchcancel', endPullTouch, { passive: true });
+  })();
 })();
 </script>
 <!-- ================= [패치 v10.2 END] ================= -->
