@@ -8598,4 +8598,377 @@
 </script>
 <!-- ================= [패치 v9.8 END] ================= -->
 
+
+<!-- ================= [패치 v9.9 START: 팀장/팀원 권한 설정 및 미소 메시지] ================= -->
+<style>
+  /* 4) 팀원 로그인 시 불필요한 '식단조립'(#memberSummaryBar) 완전 숨김 */
+  #memberSummaryBar {
+    display: none !important;
+  }
+</style>
+<script>
+(function applyRoleAndPermissionPatchV99() {
+  const MSG_MENU_CONFIRMED = '식단이 확정 되었습니다.';
+  const MSG_SHOPPING_DONE  = '장보기 완료되어 수정이 안됩니다.';
+  const MSG_DISH_REGISTERED = '반찬등록이 완료되었습니다.';
+
+  function smileAlert(msg) {
+    return showCustomAlert(msg, '😊');
+  }
+
+  // [4번] 팀원 로그인 시에도 하단 4버튼(#adminActionBtns)을 표시하고 '식단조립'(#memberSummaryBar)은 제거
+  const _origApplyRoleUIV99 = applyRoleUI;
+  applyRoleUI = function() {
+    if (_origApplyRoleUIV99) _origApplyRoleUIV99();
+    const adminActions = document.getElementById('adminActionBtns');
+    const memberBar = document.getElementById('memberSummaryBar');
+    if (adminActions) adminActions.classList.remove('hidden');
+    if (memberBar) {
+      memberBar.classList.add('hidden');
+      memberBar.innerHTML = '';
+    }
+  };
+  if (typeof currentUser !== 'undefined' && currentUser) {
+    applyRoleUI();
+  }
+
+  // [1번 - 사진올리기] 팀원도 사진 등록(올리기)은 가능! 단, 기존 사진 삭제 시도 시 미소 메시지
+  openPhotoUploadModal = async function() {
+    if (typeof enforceCropModalLayoutV94 === 'function') enforceCropModalLayoutV94();
+    cropRotation = 0;
+    window.cropAutoBright = false;
+    var imgEl = document.getElementById('cropTargetImg');
+    if (imgEl) imgEl.style.filter = 'none';
+    document.getElementById('cropStageArea').classList.remove('hidden');
+    document.getElementById('photoUploadModal').classList.remove('hidden');
+    if (typeof window.centerYellowCropBoxV94 === 'function') window.centerYellowCropBoxV94();
+
+    // 기존 사진 찾기
+    var curDateEl = document.getElementById('currentDate');
+    var rawDate = curDateEl ? curDateEl.value : getCurrentWeekSundayString();
+    var selDateStr = normalizeCompactDateStr(rawDate);
+    var existingDataUrl = null;
+    var matchedArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === selDateStr; });
+    if (matchedArch && matchedArch.photoId && String(matchedArch.photoId).indexOf('default_') !== 0 && dbPhotoStore[matchedArch.photoId]) {
+      existingDataUrl = dbPhotoStore[matchedArch.photoId];
+    } else if (currentSavedPhotoId && String(currentSavedPhotoId).indexOf('default_') !== 0 && dbPhotoStore[currentSavedPhotoId]) {
+      existingDataUrl = dbPhotoStore[currentSavedPhotoId];
+    }
+
+    if (existingDataUrl && typeof window.loadImageDataUrlToCropStageV94 === 'function') {
+      setTimeout(function() {
+        window.loadImageDataUrlToCropStageV94(existingDataUrl);
+      }, 20);
+    } else {
+      multiUploadQueue = [];
+      window.multiUploadQueue = [];
+      if (imgEl) {
+        imgEl.removeAttribute('src');
+        imgEl.classList.add('hidden');
+      }
+      var gInput = document.getElementById('inputGallery');
+      if (gInput) { gInput.value = ''; gInput.click(); }
+    }
+  };
+
+  const _origDeleteOrCancelPhotoV99 = window.deleteOrCancelPhotoCropV94;
+  window.deleteOrCancelPhotoCropV94 = async function() {
+    if (!isLeader) {
+      // 팀원이 사진 모달에서 취소/닫기를 누른 경우: 기존 사진을 지우지 않고 창만 닫음
+      var curDateEl = document.getElementById('currentDate');
+      var selDateStr = normalizeCompactDateStr(curDateEl ? curDateEl.value : getCurrentWeekSundayString());
+      var matchedArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === selDateStr; });
+      var hasSavedPhoto = Boolean(
+        (matchedArch && matchedArch.photoId && String(matchedArch.photoId).indexOf('default_') !== 0) ||
+        (currentSavedPhotoId && String(currentSavedPhotoId).indexOf('default_') !== 0)
+      );
+      closePhotoUploadModal();
+      if (hasSavedPhoto) {
+        await smileAlert(MSG_MENU_CONFIRMED);
+      }
+      return;
+    }
+    if (_origDeleteOrCancelPhotoV99) return await _origDeleteOrCancelPhotoV99();
+  };
+
+  // [1번 & 3번 - 식판 편집/삭제/확정 제어] 팀원이 식단삭제, 식단확정, 식판 메뉴 제외/변경 시도 시
+  const _origDeleteCurrentDateMenuV99 = deleteCurrentDateMenu;
+  deleteCurrentDateMenu = async function() {
+    if (!isLeader) return await smileAlert(MSG_MENU_CONFIRMED);
+    return await _origDeleteCurrentDateMenuV99();
+  };
+
+  const _origConfirmMenuToGridV99 = confirmMenuToGrid;
+  confirmMenuToGrid = async function() {
+    if (!isLeader) return await smileAlert(MSG_MENU_CONFIRMED);
+    return await _origConfirmMenuToGridV99();
+  };
+
+  const _origRequestRemoveFromTrayV99 = requestRemoveFromTray;
+  requestRemoveFromTray = function(id) {
+    if (!isLeader) {
+      smileAlert(MSG_MENU_CONFIRMED);
+      return;
+    }
+    return _origRequestRemoveFromTrayV99(id);
+  };
+
+  const _origToggleDishInTrayV99 = toggleDishInTray;
+  toggleDishInTray = async function(id) {
+    if (!isLeader) {
+      return await smileAlert(MSG_MENU_CONFIRMED);
+    }
+    return await _origToggleDishInTrayV99(id);
+  };
+
+  const _origSaveDishDetailV99 = saveDishDetail;
+  saveDishDetail = async function() {
+    if (!isLeader) {
+      closeDishDetailModal();
+      return await smileAlert(MSG_MENU_CONFIRMED);
+    }
+    return await _origSaveDishDetailV99();
+  };
+
+  // [1번 & 3번 - 반찬바구니] 팀원은 +반찬등록, CSV 불러오기 가능 / 반찬삭제는 불가(친절 메시지)
+  handleBasketMenuAction = function(actionType) {
+    closeBasketSlideMenu();
+    if (actionType === 'add') {
+      exitBasketDeleteMode();
+      openAddDishModal();
+    } else if (actionType === 'delete') {
+      if (!isLeader) {
+        smileAlert(MSG_DISH_REGISTERED);
+        return;
+      }
+      enterBasketDeleteMode();
+    } else if (actionType === 'csv') {
+      exitBasketDeleteMode();
+      openCsvModal();
+    }
+  };
+
+  // 팀원이 새 반찬 직접 등록 시: 바구니(DB)에는 정상 등록하되, 이미 확정된 식판(currentTrayIds)은 건드리지 않음
+  const _origCreateNewDishV99 = createNewDishInBasket;
+  createNewDishInBasket = async function() {
+    if (isLeader) {
+      return await _origCreateNewDishV99();
+    }
+    const cat = document.getElementById('newDishCat').value || '밥/국';
+    let name = document.getElementById('newDishName').value.trim();
+    if (!name) return await showCustomAlert('반찬 이름을 입력해주세요.', '✏️');
+    if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+    const noteVal = document.getElementById('newDishPrice') ? String(document.getElementById('newDishPrice').value || '').trim() : '';
+    const newDish = {
+      id: 'custom_' + Date.now(),
+      cat: cat,
+      name: name,
+      kg: document.getElementById('newDishKg').value.trim() || '적당량',
+      note: noteVal,
+      recipe: document.getElementById('newDishRecipe').value.trim() || '기본 조리'
+    };
+    masterBasket.unshift(newDish);
+    currentCat = cat;
+    if (db) await db.collection('basket').doc(newDish.id).set(newDish).catch(function() {});
+    closeAddDishModal();
+    renderBasket();
+    await smileAlert(MSG_DISH_REGISTERED);
+  };
+
+  // [1번 - 달력 확인 후 과거 자료만 불러와 보기]
+  function parseSundayDateObjForCheck(sundayStr) {
+    if (!sundayStr) return null;
+    const m = String(sundayStr).match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if (!m) return null;
+    const d = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  const _origSelectCalendarWeekDateV99 = selectCalendarWeekDate;
+  selectCalendarWeekDate = async function(sundayStr) {
+    if (!isLeader) {
+      const targetObj = parseSundayDateObjForCheck(sundayStr);
+      const todaySunStr = getCurrentWeekSundayString();
+      const todaySunObj = parseSundayDateObjForCheck(todaySunStr);
+
+      // 미래 주일을 선택한 경우 차단하고 친절 안내
+      if (targetObj && todaySunObj && targetObj.getTime() > todaySunObj.getTime()) {
+        return await smileAlert(MSG_MENU_CONFIRMED);
+      }
+
+      // 과거 또는 이번 주 주일인 경우: DB 덮어쓰기 없이 화면에만 과거 식단 자료를 불러와 보여줌
+      const cleanDate = normalizeCompactDateStr(sundayStr);
+      const matchedArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
+      const planEntry = weeklyPlanMap && (weeklyPlanMap[cleanDate] || weeklyPlanMap[sundayStr]);
+
+      if (matchedArch && Array.isArray(matchedArch.dishIds)) {
+        currentTrayIds = [...matchedArch.dishIds];
+        currentSavedPhotoId = matchedArch.photoId || 'default_4';
+        currentSavedPhotoIds = Array.isArray(matchedArch.photoIds) ? [...matchedArch.photoIds] : (matchedArch.photoId ? [matchedArch.photoId] : []);
+      } else if (planEntry && Array.isArray(planEntry.trayIds)) {
+        currentTrayIds = [...planEntry.trayIds];
+        currentSavedPhotoId = planEntry.photoId || 'default_4';
+        currentSavedPhotoIds = Array.isArray(planEntry.photoIds) ? [...planEntry.photoIds] : [];
+      } else {
+        currentTrayIds = [];
+        currentSavedPhotoId = 'default_4';
+        currentSavedPhotoIds = [];
+      }
+
+      populateDateDropdownOptions(cleanDate);
+      renderTray();
+      closeCustomCalendarModal();
+      return;
+    }
+    return _origSelectCalendarWeekDateV99(sundayStr);
+  };
+
+  // [2번 & 3번 - 지난 식단 길게 눌러 상세 화면 보기 가능, 식단삭제·식판에 올리기는 불가]
+  const _origOpenArchiveModalV99 = openArchiveModal;
+  openArchiveModal = function(id) {
+    _origOpenArchiveModalV99(id);
+    const archModal = document.getElementById('archiveModal');
+    if (!archModal) return;
+    const badgeEl = document.getElementById('archEditableBlinkBadge');
+    const inputs = archModal.querySelectorAll('input, textarea');
+
+    if (!isLeader) {
+      if (badgeEl) badgeEl.innerText = '상세내용 확인';
+      inputs.forEach(function(inp) { inp.readOnly = true; });
+    } else {
+      if (badgeEl) badgeEl.innerText = '세부사항 수정가능';
+      inputs.forEach(function(inp) { inp.readOnly = false; });
+    }
+  };
+
+  const _origSelectArchSeasonV99 = selectCustomArchSeason;
+  selectCustomArchSeason = function(seasonVal) {
+    const modal = document.getElementById('archiveModal');
+    if (!isLeader && modal && !modal.classList.contains('hidden')) {
+      smileAlert(MSG_MENU_CONFIRMED);
+      return;
+    }
+    return _origSelectArchSeasonV99(seasonVal);
+  };
+
+  const _origSelectArchTypeV99 = selectCustomArchType;
+  selectCustomArchType = function(typeVal) {
+    const modal = document.getElementById('archiveModal');
+    if (!isLeader && modal && !modal.classList.contains('hidden')) {
+      smileAlert(MSG_MENU_CONFIRMED);
+      return;
+    }
+    return _origSelectArchTypeV99(typeVal);
+  };
+
+  const _origDeleteArchiveFromModalV99 = window.deleteArchiveFromModal;
+  window.deleteArchiveFromModal = async function() {
+    if (!isLeader) return await smileAlert(MSG_MENU_CONFIRMED);
+    if (_origDeleteArchiveFromModalV99) return await _origDeleteArchiveFromModalV99();
+  };
+
+  const _origLoadArchiveToTrayV99 = loadArchiveToCurrentTray;
+  loadArchiveToCurrentTray = async function() {
+    if (!isLeader) return await smileAlert(MSG_MENU_CONFIRMED);
+    return await _origLoadArchiveToTrayV99();
+  };
+
+  const _origSaveArchiveEditsV99 = window.saveArchiveModalEditsIfNeeded;
+  window.saveArchiveModalEditsIfNeeded = async function() {
+    if (!isLeader) return;
+    if (_origSaveArchiveEditsV99) return await _origSaveArchiveEditsV99();
+  };
+
+  // [1번 & 3번 - 장보기: 팀원은 화면만 볼 수 있고 수정/완료 시 '😊 장보기 완료되어 수정이 안됩니다.']
+  const _origOpenShoppingModalV99 = window.openShoppingListModal;
+  window.openShoppingListModal = async function() {
+    if (!isLeader) {
+      // 팀원은 확인 질문 없이 바로 장보기 화면 열람
+      var curEl = document.getElementById('currentDate');
+      var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+      var badgeEl = document.getElementById('shoppingModalDateBadge');
+      if (badgeEl) badgeEl.innerText = cleanDate;
+
+      window.activeAddInputGroupIdV103 = null;
+      window.activeEditIngTargetV103 = null;
+      window.activeMemoGroupIdV103 = null;
+
+      if (typeof renderShoppingTreeModal === 'function') renderShoppingTreeModal();
+      document.getElementById('shoppingListModal').classList.remove('hidden');
+      return;
+    }
+    if (_origOpenShoppingModalV99) return await _origOpenShoppingModalV99();
+  };
+
+  const _origCompleteShoppingV99 = window.completeShoppingAndCommit;
+  window.completeShoppingAndCommit = async function() {
+    if (!isLeader) return await smileAlert(MSG_SHOPPING_DONE);
+    if (_origCompleteShoppingV99) return await _origCompleteShoppingV99();
+  };
+
+  const _origOpenInlineAddIngV99 = window.openInlineAddIngredientV103;
+  window.openInlineAddIngredientV103 = function(groupId) {
+    if (!isLeader) { smileAlert(MSG_SHOPPING_DONE); return; }
+    if (_origOpenInlineAddIngV99) return _origOpenInlineAddIngV99(groupId);
+  };
+
+  const _origOpenEditIngV99 = window.openEditShoppingIngredientV103;
+  window.openEditShoppingIngredientV103 = function(groupId, itemId) {
+    if (!isLeader) { smileAlert(MSG_SHOPPING_DONE); return; }
+    if (_origOpenEditIngV99) return _origOpenEditIngV99(groupId, itemId);
+  };
+
+  const _origDeleteIngV99 = window.deleteShoppingIngredientItemV103;
+  window.deleteShoppingIngredientItemV103 = function(groupId, itemId) {
+    if (!isLeader) { smileAlert(MSG_SHOPPING_DONE); return; }
+    if (_origDeleteIngV99) return _origDeleteIngV99(groupId, itemId);
+  };
+
+  const _origToggleMemoV99 = window.toggleGroupMemoEditorV103;
+  window.toggleGroupMemoEditorV103 = function(groupId) {
+    if (!isLeader) { smileAlert(MSG_SHOPPING_DONE); return; }
+    if (_origToggleMemoV99) return _origToggleMemoV99(groupId);
+  };
+
+  // 팀원이 장보기 트리 내부의 체크박스나 메뉴 잠금 영역을 터치/길게누르기 할 때도 수정 차단 및 미소 안내
+  const _origRenderShoppingTreeV99 = window.renderShoppingTreeModal;
+  window.renderShoppingTreeModal = function() {
+    if (_origRenderShoppingTreeV99) _origRenderShoppingTreeV99();
+    if (isLeader) return;
+
+    const container = document.getElementById('shoppingTreeContainer');
+    if (!container) return;
+
+    // 팀원 화면에서는 체크박스 줄 및 메뉴 헤더 터치 시 데이터 변경을 막고 친절한 메시지 표시
+    const interceptForMember = function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      smileAlert(MSG_SHOPPING_DONE);
+    };
+
+    container.querySelectorAll('.shop-tree-checkbox').forEach(function(chk) {
+      const touchArea = chk.parentElement;
+      if (touchArea) {
+        touchArea.onpointerdown = null;
+        touchArea.onpointerup = null;
+        touchArea.onclick = interceptForMember;
+      }
+    });
+
+    container.querySelectorAll('.shop-group-locked').forEach(function(lockedCard) {
+      const headerRow = lockedCard.firstElementChild;
+      if (headerRow) {
+        Array.from(headerRow.children).forEach(function(ch) {
+          ch.onpointerdown = null;
+          ch.onpointerup = null;
+          ch.onclick = interceptForMember;
+        });
+      }
+    });
+  };
+})();
+</script>
+<!-- ================= [패치 v9.9 END] ================= -->
+
 </body></html>
