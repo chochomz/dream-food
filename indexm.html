@@ -2,12 +2,11 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+  <!-- 사용자가 임의로 두 손가락 확대(pinch-zoom)하는 기능은 허용하되, 입력창 16px 적용으로 터치 시 자동 확대는 방지 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>세종꿈의교회 - 권한관리</title>
-  
-  <!-- ================= [보안 코어 모듈 v3.0: URL 마스킹 / 우클릭·소스보기 차단 / 앞뒤3자리 핀 암복호화] ================= -->
-  <script id="sejongSecurityCoreV30">
-    // 1. URL 주소창에서 index.html, indexm.html 즉시 숨김
+  <script>
+    // 1. URL 주소창에서 indexm.html 즉시 숨김
     (function maskBrowserUrlPath() {
       try {
         var cleanPath = window.location.pathname.replace(/\/(indexm?\.html)$/i, '/');
@@ -35,19 +34,16 @@
         var code = e.keyCode || e.which;
         var ctrlOrCmd = e.ctrlKey || e.metaKey;
 
-        // F12 차단
         if (code === 123 || key === 'F12') {
           e.preventDefault();
           e.stopPropagation();
           return false;
         }
-        // Ctrl+U (소스보기), Ctrl+S (저장), Ctrl+P (인쇄) 차단
         if (ctrlOrCmd && (key === 'U' || key === 'S' || key === 'P' || code === 85 || code === 83 || code === 80)) {
           e.preventDefault();
           e.stopPropagation();
           return false;
         }
-        // Ctrl+Shift+I / J / C (개발자도구) 또는 Mac Cmd+Option+I / J / C / U 차단
         if ((ctrlOrCmd && e.shiftKey && (key === 'I' || key === 'J' || key === 'C' || code === 73 || code === 74 || code === 67)) ||
             (e.metaKey && e.altKey && (key === 'I' || key === 'J' || key === 'C' || key === 'U'))) {
           e.preventDefault();
@@ -57,12 +53,14 @@
       }, true);
     })();
 
-    // 3. 비밀번호 앞뒤 3자리 랜덤 패딩 암호화 & 진짜 4자리 추출 알고리즘
+    // 3. 비밀번호 앞뒤 3자리 랜덤 패딩(총 10자리) 생성 및 추출 알고리즘
     window.encodePinWithRandom3 = function(realPin) {
-      var clean = String(realPin || '').trim();
-      // 이미 10자리로 암호화된 값이면 먼저 가운데 4자리만 꺼낸 뒤 새로 랜덤 3자리를 입힘
-      if (clean.length === 10) {
+      var clean = String(realPin || '').replace(/[^0-9]/g, '').trim();
+      if (!clean) return '';
+      if (clean.length >= 10) {
         clean = clean.slice(3, 7);
+      } else if (clean.length > 4) {
+        clean = clean.slice(0, 4);
       }
       var chars = '0123456789';
       var prefix = '';
@@ -77,16 +75,13 @@
     window.extractRealPinFromStored = function(storedVal) {
       var raw = String(storedVal || '').trim();
       if (!raw) return '';
-      // 앞 3자리 + 진짜 비밀번호(4자리 이상) + 뒤 3자리 구조(총 10자리 이상)인 경우 앞뒤 3자리 제거
       if (raw.length >= 10) {
-        return raw.slice(3, -3);
+        return raw.slice(3, 7);
       }
       return raw;
     };
-  </script>
 
-  <script>
-    // [보안 게이트] index.html의 ⚙️ 설정에서 코드 인증 티켓으로 들어온 경우만 허용
+    // 4. [보안 게이트] 주소 직접 입력 시 세션 초기화 후 index.html 로그인 창으로 이동
     (function enforceDirectAccessBlock() {
       try {
         var verified = sessionStorage.getItem('sejong_admin_verified') === '1';
@@ -112,6 +107,10 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
     @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+    html, body {
+      touch-action: pan-x pan-y pinch-zoom !important;
+      -webkit-text-size-adjust: 100% !important;
+    }
     body {
       font-family: 'Pretendard', sans-serif;
       background-color: #f8fafc;
@@ -119,6 +118,11 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-touch-callout: none;
+    }
+    /* 입력창 터치 시 모바일 브라우저 자동 줌인(확대) 원천 방지: 최소 16px 보장 */
+    .no-zoom-input {
+      font-size: 16px !important;
+      line-height: 1.25 !important;
     }
     .no-scrollbar::-webkit-scrollbar { display: none; }
   </style>
@@ -145,22 +149,30 @@
 
   <main id="adminDashboard" class="space-y-2.5 flex-1 flex flex-col min-h-0">
 
-    <!-- 1. 코드번호 관리 (4자리 입력 -> 저장 시 앞뒤 3자리 랜덤 부착하여 10자리로 암호화 저장) -->
-    <section class="bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 space-y-2 shrink-0">
+    <!-- 1. 코드번호 관리 (화면에도 10자리 난독화 숫자 표시 / 4자리 입력 즉시 앞뒤 3자리 랜덤 부착) -->
+    <section id="codeSectionCard" class="bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 space-y-2 shrink-0">
       <div class="flex items-center justify-between">
-        <h2 class="text-xs font-black text-slate-800">🔑 접속 코드 설정 (4자리)</h2>
+        <h2 class="text-xs font-black text-slate-800">🔑 접속 코드 설정</h2>
         <button type="button" onclick="saveBothCodes()" class="bg-slate-800 hover:bg-slate-900 text-white text-[11px] font-extrabold px-3 py-1 rounded-lg transition active:scale-95">
           저장
         </button>
       </div>
-      <div class="grid grid-cols-2 gap-2 text-xs">
+      <div class="grid grid-cols-2 gap-2">
         <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
-          <span class="font-extrabold text-purple-900 text-[11px] whitespace-nowrap">팀장 코드</span>
-          <input id="editAdminCode" type="text" inputmode="numeric" maxlength="4" autocomplete="off" class="w-16 text-right font-black text-purple-950 bg-transparent focus:outline-none">
+          <span class="font-extrabold text-purple-900 text-[11px] whitespace-nowrap shrink-0">팀장</span>
+          <input id="editAdminCode" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+            onfocus="handlePinFocus(this)"
+            oninput="handlePinAutoSalt(this)"
+            onblur="handlePinBlur(this, 'admin')"
+            class="no-zoom-input w-full text-right font-black text-purple-950 bg-transparent focus:outline-none tracking-tight">
         </div>
         <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
-          <span class="font-extrabold text-teal-900 text-[11px] whitespace-nowrap">팀원 코드</span>
-          <input id="editMemberCode" type="text" inputmode="numeric" maxlength="4" autocomplete="off" class="w-16 text-right font-black text-teal-950 bg-transparent focus:outline-none">
+          <span class="font-extrabold text-teal-900 text-[11px] whitespace-nowrap shrink-0">팀원</span>
+          <input id="editMemberCode" type="text" inputmode="numeric" maxlength="10" autocomplete="off"
+            onfocus="handlePinFocus(this)"
+            oninput="handlePinAutoSalt(this)"
+            onblur="handlePinBlur(this, 'member')"
+            class="no-zoom-input w-full text-right font-black text-teal-950 bg-transparent focus:outline-none tracking-tight">
         </div>
       </div>
     </section>
@@ -172,14 +184,17 @@
         <span id="memberCountBadge" class="text-[11px] font-extrabold text-slate-500">0명</span>
       </div>
 
-      <!-- 입력창: 권한 -> 이름 -> 추가 순 -->
-      <div class="flex items-center gap-1.5 shrink-0">
-        <select id="newMemberRole" class="border border-slate-300 rounded-lg px-2 py-1.5 text-xs font-extrabold bg-white text-slate-800 focus:outline-none shrink-0">
-          <option value="member">팀원(일반권한)</option>
-          <option value="admin">팀장(관리자 권한)</option>
+      <!-- 입력창: 권한 -> 이름 -> 추가 순 (16px 고정으로 터치 시 자동 확대 방지 & 포커스 시 화면 중앙 배치) -->
+      <div id="memberInputRow" class="flex items-center gap-1.5 shrink-0">
+        <select id="newMemberRole" onfocus="centerElementOnKeyboard(this)" class="no-zoom-input border border-slate-300 rounded-lg px-1.5 py-1.5 font-extrabold bg-white text-slate-800 focus:outline-none shrink-0">
+          <option value="member">팀원(일반)</option>
+          <option value="admin">팀장(관리)</option>
         </select>
-        <input id="newMemberName" type="text" autocomplete="off" placeholder="이름" onkeydown="if(event.key==='Enter') addAuthorizedMember()" class="flex-1 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-bold bg-white focus:outline-none focus:border-slate-700">
-        <button type="button" onclick="addAuthorizedMember()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold px-3 py-1.5 rounded-lg text-xs whitespace-nowrap shrink-0 transition active:scale-95">
+        <input id="newMemberName" type="text" autocomplete="off" placeholder="이름"
+          onfocus="centerElementOnKeyboard(this)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault(); addAuthorizedMember();}"
+          class="no-zoom-input flex-1 min-w-0 border border-slate-300 rounded-lg px-2.5 py-1.5 font-bold bg-white focus:outline-none focus:border-slate-700">
+        <button type="button" onclick="addAuthorizedMember()" class="bg-slate-800 hover:bg-slate-900 text-white font-extrabold px-3 py-2 rounded-lg text-xs whitespace-nowrap shrink-0 transition active:scale-95">
           추가
         </button>
       </div>
@@ -224,6 +239,66 @@
 
     let authConfig = { adminCode: '', memberCode: '', members: [] };
 
+    // 키보드가 올라올 때 입력창이 가려지지 않도록 화면 정중앙에 부드럽게 배치
+    function centerElementOnKeyboard(el) {
+      if (!el) return;
+      setTimeout(function() {
+        try {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+        } catch (e) {}
+      }, 180);
+    }
+
+    // 코드 입력창 터치 시: 새 4자리를 바로 입력할 수 있도록 기존 값을 임시 보관 후 비우고 중앙 정렬
+    function handlePinFocus(inputEl) {
+      if (!inputEl) return;
+      inputEl.dataset.prevSalted = inputEl.value || '';
+      inputEl.value = '';
+      centerElementOnKeyboard(inputEl);
+    }
+
+    // 4자리 숫자를 입력하는 순간 즉시 앞뒤 3자리 랜덤 숫자를 박아 10자리로 표시
+    function handlePinAutoSalt(inputEl) {
+      if (!inputEl) return;
+      var digits = String(inputEl.value || '').replace(/[^0-9]/g, '');
+      if (inputEl.value !== digits) {
+        inputEl.value = digits;
+      }
+      if (digits.length === 4) {
+        var salted10 = window.encodePinWithRandom3(digits);
+        inputEl.value = salted10;
+        inputEl.dataset.prevSalted = salted10;
+        inputEl.blur();
+      }
+    }
+
+    // 포커스가 빠져나갈 때 아무것도 안 쳤으면 기존 10자리 복원, 4자리를 쳤으면 10자리 난독화 보장
+    function handlePinBlur(inputEl, type) {
+      if (!inputEl) return;
+      var val = String(inputEl.value || '').replace(/[^0-9]/g, '').trim();
+      if (!val) {
+        var fallback = inputEl.dataset.prevSalted || (type === 'admin' ? authConfig.adminCode : authConfig.memberCode) || '';
+        inputEl.value = ensureSalted10Format(fallback);
+      } else if (val.length === 4) {
+        inputEl.value = window.encodePinWithRandom3(val);
+      } else if (val.length >= 10) {
+        inputEl.value = val.slice(0, 10);
+      } else {
+        // 4자리 미만으로 잘못 친 경우 이전 값 복원
+        var prev = inputEl.dataset.prevSalted || '';
+        inputEl.value = ensureSalted10Format(prev);
+        showToast('코드는 4자리로 입력해주세요.');
+      }
+    }
+
+    // 화면에 표시할 때 무조건 10자리(앞3랜덤+진짜4+뒤3랜덤) 형태가 되도록 보장
+    function ensureSalted10Format(val) {
+      var clean = String(val || '').replace(/[^0-9]/g, '').trim();
+      if (!clean) return '';
+      if (clean.length === 10) return clean;
+      return window.encodePinWithRandom3(clean);
+    }
+
     function showToast(msg) {
       const el = document.getElementById('toastMsg');
       if (!el) return;
@@ -240,8 +315,8 @@
           const parsed = JSON.parse(raw);
           if (parsed && typeof parsed === 'object') {
             return {
-              adminCode: String(parsed.adminCode || parsed.adminPassword || ''),
-              memberCode: String(parsed.memberCode || ''),
+              adminCode: ensureSalted10Format(parsed.adminCode || parsed.adminPassword || ''),
+              memberCode: ensureSalted10Format(parsed.memberCode || ''),
               members: Array.isArray(parsed.members) ? parsed.members : []
             };
           }
@@ -256,15 +331,15 @@
       } catch (e) {}
     }
 
-    // 화면 입력칸에는 앞뒤 3자리 랜덤값을 제거한 진짜 4자리만 표시
+    // 화면 입력칸에도 항상 10자리(앞3랜덤 + 진짜4자리 + 뒤3랜덤) 그대로 찍혀서 보이게 함
     function syncInputsAndList() {
       const admEl = document.getElementById('editAdminCode');
       const memEl = document.getElementById('editMemberCode');
       if (admEl && document.activeElement !== admEl) {
-        admEl.value = window.extractRealPinFromStored(authConfig.adminCode || '');
+        admEl.value = ensureSalted10Format(authConfig.adminCode || '');
       }
       if (memEl && document.activeElement !== memEl) {
-        memEl.value = window.extractRealPinFromStored(authConfig.memberCode || '');
+        memEl.value = ensureSalted10Format(authConfig.memberCode || '');
       }
       renderMemberList();
     }
@@ -325,16 +400,25 @@
       document.getElementById('memberRoleCount').textContent = String(memberNum);
     }
 
-    // 저장 시 4자리 코드 앞뒤로 3자리씩 랜덤 숫자를 붙여 10자리로 암호화 저장
     async function saveBothCodes() {
-      const rawAdminInput = document.getElementById('editAdminCode').value.trim();
-      const rawMemberInput = document.getElementById('editMemberCode').value.trim();
-      if (rawAdminInput.length !== 4 || rawMemberInput.length !== 4) {
+      const admEl = document.getElementById('editAdminCode');
+      const memEl = document.getElementById('editMemberCode');
+      const rawAdmin = admEl.value.replace(/[^0-9]/g, '').trim();
+      const rawMember = memEl.value.replace(/[^0-9]/g, '').trim();
+
+      if ((rawAdmin.length !== 4 && rawAdmin.length !== 10) || (rawMember.length !== 4 && rawMember.length !== 10)) {
         return showToast('코드는 4자리로 입력해주세요.');
       }
 
-      const saltedAdminCode = window.encodePinWithRandom3(rawAdminInput);
-      const saltedMemberCode = window.encodePinWithRandom3(rawMemberInput);
+      const realAdmin4 = window.extractRealPinFromStored(rawAdmin);
+      const realMember4 = window.extractRealPinFromStored(rawMember);
+
+      // 저장할 때마다 앞뒤 3자리 랜덤 숫자를 새로 입혀 10자리로 화면과 DB에 동시 반영
+      const saltedAdminCode = window.encodePinWithRandom3(realAdmin4);
+      const saltedMemberCode = window.encodePinWithRandom3(realMember4);
+
+      admEl.value = saltedAdminCode;
+      memEl.value = saltedMemberCode;
 
       authConfig.adminCode = saltedAdminCode;
       authConfig.memberCode = saltedMemberCode;
@@ -345,9 +429,9 @@
           adminCode: saltedAdminCode,
           memberCode: saltedMemberCode
         }, { merge: true });
-        showToast('암호화되어 저장되었습니다.');
+        showToast('저장되었습니다.');
       } catch (e) {
-        showToast('로컬에 암호화 저장되었습니다.');
+        showToast('로컬에 저장되었습니다.');
       }
     }
 
@@ -365,6 +449,7 @@
       members.push({ name: name, role: role, addedAt: Date.now() });
       authConfig.members = members;
       nameInput.value = '';
+      nameInput.blur();
       saveBackupConfig(authConfig);
       renderMemberList();
 
@@ -407,9 +492,11 @@
       db.collection('settings').doc('authConfig').onSnapshot(doc => {
         if (doc.exists) {
           const data = doc.data() || {};
+          const rawAdm = String(data.adminCode || data.adminPassword || '');
+          const rawMem = String(data.memberCode || '');
           authConfig = {
-            adminCode: String(data.adminCode || data.adminPassword || ''),
-            memberCode: String(data.memberCode || ''),
+            adminCode: ensureSalted10Format(rawAdm),
+            memberCode: ensureSalted10Format(rawMem),
             members: Array.isArray(data.members) ? data.members : []
           };
           saveBackupConfig(authConfig);
