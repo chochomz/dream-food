@@ -214,8 +214,8 @@
         </div>
       </div>
 
-      <button type="button" onclick="handleStrictLogin(false)" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
-        로그인
+      <button type="button" onclick="handleStrictLogin(false)" style="background-color: #1e3a8a;" class="w-full hover:opacity-95 text-white font-extrabold py-3 rounded-xl text-sm shadow-sm transition active:scale-95">
+        들어가기
       </button>
     </div>
   </div>
@@ -7074,7 +7074,7 @@
       <div class="flex items-center justify-between gap-1 w-full">
         <div class="flex items-center gap-1 min-w-0">
           <span class="text-sm leading-none">🛒</span>
-          <h3 class="text-[14px] font-black text-teal-950 truncate">장보기 체크리스트</h3>
+          <h3 id="shoppingModalTitleText" class="text-[13.5px] font-black text-teal-950 truncate">장보기 목록 (총 00 품목)</h3>
         </div>
         <span id="shoppingModalDateBadge" class="text-[10.5px] font-extrabold text-teal-900 bg-white px-2 py-0.5 rounded border border-teal-200 shrink-0"></span>
       </div>
@@ -7082,7 +7082,7 @@
 
     <div id="shoppingTreeContainer" class="p-1.5 space-y-1.5 overflow-y-auto overflow-x-hidden overscroll-contain flex-1 bg-slate-50/50 w-full box-border"></div>
 
-    <!-- 풀업 슬라이드 메뉴 (우측 '결과 공유' 버튼 바로 위로 올라옴, 이모지·임의문구 없음) -->
+    <!-- 풀업 슬라이드 메뉴 (우측 '결과 공유' 버튼 바로 위로 올라옴) -->
     <div id="shoppingSharePullupMenu" class="hidden absolute bottom-[52px] right-2 w-44 bg-emerald-50 rounded-xl shadow-xl border border-emerald-300 py-0.5 z-40 overflow-hidden">
       <button type="button" onclick="openOrderSharePreview('image', 'light')" class="w-full px-3 py-2 text-left text-xs font-bold text-slate-800 hover:bg-emerald-100/80 active:bg-emerald-200/70 border-b border-emerald-200/80 block transition">
         이미지 저장 (초경량)
@@ -7135,7 +7135,6 @@
       </div>
     </div>
 
-    <!-- 상하가 절대 잘리지 않도록 스크롤 컨테이너 내부에 여유 있게 배치 -->
     <div id="orderPreviewScrollBody" class="p-2.5 overflow-y-auto overscroll-contain flex-1 bg-slate-100 block">
       <div id="orderPreviewImageWrap" class="w-full bg-white rounded-lg border border-slate-300 shadow-2xs overflow-visible">
         <img id="orderPreviewImgTag" src="" alt="주문서 미리보기" class="w-full h-auto object-contain block select-none">
@@ -9556,11 +9555,44 @@
     });
   }
 
-  // ================= [v10.2 슬림 확장: JPG 주문서 공유 & 당겨서 새로고침] =================
+  // ================= [v10.2 슬림 확장: JPG 주문서 공유 & 품목수 표시 & 들어가기 감청색] =================
   window.openInlineAddIngredientV103 = window.openInlineAddIngredientV10;
   window.openEditShoppingIngredientV103 = window.openEditShoppingIngredientV10;
   window.deleteShoppingIngredientItemV103 = window.deleteShoppingIngredientItemV10;
   window.toggleGroupMemoEditorV103 = window.toggleGroupMemoEditorV10;
+
+  // [요구사항 2] 로그인 페이지 '로그인' -> '들어가기' 및 로고 감청색(#1e3a8a) 적용
+  (function applyLoginButtonNavyTheme() {
+    var loginBtn = document.querySelector('#loginGateCard button[onclick*="handleStrictLogin"]');
+    if (loginBtn) {
+      loginBtn.textContent = '들어가기';
+      loginBtn.style.backgroundColor = '#1e3a8a';
+      loginBtn.style.color = '#ffffff';
+      loginBtn.className = 'w-full hover:opacity-95 text-white font-extrabold py-3 rounded-xl text-sm shadow-sm transition active:scale-95';
+    }
+  })();
+
+  // [요구사항 1] '장보기 목록 (총 00 품목)' 실시간 카운트 업데이트
+  function updateShoppingModalTitleCountV103() {
+    var titleEl = document.getElementById('shoppingModalTitleText') || document.querySelector('#shoppingListModal h3');
+    if (!titleEl) return;
+    var cleanDate = getActiveCleanDateV101();
+    var tree = shoppingTreesMap[cleanDate];
+    var totalCnt = 0;
+    if (tree && Array.isArray(tree.groups)) {
+      tree.groups.forEach(function(g) {
+        if (Array.isArray(g.items)) totalCnt += g.items.length;
+      });
+    }
+    var padded = totalCnt < 10 && totalCnt > 0 ? String(totalCnt) : String(totalCnt);
+    titleEl.textContent = '장보기 목록 (총 ' + padded + ' 품목)';
+  }
+
+  var _baseRenderShopTreeV103 = window.renderShoppingTreeModal;
+  window.renderShoppingTreeModal = function() {
+    if (_baseRenderShopTreeV103) _baseRenderShopTreeV103();
+    updateShoppingModalTitleCountV103();
+  };
 
   window.closeShoppingSharePullup = function() {
     var pullup = document.getElementById('shoppingSharePullupMenu');
@@ -9572,7 +9604,8 @@
   var _baseOpenShopV102 = window.openShoppingListModal;
   window.openShoppingListModal = async function() {
     window.closeShoppingSharePullup();
-    if (_baseOpenShopV102) return await _baseOpenShopV102();
+    if (_baseOpenShopV102) await _baseOpenShopV102();
+    updateShoppingModalTitleCountV103();
   };
 
   var _baseCloseShopV102 = window.closeShoppingListModal;
@@ -9599,7 +9632,7 @@
       shoppingTreesMap[cleanDate].shoppingCompleted = true;
       saveShoppingTreesToLocal();
     }
-    renderShoppingTreeModal();
+    window.renderShoppingTreeModal();
     var pullup = document.getElementById('shoppingSharePullupMenu');
     var arrow = document.getElementById('shoppingShareArrow');
     if (pullup) pullup.classList.remove('hidden');
@@ -9723,20 +9756,33 @@
     return res;
   }
 
-  // [JPG 전용 & 상하 잘림 완벽 방지 렌더링]
+  // [요구사항 3 & 4] 로고 상하 여백 + 회색 반절 밑줄 중앙 정렬 + 좌측 여백 2배(28px) & 우측 잘림 방지 2열 첫글자 밑 정렬
   function renderCompactOrderCanvas(payload, qualityKey) {
     var preset = QUALITY_PRESETS[qualityKey] || QUALITY_PRESETS.standard;
-    var BASE_W = 440, scale = preset.baseWidth / BASE_W, padX = 14, contentMaxW = BASE_W - padX * 2 - 20;
+    var BASE_W = 440, scale = preset.baseWidth / BASE_W;
+
+    // 좌측 여백은 기존의 2배(28px), 우측 여백은 기존 상태(14px) 유지
+    var leftPad = 28;
+    var rightPad = 14;
+    var branchOffsetX = leftPad + 6;  // 트리 기호(├, └) 시작 위치
+    var textStartX = leftPad + 22;    // 재료 첫 글자 시작 위치 (2열 줄바꿈 시에도 정확히 이 위치로 정렬!)
+    var contentMaxW = BASE_W - textStartX - rightPad; // 우측 잘림 방지 최대 폭
+
     var mCtx = document.createElement('canvas').getContext('2d');
 
-    var topPad = 14;    // 상단 잘림 방지 안전 여백
-    var bottomPad = 18; // 하단 잘림 방지 안전 여백
-    var headerH = 32 + 16 + 18 + 10; // 로고(32) + 날짜(16) + 부제목(18) + 구분선(10)
+    var topPad = 20;    // 로고 타이틀 상단 여유 여백
+    var bottomPad = 18; // 하단 안전 여백
+    // 로고영역(28) + 로고하단여백(12) + 회색반절밑줄후여백(10) + 날짜(18) + 부제목(19) + 본문전구분선(10) = 97
+    var headerH = 97;
     var totalBaseH = topPad + headerH;
 
     var preparedGroups = [];
     payload.groups.forEach(function(g) {
-      totalBaseH += 19; // ● 메뉴이름 줄 높이
+      mCtx.font = '900 13.5px Pretendard, sans-serif';
+      var menuTitleMaxW = BASE_W - (leftPad + 16) - rightPad;
+      var wrappedTitle = wrapCanvasLines(mCtx, g.name, menuTitleMaxW);
+      totalBaseH += wrappedTitle.length * 18 + 2;
+
       var treeRows = [], totalChildren = g.items.length + g.memoLines.length, childIdx = 0;
 
       mCtx.font = '800 13px Pretendard, sans-serif';
@@ -9755,8 +9801,8 @@
         totalBaseH += wrapped.length * 15.5;
       });
 
-      totalBaseH += 3;
-      preparedGroups.push({ name: g.name, rows: treeRows });
+      totalBaseH += 4;
+      preparedGroups.push({ titleLines: wrappedTitle, rows: treeRows });
     });
 
     totalBaseH += bottomPad;
@@ -9766,7 +9812,7 @@
     canvas.width = outW; canvas.height = outH;
     var ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
-    ctx.textBaseline = 'top'; // 폰트 베이스라인을 top으로 고정하여 위아래 잘림 원천 차단
+    ctx.textBaseline = 'top';
 
     // 흰색 배경 및 외곽 테두리
     ctx.fillStyle = '#ffffff';
@@ -9777,68 +9823,82 @@
 
     var curY = topPad;
 
-    // 1. 최상단 로고 + 타이틀 중앙 정렬
+    // 1. 최상단 로고 + 타이틀 중앙 정렬 (상하 여백을 보기 좋게 확보)
     var logoImg = document.getElementById('printLogoImg') || document.querySelector('header img[src*="tlogo"]');
     var titleImg = document.getElementById('printTitleImg') || document.querySelector('header img[src*="ttitle"]');
     if (logoImg && logoImg.complete && logoImg.naturalWidth > 0 && titleImg && titleImg.complete && titleImg.naturalWidth > 0) {
-      var lH = 22, lW = (logoImg.naturalWidth / logoImg.naturalHeight) * lH;
-      var tH = 24, tW = (titleImg.naturalWidth / titleImg.naturalHeight) * tH;
-      var boxW = lW + 8, startX = (BASE_W - (boxW + 6 + tW)) / 2;
+      var lH = 24, lW = (logoImg.naturalWidth / logoImg.naturalHeight) * lH;
+      var tH = 26, tW = (titleImg.naturalWidth / titleImg.naturalHeight) * tH;
+      var boxW = lW + 8, startX = (BASE_W - (boxW + 7 + tW)) / 2;
       ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
       ctx.strokeRect(startX, curY, boxW, lH + 4);
       try {
         ctx.drawImage(logoImg, startX + 4, curY + 2, lW, lH);
-        ctx.drawImage(titleImg, startX + boxW + 6, curY + 1, tW, tH);
+        ctx.drawImage(titleImg, startX + boxW + 7, curY + 1, tW, tH);
       } catch (e) {}
     } else {
       ctx.fillStyle = '#0f172a'; ctx.font = '900 17px Pretendard, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('세종꿈의교회', BASE_W / 2, curY + 4);
     }
-    curY += 30;
+    curY += 28 + 12; // 로고 높이(28) + 보기 좋은 하단 여백(12)
 
-    // 2. 밑줄 긋기
-    ctx.strokeStyle = '#334155'; ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.moveTo(padX, curY); ctx.lineTo(BASE_W - padX, curY); ctx.stroke();
-    curY += 6;
+    // 2. 회색으로 반절(50%) 줄여서 정중앙 정렬된 밑줄
+    var halfLineW = Math.round(BASE_W * 0.5);
+    var halfLineStartX = Math.round((BASE_W - halfLineW) / 2);
+    ctx.strokeStyle = '#94a3b8'; // 깔끔한 회색
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(halfLineStartX, curY);
+    ctx.lineTo(halfLineStartX + halfLineW, curY);
+    ctx.stroke();
+    curY += 10;
 
     // 3. 날짜 (중앙정렬)
     ctx.fillStyle = '#0f766e'; ctx.font = '900 13.5px Pretendard, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText(payload.displayDate, BASE_W / 2, curY);
-    curY += 17;
+    curY += 18;
 
     // 4. - 식품 주문 내역 ( 총 00 품목 ) -
     ctx.fillStyle = '#0f172a'; ctx.font = '900 14px Pretendard, sans-serif'; ctx.textAlign = 'center';
     ctx.fillText('- 식품 주문 내역 ( 총 ' + payload.totalItemsCount + ' 품목 ) -', BASE_W / 2, curY);
-    curY += 18;
+    curY += 19;
 
+    // 본문 시작 전 옅은 구분선
     ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(padX, curY); ctx.lineTo(BASE_W - padX, curY); ctx.stroke();
-    curY += 5;
+    ctx.beginPath(); ctx.moveTo(rightPad, curY); ctx.lineTo(BASE_W - rightPad, curY); ctx.stroke();
+    curY += 10;
 
-    // 5. 트리구조 본문 나열
+    // 5. 식품 내역 본문: 좌측 여백 2배(leftPad=28) & 2열 줄바꿈 시 해당 첫 글자 밑으로 정확히 정렬
     ctx.textAlign = 'left';
     preparedGroups.forEach(function(grp) {
       ctx.fillStyle = '#0f172a'; ctx.font = '900 13.5px Pretendard, sans-serif';
-      ctx.fillText('● ' + grp.name, padX + 2, curY + 2);
-      curY += 19;
+      grp.titleLines.forEach(function(tLine, tIdx) {
+        if (tIdx === 0) {
+          ctx.fillText('●', leftPad, curY + 1);
+        }
+        // 메뉴명이 2줄로 넘어갈 때도 메뉴 첫 글자 위치(leftPad + 16)에 맞춰 정렬
+        ctx.fillText(tLine, leftPad + 16, curY + 1);
+        curY += 18;
+      });
+      curY += 2;
 
       grp.rows.forEach(function(row) {
         var stepH = row.isMemo ? 15.5 : 16.5;
         row.lines.forEach(function(lineStr, lIdx) {
           if (lIdx === 0) {
             ctx.fillStyle = '#94a3b8'; ctx.font = '700 11.5px monospace';
-            ctx.fillText(row.branch, padX + 6, curY + 1);
+            ctx.fillText(row.branch, branchOffsetX, curY + 1);
           }
           ctx.fillStyle = row.isMemo ? '#0f766e' : '#1e293b';
           ctx.font = (row.isMemo ? '700 12px' : '800 13px') + ' Pretendard, sans-serif';
-          ctx.fillText(lineStr, padX + 19, curY + 1);
+          // 1열이든 2열이든 항상 첫 글자 시작 좌표(textStartX)에 정확히 맞춰 출력
+          ctx.fillText(lineStr, textStartX, curY + 1);
           curY += stepH;
         });
       });
-      curY += 3;
+      curY += 4;
     });
 
-    // 무조건 JPG(image/jpeg) 포맷으로 생성
     var dataUrl = canvas.toDataURL('image/jpeg', preset.quality);
     var kbStr = (Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75) / 1024).toFixed(1) + ' KB';
     return { dataUrl: dataUrl, width: outW, height: outH, kbStr: kbStr, ext: 'jpg', mime: 'image/jpeg', preset: preset };
