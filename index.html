@@ -1,5 +1,86 @@
   <!DOCTYPE html>
 <html lang="ko"><head>
+
+  <!-- ================= [보안 코어 모듈 v3.0: URL 마스킹 / 우클릭·소스보기 차단 / 앞뒤3자리 핀 암복호화] ================= -->
+  <script id="sejongSecurityCoreV30">
+    // 1. URL 주소창에서 index.html, indexm.html 즉시 숨김
+    (function maskBrowserUrlPath() {
+      try {
+        var cleanPath = window.location.pathname.replace(/\/(indexm?\.html)$/i, '/');
+        if (window.location.pathname !== cleanPath) {
+          window.history.replaceState(null, document.title, cleanPath + window.location.search + window.location.hash);
+        }
+      } catch (e) {}
+    })();
+
+    // 2. 오른쪽 마우스 클릭 및 소스보기(Ctrl+U, F12, Ctrl+Shift+I/J/C, Ctrl+S) 원천 차단
+    (function blockInspectAndRightClick() {
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        return false;
+      }, true);
+
+      document.addEventListener('dragstart', function(e) {
+        e.preventDefault();
+        return false;
+      }, true);
+
+      document.addEventListener('keydown', function(e) {
+        var key = (e.key || '').toUpperCase();
+        var code = e.keyCode || e.which;
+        var ctrlOrCmd = e.ctrlKey || e.metaKey;
+
+        // F12 차단
+        if (code === 123 || key === 'F12') {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        // Ctrl+U (소스보기), Ctrl+S (저장), Ctrl+P (인쇄) 차단
+        if (ctrlOrCmd && (key === 'U' || key === 'S' || key === 'P' || code === 85 || code === 83 || code === 80)) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+        // Ctrl+Shift+I / J / C (개발자도구) 또는 Mac Cmd+Option+I / J / C / U 차단
+        if ((ctrlOrCmd && e.shiftKey && (key === 'I' || key === 'J' || key === 'C' || code === 73 || code === 74 || code === 67)) ||
+            (e.metaKey && e.altKey && (key === 'I' || key === 'J' || key === 'C' || key === 'U'))) {
+          e.preventDefault();
+          e.stopPropagation();
+          return false;
+        }
+      }, true);
+    })();
+
+    // 3. 비밀번호 앞뒤 3자리 랜덤 패딩 암호화 & 진짜 4자리 추출 알고리즘
+    window.encodePinWithRandom3 = function(realPin) {
+      var clean = String(realPin || '').trim();
+      // 이미 10자리로 암호화된 값이면 먼저 가운데 4자리만 꺼낸 뒤 새로 랜덤 3자리를 입힘
+      if (clean.length === 10) {
+        clean = clean.slice(3, 7);
+      }
+      var chars = '0123456789';
+      var prefix = '';
+      var suffix = '';
+      for (var i = 0; i < 3; i++) {
+        prefix += chars.charAt(Math.floor(Math.random() * chars.length));
+        suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return prefix + clean + suffix;
+    };
+
+    window.extractRealPinFromStored = function(storedVal) {
+      var raw = String(storedVal || '').trim();
+      if (!raw) return '';
+      // 앞 3자리 + 진짜 비밀번호(4자리 이상) + 뒤 3자리 구조(총 10자리 이상)인 경우 앞뒤 3자리 제거
+      if (raw.length >= 10) {
+        return raw.slice(3, -3);
+      }
+      return raw;
+    };
+  </script>
+
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>세종꿈의교회 식단관리</title>
@@ -8351,5 +8432,170 @@
 </script>
 <!-- ================= [패치 v9.7 END] ================= -->
 
+
+
+<!-- ================= [패치 v9.8 START] ================= -->
+<script>
+(function applyRecoveryAndPinSecurityV98() {
+  // [A] 찌꺼기 제거 과정에서 누락되었을 수 있는 지난 식단 관리 핵심 보조 함수 4종 100% 복원
+  window.parseArchiveDateValue = function(dateStr) {
+    if (!dateStr) return 0;
+    var m = String(dateStr).match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
+    if (m) {
+      return parseInt(m[1], 10) * 10000 + parseInt(m[2], 10) * 100 + parseInt(m[3], 10);
+    }
+    return 0;
+  };
+
+  window.hasRealArchivePhoto = function(item) {
+    if (!item) return false;
+    if (Array.isArray(item.photoIds) && item.photoIds.length > 0) {
+      var firstId = item.photoIds[0];
+      if (firstId && !String(firstId).startsWith('default_') && dbPhotoStore[firstId]) return true;
+    }
+    if (item.photoId && !String(item.photoId).startsWith('default_') && dbPhotoStore[item.photoId]) return true;
+    return false;
+  };
+
+  window.getMainMenuDisplayTitle = function(item) {
+    if (!item) return '공동체 식단';
+    if (item.title) {
+      var mainPart = String(item.title).split('&')[0].replace(/식단$/, '').trim();
+      if (mainPart) return mainPart;
+    }
+    var dishIds = item.dishIds || [];
+    for (var i = 0; i < dishIds.length; i++) {
+      var d = (masterBasket || []).find(function(x) { return x.id === dishIds[i]; });
+      if (d && d.cat === '메인반찬') return d.name.replace('(👶)', '');
+    }
+    if (dishIds.length > 0) {
+      var firstD = (masterBasket || []).find(function(x) { return x.id === dishIds[0]; });
+      if (firstD) return firstD.name.replace('(👶)', '');
+    }
+    return item.title || '공동체 식단';
+  };
+
+  window.parseCsvLineRespectQuotes = function(line) {
+    var res = [], cur = '', inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) { res.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    res.push(cur.trim());
+    return res;
+  };
+
+  // [B] 로그인 및 설정(⚙️) 코드 대조 시 앞뒤 3자리를 제외한 가운데 진짜 4자리 추출 대조 적용
+  window.handleStrictLogin = async function(isAutoTrigger) {
+    var nameEl = document.getElementById('gateUserName');
+    var codeEl = document.getElementById('gateAccessCode');
+    var nameInput = nameEl ? nameEl.value.trim() : '';
+    var codeInput = codeEl ? codeEl.value.replace(/[ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '').trim() : '';
+
+    if (!nameInput || !codeInput) return;
+
+    // 저장된 코드에서 앞뒤 3자리를 제거한 진짜 4자리 추출
+    var admCode = window.extractRealPinFromStored(cachedGateAuth.adminCode || '9999') || '9999';
+    var memCode = window.extractRealPinFromStored(cachedGateAuth.memberCode || '1004') || '1004';
+
+    var completeLoginSuccess = function(userName, leaderFlag) {
+      currentUser = userName;
+      isLeader = leaderFlag;
+      sessionStorage.setItem('sejong_user', currentUser);
+      sessionStorage.setItem('sejong_leader', isLeader ? '1' : '0');
+      if (isLeader) {
+        sessionStorage.setItem('sejong_admin_verified', '1');
+      } else {
+        sessionStorage.removeItem('sejong_admin_verified');
+      }
+      if (nameEl) nameEl.blur();
+      if (codeEl) codeEl.blur();
+      unlockAppAndStart();
+      if (typeof ensureDefaultAuthInDb === 'function') ensureDefaultAuthInDb();
+    };
+
+    var matched = findMatchedGateMember(nameInput);
+    if (matched) {
+      if (matched.role === 'admin' && codeInput === admCode) {
+        completeLoginSuccess(matched.name, true);
+        return;
+      }
+      if (codeInput === memCode || (matched.role === 'member' && codeInput === admCode)) {
+        completeLoginSuccess(matched.name, false);
+        return;
+      }
+    }
+
+    if (isAutoTrigger) return;
+
+    if (!db) return;
+    try {
+      var doc = await db.collection('settings').doc('authConfig').get();
+      if (doc.exists) {
+        var config = doc.data() || {};
+        var rawDbAdmin = String(config.adminCode || config.adminPassword || '9999').trim();
+        var rawDbMember = String(config.memberCode || '1004').trim();
+        var dbAdminCode = window.extractRealPinFromStored(rawDbAdmin);
+        var dbMemberCode = window.extractRealPinFromStored(rawDbMember);
+        var mergedMembers = mergeMembersWithDefaults(config.members);
+        cachedGateAuth = { adminCode: rawDbAdmin, memberCode: rawDbMember, members: mergedMembers };
+
+        var foundMember = mergedMembers.find(function(m) { return m.name === nameInput; });
+        if (!foundMember) return;
+
+        if (foundMember.role === 'admin' && codeInput === dbAdminCode) {
+          completeLoginSuccess(foundMember.name, true);
+        } else if (codeInput === dbMemberCode || (foundMember.role === 'member' && codeInput === dbAdminCode)) {
+          completeLoginSuccess(foundMember.name, false);
+        }
+      }
+    } catch (err) {}
+  };
+
+  // 설정(⚙️) 퀵 코드 팝업에서도 앞뒤 3자리를 뺀 진짜 4자리로 검증 후 indexm.html 직행
+  window.verifyAdminQuickCodeInput = function(inputEl, isEnterKey) {
+    if (!inputEl) return;
+    var val = String(inputEl.value || '').replace(/[ㄱ-ㅎㅏ-ㅣ가-힣\s]/g, '').trim();
+    if (inputEl.value !== val) inputEl.value = val;
+
+    var rawTarget = '9999';
+    if (typeof inAppAuthConfig !== 'undefined' && inAppAuthConfig && inAppAuthConfig.adminCode) {
+      rawTarget = String(inAppAuthConfig.adminCode).trim();
+    } else if (typeof cachedGateAuth !== 'undefined' && cachedGateAuth && cachedGateAuth.adminCode) {
+      rawTarget = String(cachedGateAuth.adminCode).trim();
+    }
+    var realTargetCode = window.extractRealPinFromStored(rawTarget) || '9999';
+
+    if (val === realTargetCode) {
+      inputEl.blur();
+      if (typeof closeAdminQuickCodePopup === 'function') closeAdminQuickCodePopup();
+      sessionStorage.setItem('sejong_admin_verified', '1');
+      sessionStorage.setItem('sejong_indexm_pass_ticket', String(Date.now()));
+      location.href = 'indexm.html';
+      return;
+    }
+
+    if (isEnterKey || val.length >= Math.max(4, realTargetCode.length)) {
+      var pop = document.getElementById('adminQuickCodePopup');
+      if (pop) {
+        pop.classList.remove('shake-v92');
+        void pop.offsetWidth;
+        pop.classList.add('shake-v92');
+      }
+      inputEl.value = '';
+    }
+  };
+
+  // [C] 복원 즉시 지난 식단 관리 그리드 다시 그리기
+  if (typeof renderArchiveGrid === 'function') {
+    renderArchiveGrid();
+  }
+})();
+</script>
+<!-- ================= [패치 v9.8 END] ================= -->
 
 </body></html>
