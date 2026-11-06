@@ -5,18 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
   <title>세종꿈의교회 - 권한관리</title>
   <script>
-    // [보안 게이트] 주소 직접 입력 또는 미인증 접근 시 즉시 index.html 로그인 창으로 이동
-    (function enforceStrictAdminAccess() {
+    // [보안 게이트] index.html의 ⚙️ 설정에서 코드 인증 티켓으로 들어온 경우만 허용
+    // 브라우저 주소창에 indexm.html을 직접 입력한 경우 세션을 비워 index.html 로그인 창이 열리게 함
+    (function enforceDirectAccessBlock() {
       try {
         var verified = sessionStorage.getItem('sejong_admin_verified') === '1';
         var leader = sessionStorage.getItem('sejong_leader') === '1';
         var user = sessionStorage.getItem('sejong_user');
-        var navEntries = performance.getEntriesByType ? performance.getEntriesByType('navigation') : [];
-        var isDirectAddressBar = navEntries.length > 0 && navEntries[0].type === 'navigate' && !document.referrer;
-        if (!verified || !leader || !user || isDirectAddressBar) {
+        var ticket = Number(sessionStorage.getItem('sejong_indexm_pass_ticket') || '0');
+        var now = Date.now();
+
+        // 티켓은 index.html에서 넘어올 때 발급되며, indexm.html 내에서 새로고침 대비 갱신됨
+        // 티켓이 없거나 미인증 상태면 주소 직접 입력으로 간주하여 로그인 창으로 강제 이동
+        if (!verified || !leader || !user || !ticket || (now - ticket > 1000 * 60 * 30)) {
+          sessionStorage.clear();
           location.replace('index.html');
+          return;
         }
+        // 정상 진입 확인 후 일회성 티켓 소모 (새로고침이나 주소창 재입력 시 로그인창으로 보내기 위함)
+        sessionStorage.removeItem('sejong_indexm_pass_ticket');
       } catch (e) {
+        sessionStorage.clear();
         location.replace('index.html');
       }
     })();
@@ -58,7 +67,7 @@
 
   <main id="adminDashboard" class="space-y-2.5 flex-1 flex flex-col min-h-0">
 
-    <!-- 1. 코드번호 관리 (문구 단순화 & 1줄 컴팩트 배치) -->
+    <!-- 1. 코드번호 관리 -->
     <section class="bg-slate-50 px-3 py-2.5 rounded-xl border border-slate-200 space-y-2 shrink-0">
       <div class="flex items-center justify-between">
         <h2 class="text-xs font-black text-slate-800">🔑 접속 코드 설정</h2>
@@ -69,11 +78,11 @@
       <div class="grid grid-cols-2 gap-2 text-xs">
         <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
           <span class="font-extrabold text-purple-900 text-[11px] whitespace-nowrap">팀장 코드</span>
-          <input id="editAdminCode" type="password" inputmode="numeric" autocomplete="off" class="w-16 text-right font-black text-purple-950 bg-transparent focus:outline-none">
+          <input id="editAdminCode" type="text" inputmode="numeric" autocomplete="off" class="w-16 text-right font-black text-purple-950 bg-transparent focus:outline-none">
         </div>
         <div class="flex items-center justify-between bg-white px-2.5 py-1.5 rounded-lg border border-slate-200">
           <span class="font-extrabold text-teal-900 text-[11px] whitespace-nowrap">팀원 코드</span>
-          <input id="editMemberCode" type="password" inputmode="numeric" autocomplete="off" class="w-16 text-right font-black text-teal-950 bg-transparent focus:outline-none">
+          <input id="editMemberCode" type="text" inputmode="numeric" autocomplete="off" class="w-16 text-right font-black text-teal-950 bg-transparent focus:outline-none">
         </div>
       </div>
     </section>
@@ -121,7 +130,6 @@
 
   </main>
 
-  <!-- 심플 토스트 알림 -->
   <div id="toastMsg" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900/95 text-white text-xs font-extrabold px-4 py-2 rounded-full shadow-lg hidden z-50 whitespace-nowrap"></div>
 
   <script>
