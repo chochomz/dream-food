@@ -10942,8 +10942,8 @@
 </script>
 <!-- ================= [패치 v10.3 END] ================= -->
 
-<!-- ================= [패치 v10.4 START] ================= -->
-<style id="sejongPatchStyleV104">
+<!-- ================= [패치 v10.5 START] ================= -->
+<style id="sejongPatchStyleV105">
   /* 1) 지난 식단 상세창: 식수인원, 남은반찬, 재료목록, 공통품목 폰트를 식판 메뉴 사이즈(12px)와 동일하게 맞춤 */
   #archiveModal #archExtraFieldsBox input,
   #archiveModal #archExtraFieldsBox textarea,
@@ -10958,65 +10958,434 @@
     min-height: 24px !important;
   }
 
-  /* 2-1) 장보기 상단 헤더: '장보기 목록(총 00품목)' 잘림 방지 폰트 및 자간 최적화 */
+  /* 2-1) 장보기 상단 헤더: '장보기 목록(총 00품목)' 절대 잘리지 않도록 레이아웃 및 폰트 최적화 */
   #shoppingModalTitleText {
-    font-size: clamp(11.5px, 3.3vw, 12.5px) !important;
+    font-size: clamp(11.5px, 3.4vw, 13px) !important;
+    font-weight: 900 !important;
     letter-spacing: -0.04em !important;
     white-space: nowrap !important;
     overflow: visible !important;
     text-overflow: clip !important;
+    flex-shrink: 0 !important;
     line-height: 1.2 !important;
   }
   #shoppingModalDateBadge {
     font-size: 10px !important;
+    font-weight: 800 !important;
     letter-spacing: -0.03em !important;
-    padding: 2px 5px !important;
+    padding: 2px 6px !important;
     white-space: nowrap !important;
+    flex-shrink: 0 !important;
   }
 
-  /* 2-2) 장보기 각 메뉴 재료의 (괄호 안 내용): 1pt 작고 두껍지 않게(보통 굵기) 구분 */
+  /* 2-2) 장보기 각 메뉴 재료의 (괄호 안 내용): 1pt 작고(11.5px) 두껍지 않게(font-weight: 400, 차분한 회색) 구분 */
+  .shop-ing-main-txt {
+    font-size: 13px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+  }
+  .line-through .shop-ing-main-txt,
+  .line-through.shop-ing-main-txt {
+    color: #94a3b8 !important;
+    font-weight: 700 !important;
+  }
   .shop-ing-paren-sub {
     font-size: 11.5px !important;
     font-weight: 400 !important;
-    color: #475569 !important;
+    color: #64748b !important;
     letter-spacing: -0.02em !important;
+    margin-left: 1px !important;
   }
   .line-through .shop-ing-paren-sub {
     color: #94a3b8 !important;
+    font-weight: 400 !important;
   }
 </style>
 
-<script id="sejongPatchScriptV104">
-(function applyPatchV104() {
-  // =========================================================================
-  // 1) 지난 식단 상세창: 12px 폰트에 맞춘 높이 자동 계산 보정
-  // =========================================================================
-  window.autoResizeArchFieldV101 = function(el) {
-    if (!el) return;
-    el.style.height = 'auto';
-    var minH = (el.id === 'archModalDate') ? 22 : 24;
-    el.style.height = Math.max(minH, el.scrollHeight) + 'px';
-  };
+<script id="sejongPatchScriptV105">
+(function applyPatchV105() {
+  var SHOPPING_STORAGE_KEY = 'sejong_shopping_trees_v1';
+  var CONFIRMED_ONLY_DATES_KEY = 'sejong_confirmed_only_dates_v105';
 
-  var _prevOpenArchiveModalV104 = openArchiveModal;
-  openArchiveModal = function(id) {
-    if (_prevOpenArchiveModalV104) _prevOpenArchiveModalV104(id);
-    requestAnimationFrame(function() {
-      if (typeof window.autoResizeAllArchModalFieldsV101 === 'function') {
-        window.autoResizeAllArchModalFieldsV101();
+  // 아직 장보기 완료 전인 '식단확정' 전용 날짜 목록 관리 (기본값으로 2026년 11월8일(2주) 포함)
+  var confirmedOnlyDatesSet = new Set(['2026년 11월8일(2주)']);
+  try {
+    var rawConfOnly = localStorage.getItem(CONFIRMED_ONLY_DATES_KEY);
+    if (rawConfOnly) {
+      var parsedArr = JSON.parse(rawConfOnly);
+      if (Array.isArray(parsedArr)) {
+        confirmedOnlyDatesSet = new Set(parsedArr.map(function(d) { return normalizeCompactDateStr(d); }));
+      }
+    } else {
+      localStorage.setItem(CONFIRMED_ONLY_DATES_KEY, JSON.stringify(Array.from(confirmedOnlyDatesSet)));
+    }
+  } catch (e) {}
+
+  function saveConfirmedOnlyDatesV105() {
+    try {
+      localStorage.setItem(CONFIRMED_ONLY_DATES_KEY, JSON.stringify(Array.from(confirmedOnlyDatesSet)));
+    } catch (e) {}
+  }
+
+  // =========================================================================
+  // 1-A) 식판 메뉴 ID 배열(dishIds)로부터 정확한 주간 장보기 재료 문자열(rawIngredients) 생성기
+  //      (식판에 없는 옛날 짜장밥 재료 등이 섞이는 현상을 원천 차단!)
+  // =========================================================================
+  function buildCleanRawIngredientsFromDishIdsV105(dishIds, cleanDate) {
+    if (!Array.isArray(dishIds) || dishIds.length === 0) return '';
+    var treesMap = window.shoppingTreesMap || {};
+    var tree = cleanDate ? treesMap[cleanDate] : null;
+    var lines = [];
+
+    dishIds.forEach(function(dId) {
+      var dish = (masterBasket || []).find(function(x) { return String(x.id) === String(dId); });
+      if (!dish) return;
+      var bareName = String(dish.name || '').replace('(👶)', '').trim();
+
+      // 쌀밥/배추김치/조미김 등 기본 상시 품목은 공통품목에 들어가므로 별도 주재료가 있을 때만 표시
+      var treeGrp = (tree && Array.isArray(tree.groups))
+        ? tree.groups.find(function(g) { return !g.isCommon && (String(g.id) === String(dId) || g.name === dish.name); })
+        : null;
+
+      if (treeGrp && Array.isArray(treeGrp.items) && treeGrp.items.length > 0) {
+        var itemNames = treeGrp.items.map(function(it) { return String(it.name || '').trim(); }).filter(Boolean);
+        if (itemNames.length > 0) {
+          lines.push('• ' + bareName + ': ' + itemNames.join(', '));
+          return;
+        }
+      }
+
+      var noteStr = (dish.note && String(dish.note).trim()) ? String(dish.note).trim() : '';
+      if (noteStr && noteStr !== '쌀' && noteStr !== '김' && noteStr !== '배추김치') {
+        lines.push('• ' + bareName + ': ' + noteStr);
+      } else if (dish.kg && dish.kg !== '적당량' && dish.kg !== '기본제공' && dish.kg !== '300인분') {
+        lines.push('• ' + bareName + ': ' + dish.kg);
       }
     });
-    setTimeout(function() {
-      if (typeof window.autoResizeAllArchModalFieldsV101 === 'function') {
-        window.autoResizeAllArchModalFieldsV101();
+
+    return lines.join('\n');
+  }
+
+  // 식판 메뉴(dishIds)와 맞지 않는 유령 재료 줄(예: 식판에 짜장밥이 없는데 '• 짜장밥: ...'이 들어있는 경우) 정리 함수
+  function sanitizeArchiveRawIngredientsV105(archItem) {
+    if (!archItem || !Array.isArray(archItem.dishIds)) return;
+    var cleanDate = normalizeCompactDateStr(archItem.date || '');
+
+    // 현재 식판 메뉴들의 이름 집합
+    var validBareNames = new Set();
+    archItem.dishIds.forEach(function(dId) {
+      var d = (masterBasket || []).find(function(x) { return String(x.id) === String(dId); });
+      if (d && d.name) {
+        validBareNames.add(String(d.name).replace('(👶)', '').trim());
+        validBareNames.add(String(d.name).trim());
       }
-    }, 35);
+    });
+
+    var rawIng = String(archItem.rawIngredients || '').trim();
+    if (!rawIng) {
+      archItem.rawIngredients = buildCleanRawIngredientsFromDishIdsV105(archItem.dishIds, cleanDate);
+      return;
+    }
+
+    var lines = rawIng.split(/\r?\n/);
+    var validLines = [];
+    var foundGhostLine = false;
+
+    lines.forEach(function(line) {
+      var trimmed = line.trim();
+      if (!trimmed) return;
+      var cleanLine = trimmed.replace(/^[•\-*]\s*/, '');
+      var colonIdx = cleanLine.indexOf(':');
+      if (colonIdx > 0) {
+        var menuLabel = cleanLine.slice(0, colonIdx).replace('(👶)', '').trim();
+        if (validBareNames.size > 0 && !validBareNames.has(menuLabel)) {
+          // 식판에 없는 메뉴의 재료 줄 발견 (예: 짜장밥이 식판에 없는데 '• 짜장밥:' 줄이 있는 경우)
+          foundGhostLine = true;
+          return;
+        }
+      }
+      validLines.push(trimmed);
+    });
+
+    if (foundGhostLine || validLines.length === 0) {
+      archItem.rawIngredients = buildCleanRawIngredientsFromDishIdsV105(archItem.dishIds, cleanDate);
+    }
+  }
+
+  // =========================================================================
+  // 1-B) 2026년 11월8일(2주) 유령 짜장 데이터 즉시 청소 및 '확정 전용' 상태로 전환
+  // =========================================================================
+  function cleanUpNov8GhostDataV105() {
+    var targetDate = '2026년 11월8일(2주)';
+    var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[targetDate] : null;
+    var archIdx = (archiveList || []).findIndex(function(a) { return a && normalizeCompactDateStr(a.date) === targetDate; });
+
+    // 1) 만약 weeklyPlanMap에 사용자가 확정한 메뉴가 있다면 그 메뉴를 기준으로 맞추고,
+    //    아직 장보기 완료 전인 11월8일은 archiveList(지난 식단 관리)에서 분리하여 weeklyPlanMap과 달력에만 남김
+    if (archIdx >= 0) {
+      var archObj = archiveList[archIdx];
+      var activeTrayIds = (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0)
+        ? plan.trayIds.slice()
+        : (Array.isArray(archObj.dishIds) ? archObj.dishIds.slice() : []);
+
+      // 장보기 트리에서 식판에 없는 짜장밥 그룹 제거 및 실제 식판 메뉴로 재구성
+      var treesMap = window.shoppingTreesMap || {};
+      if (treesMap[targetDate] && Array.isArray(treesMap[targetDate].groups)) {
+        var validIdSet = new Set(activeTrayIds.map(String));
+        var validNameSet = new Set(activeTrayIds.map(function(id) {
+          var d = (masterBasket || []).find(function(x) { return String(x.id) === String(id); });
+          return d ? d.name : '';
+        }).filter(Boolean));
+
+        var hasGhostInTree = treesMap[targetDate].groups.some(function(g) {
+          return !g.isCommon && g.id !== 'common_group' && !validIdSet.has(String(g.id)) && !validNameSet.has(g.name);
+        });
+        if (hasGhostInTree) {
+          delete treesMap[targetDate];
+          window.shoppingTreesMap = treesMap;
+          try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(treesMap)); } catch (e) {}
+        }
+      }
+
+      var cleanRawIng = buildCleanRawIngredientsFromDishIdsV105(activeTrayIds, targetDate);
+
+      if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
+        weeklyPlanMap[targetDate] = Object.assign({}, plan || {}, {
+          trayIds: activeTrayIds,
+          photoId: archObj.photoId || (plan && plan.photoId) || 'default_4',
+          photoIds: archObj.photoIds || (plan && plan.photoIds) || [],
+          rawIngredients: cleanRawIng,
+          supplies: (plan && plan.supplies) ? plan.supplies : (archObj.supplies || '쌀, 김'),
+          confirmedOnly: true,
+          shoppingCompleted: false,
+          updatedAt: Date.now()
+        });
+        if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+      }
+
+      // confirmedOnlyDatesSet에 포함되어 있으면 archiveList 및 클라우드 archives에서 제거 (달력에는 weeklyPlanMap으로 '확정/예정' 정상 표시됨)
+      if (confirmedOnlyDatesSet.has(targetDate)) {
+        var delArchId = String(archObj.id);
+        archiveList.splice(archIdx, 1);
+        try {
+          localStorage.setItem('sejong_fast_archive_cache_v1', JSON.stringify(archiveList));
+        } catch (e) {}
+        if (db && delArchId) {
+          db.collection('archives').doc(delArchId).delete().catch(function() {});
+        }
+      } else {
+        sanitizeArchiveRawIngredientsV105(archObj);
+      }
+    }
+
+    // 나머지 모든 archiveList 항목들도 식판 메뉴와 맞지 않는 유령 재료가 있으면 자동 정제
+    if (Array.isArray(archiveList)) {
+      archiveList.forEach(function(a) {
+        sanitizeArchiveRawIngredientsV105(a);
+      });
+    }
+  }
+
+  // =========================================================================
+  // 1-C) [식단확정] 실행 함수(executeDialConfirmSave) 수정:
+  //      - 식단확정 시에는 주간계획(weeklyPlanMap)과 장보기 트리만 현재 식판 메뉴 기준으로 깨끗하게 세팅!
+  //      - 아직 지난 식단(장보기 완료)이 아니므로 '지난 식단 관리'(archiveList)에는 올리지 않고 달력에만 '확정/예정' 표시!
+  //      - 예전 식단의 짜장 재료 등을 덮어쓰는 버그 완전 제거!
+  // =========================================================================
+  executeDialConfirmSave = async function() {
+    var dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
+    closeConfirmDialModal();
+
+    if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet) {
+      deletedDatesSet.delete(dateStr);
+      if (typeof saveDeletedDatesToLocal === 'function') saveDeletedDatesToLocal();
+    }
+
+    var curDateInput = document.getElementById('currentDate');
+    if (curDateInput) curDateInput.value = dateStr;
+    populateDateDropdownOptions(dateStr);
+
+    if (typeof window.sortTrayIdsByCategoryOrder === 'function') {
+      window.sortTrayIdsByCategoryOrder(currentTrayIds);
+    }
+
+    var firstMain = (masterBasket || []).find(function(d) { return currentTrayIds.includes(d.id) && d.cat === '메인반찬'; }) ||
+                    (masterBasket || []).find(function(d) { return d.id === currentTrayIds[0]; });
+    var firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || 'default_4');
+
+    // 장보기 트리에서 식판에 없는 옛날 메뉴 그룹을 깨끗하게 정리하고 현재 식판 메뉴들로 재구성
+    var treesMap = window.shoppingTreesMap || {};
+    var prevTree = treesMap[dateStr];
+    var newGroups = [];
+
+    currentTrayIds.forEach(function(dId) {
+      var dish = (masterBasket || []).find(function(x) { return String(x.id) === String(dId); });
+      var dishName = dish ? dish.name : dId;
+      var dishMemo = (dish && dish.recipe && dish.recipe !== '기본 조리') ? dish.recipe : '';
+
+      var prevGrp = (prevTree && Array.isArray(prevTree.groups))
+        ? prevTree.groups.find(function(g) { return !g.isCommon && (String(g.id) === String(dId) || g.name === dishName); })
+        : null;
+
+      if (prevGrp && Array.isArray(prevGrp.items) && prevGrp.items.length > 0) {
+        newGroups.push({
+          id: dId,
+          name: dishName,
+          isCommon: false,
+          locked: false,
+          memo: prevGrp.memo || dishMemo,
+          items: prevGrp.items
+        });
+      } else {
+        var initItems = [];
+        if (dish && dish.note) {
+          String(dish.note).split(/[,/\n]+/).map(function(s) { return s.trim(); }).filter(Boolean).forEach(function(txt, idx) {
+            initItems.push({ id: 'ing_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 5), name: txt, checked: false });
+          });
+        }
+        if (initItems.length === 0 && dish) {
+          var defLabel = dishName.replace('(👶)', '') + (dish.kg && dish.kg !== '적당량' ? ' (' + dish.kg + ')' : ' 주재료');
+          initItems.push({ id: 'ing_' + Date.now() + '_0_' + Math.random().toString(36).slice(2, 5), name: defLabel, checked: false });
+        }
+        newGroups.push({
+          id: dId,
+          name: dishName,
+          isCommon: false,
+          locked: false,
+          memo: dishMemo,
+          items: initItems
+        });
+      }
+    });
+
+    var prevCommon = (prevTree && Array.isArray(prevTree.groups))
+      ? prevTree.groups.find(function(g) { return g.isCommon || g.id === 'common_group'; })
+      : null;
+
+    newGroups.push(prevCommon || {
+      id: 'common_group',
+      name: '공통재료',
+      isCommon: true,
+      locked: false,
+      memo: '',
+      items: [
+        { id: 'com_' + Date.now() + '_0', name: '쌀', checked: false },
+        { id: 'com_' + Date.now() + '_1', name: '김', checked: false }
+      ]
+    });
+
+    treesMap[dateStr] = {
+      date: dateStr,
+      groups: newGroups,
+      shoppingCompleted: false,
+      updatedAt: Date.now()
+    };
+    window.shoppingTreesMap = treesMap;
+    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(treesMap)); } catch (e) {}
+
+    // 현재 식판 메뉴들에 맞는 깨끗한 재료 문자열 생성
+    var cleanRawIng = buildCleanRawIngredientsFromDishIdsV105(currentTrayIds, dateStr);
+    var commonGrp = newGroups.find(function(g) { return g.isCommon || g.id === 'common_group'; });
+    var cleanSupplies = (commonGrp && Array.isArray(commonGrp.items))
+      ? commonGrp.items.map(function(it) { return it.name; }).filter(Boolean).join(', ')
+      : '쌀, 김';
+
+    // 주간 계획(weeklyPlanMap)에 저장 (달력에서 '확정' 또는 '예정'으로 표시됨)
+    weeklyPlanMap[dateStr] = {
+      trayIds: currentTrayIds.slice(),
+      photoId: firstPhotoId,
+      photoIds: (currentSavedPhotoIds || []).slice(),
+      title: (firstMain ? firstMain.name.replace('(👶)', '') : '공동체') + ' 식단',
+      season: (typeof inferSeasonFromDateStr === 'function') ? inferSeasonFromDateStr(dateStr) : '가을',
+      menuType: '육류',
+      headcount: '300명',
+      leftoverNote: '',
+      rawIngredients: cleanRawIng,
+      supplies: cleanSupplies,
+      confirmedOnly: true,
+      shoppingCompleted: false,
+      updatedAt: Date.now()
+    };
+    if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+
+    // 아직 장보기 완료 전인 '식단확정' 상태이므로 confirmedOnlyDatesSet에 등록하고 archiveList(지난 식단 관리)에서는 제거
+    confirmedOnlyDatesSet.add(dateStr);
+    saveConfirmedOnlyDatesV105();
+
+    var removedArchIds = [];
+    archiveList = (archiveList || []).filter(function(a) {
+      if (a && normalizeCompactDateStr(a.date) === dateStr) {
+        removedArchIds.push(String(a.id));
+        return false;
+      }
+      return true;
+    });
+
+    renderTray();
+    renderArchiveGrid();
+
+    if (db) {
+      setCloudStatusLamp('saving');
+      try {
+        var promises = [syncCurrentStateToDb()];
+        removedArchIds.forEach(function(aid) {
+          promises.push(db.collection('archives').doc(aid).delete().catch(function() {}));
+        });
+        await Promise.all(promises);
+        setCloudStatusLamp('connected');
+      } catch (e) {
+        console.error(e);
+        setCloudStatusLamp('disconnected');
+      }
+    } else {
+      await syncCurrentStateToDb();
+    }
+
+    await showCustomAlert('[' + dateStr + ']\n식단이 확정되어 달력에 저장되었습니다!\n(장보기 완료 시 지난 식단 관리에 최종 기록됩니다)', '✅');
+  };
+
+  // [장보기 완료]를 누르면 그때 confirmedOnlyDatesSet에서 해제되어 「지난 식단 관리」에 정식 등재됨
+  var _prevCompleteShoppingV105 = window.completeShoppingAndCommit;
+  window.completeShoppingAndCommit = async function() {
+    var curEl = document.getElementById('currentDate');
+    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+    if (confirmedOnlyDatesSet.has(cleanDate)) {
+      confirmedOnlyDatesSet.delete(cleanDate);
+      saveConfirmedOnlyDatesV105();
+    }
+    if (_prevCompleteShoppingV105) {
+      await _prevCompleteShoppingV105();
+    }
+  };
+
+  // 「지난 식단 관리」 렌더링 시 confirmedOnlyDatesSet(식단확정만 된 날짜)은 제외하고 렌더링
+  var _prevRenderArchiveGridV105 = renderArchiveGrid;
+  renderArchiveGrid = function() {
+    cleanUpNov8GhostDataV105();
+    if (confirmedOnlyDatesSet && confirmedOnlyDatesSet.size > 0 && Array.isArray(archiveList)) {
+      archiveList = archiveList.filter(function(a) {
+        return !(a && confirmedOnlyDatesSet.has(normalizeCompactDateStr(a.date)));
+      });
+    }
+    if (_prevRenderArchiveGridV105) _prevRenderArchiveGridV105();
+  };
+
+  // 상세창 오픈 시에도 식판 메뉴에 없는 유령 재료가 절대 표시되지 않도록 한번 더 검증
+  var _prevOpenArchiveModalV105 = openArchiveModal;
+  openArchiveModal = function(id) {
+    var item = (archiveList || []).find(function(a) { return a && String(a.id) === String(id); });
+    if (item) {
+      sanitizeArchiveRawIngredientsV105(item);
+    }
+    if (_prevOpenArchiveModalV105) _prevOpenArchiveModalV105(id);
   };
 
   // =========================================================================
-  // 2) 장보기 창: 타이틀 '장보기 목록(총 00품목)' 잘림 방지 & 재료 (괄호) 1pt 축소·얇게 렌더링
+  // 2) 장보기 모달:
+  //    - 상단 '장보기 목록(총 00품목)' 잘림 완벽 방지 (우측 날짜 배지 연도 생략 슬림화)
+  //    - 각 메뉴 재료의 (괄호 안 내용)만 1pt 작고(11.5px) 두껍지 않은 글씨(font-weight: 400, 차분한 회색)로 직접 구분
   // =========================================================================
-  function escapeHtmlV104(str) {
+  function escapeHtmlV105(str) {
     return String(str || '')
       .replace(/&/g, '&')
       .replace(/</g, '<')
@@ -11025,20 +11394,27 @@
       .replace(/'/g, ''');
   }
 
-  // 재료 텍스트 중 (괄호 안 내용)만 1pt 작고 두껍지 않은 span으로 변환
-  function formatIngredientWithParenV104(rawText) {
-    var safe = escapeHtmlV104(rawText);
-    return safe.replace(/\(([^)]+)\)/g, '<span class="shop-ing-paren-sub">($1)</span>');
+  function formatIngredientHtmlWithSubParenV105(rawText) {
+    var safe = escapeHtmlV105(rawText);
+    var withParenStyled = safe.replace(/\(([^)]+)\)/g, '<span class="shop-ing-paren-sub">($1)</span>');
+    return '<span class="shop-ing-main-txt">' + withParenStyled + '</span>';
   }
 
-  function applyShoppingTitleAndParenFormattingV104() {
-    // 2-1) 상단 타이틀을 공백 줄인 '장보기 목록(총 00품목)'으로 업데이트하여 잘림 방지
+  function applyShoppingHeaderAndParenV105() {
+    var curEl = document.getElementById('currentDate');
+    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+
+    // 우측 날짜 배지: '2026년 11월8일(2주)' -> '11월8일(2주)'로 슬림화하여 좌측 타이틀 공간 확보
+    var badgeEl = document.getElementById('shoppingModalDateBadge');
+    if (badgeEl) {
+      var shortDate = cleanDate.replace(/^\d{4}년\s*/, '').trim();
+      badgeEl.textContent = shortDate || cleanDate;
+    }
+
+    // 좌측 상단 타이틀: '장보기 목록(총 00품목)' 잘림 없이 표시
     var titleEl = document.getElementById('shoppingModalTitleText') || document.querySelector('#shoppingListModal h3');
     if (titleEl) {
-      var SHOPPING_KEY = 'sejong_shopping_trees_v1';
       var treesMap = window.shoppingTreesMap || {};
-      var curEl = document.getElementById('currentDate');
-      var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
       var tree = treesMap[cleanDate];
       var totalCnt = 0;
       if (tree && Array.isArray(tree.groups)) {
@@ -11050,33 +11426,64 @@
       titleEl.classList.remove('truncate');
     }
 
-    // 2-2) 장보기 트리 내 각 재료 이름의 (괄호) 부분에 .shop-ing-paren-sub 적용
+    // 장보기 트리 내부의 모든 재료 텍스트 줄에서 (괄호 안 내용)을 1pt 작고 얇은 글씨로 변환
     var container = document.getElementById('shoppingTreeContainer');
     if (!container) return;
 
-    var nameSpans = container.querySelectorAll('span.text-\\[13px\\]');
-    nameSpans.forEach(function(spanEl) {
-      // 이미 변환되었거나 내부에 input이 있는 경우 건너뜀
-      if (spanEl.querySelector('.shop-ing-paren-sub')) return;
-      var rawTxt = spanEl.textContent || '';
+    var allItemRows = container.querySelectorAll('.shop-tree-checkbox');
+    allItemRows.forEach(function(chkEl) {
+      var touchArea = chkEl.parentElement;
+      if (!touchArea) return;
+      var nameSpan = touchArea.lastElementChild;
+      if (!nameSpan || nameSpan === chkEl) return;
+
+      var rawTxt = nameSpan.getAttribute('data-raw-ing-name') || nameSpan.textContent || '';
+      nameSpan.setAttribute('data-raw-ing-name', rawTxt);
+
       if (rawTxt.indexOf('(') !== -1 && rawTxt.indexOf(')') !== -1) {
-        spanEl.innerHTML = formatIngredientWithParenV104(rawTxt);
+        nameSpan.innerHTML = formatIngredientHtmlWithSubParenV105(rawTxt);
+      } else {
+        nameSpan.innerHTML = '<span class="shop-ing-main-txt">' + escapeHtmlV105(rawTxt) + '</span>';
       }
     });
   }
 
-  var _prevRenderShoppingTreeV104 = window.renderShoppingTreeModal;
+  var _prevRenderShoppingTreeV105 = window.renderShoppingTreeModal;
   window.renderShoppingTreeModal = function() {
-    if (_prevRenderShoppingTreeV104) _prevRenderShoppingTreeV104();
-    applyShoppingTitleAndParenFormattingV104();
+    if (_prevRenderShoppingTreeV105) _prevRenderShoppingTreeV105();
+    applyShoppingHeaderAndParenV105();
   };
 
-  var _prevOpenShoppingModalV104 = window.openShoppingListModal;
+  var _prevOpenShoppingListModalV105 = window.openShoppingListModal;
   window.openShoppingListModal = async function() {
-    if (_prevOpenShoppingModalV104) await _prevOpenShoppingModalV104();
-    applyShoppingTitleAndParenFormattingV104();
+    // 장보기 창 열기 전에 해당 날짜의 식판 메뉴와 장보기 트리 그룹 동기화 검증
+    var curEl = document.getElementById('currentDate');
+    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+    if (confirmedOnlyDatesSet.has(cleanDate) && Array.isArray(currentTrayIds) && currentTrayIds.length > 0) {
+      var treesMap = window.shoppingTreesMap || {};
+      if (treesMap[cleanDate] && Array.isArray(treesMap[cleanDate].groups)) {
+        var validIdSet = new Set(currentTrayIds.map(String));
+        var validNameSet = new Set(currentTrayIds.map(function(id) {
+          var d = (masterBasket || []).find(function(x) { return String(x.id) === String(id); });
+          return d ? d.name : '';
+        }).filter(Boolean));
+        treesMap[cleanDate].groups = treesMap[cleanDate].groups.filter(function(g) {
+          return g.isCommon || g.id === 'common_group' || validIdSet.has(String(g.id)) || validNameSet.has(g.name);
+        });
+        window.shoppingTreesMap = treesMap;
+        try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(treesMap)); } catch (e) {}
+      }
+    }
+
+    if (_prevOpenShoppingListModalV105) await _prevOpenShoppingListModalV105();
+    applyShoppingHeaderAndParenV105();
   };
+
+  // 초기 로드 즉시 11월8일 유령 데이터 정리 및 화면 갱신
+  cleanUpNov8GhostDataV105();
+  renderTray();
+  renderArchiveGrid();
 })();
 </script>
-<!-- ================= [패치 v10.4 END] ================= -->
+<!-- ================= [패치 v10.5 END] ================= -->
 </body></html>
