@@ -12892,4 +12892,349 @@
 })();
 </script>
 <!-- ================= [패치 v10.7 END] ================= -->
+
+<!-- ================= [패치 v10.8 START: 식단확정 영구 유지 및 클라우드 덮어쓰기 방지] ================= -->
+<script id="sejongPatchScriptV108">
+(function applyPersistentConfirmPatchV108() {
+  var CONFIRMED_DATES_V106_KEY = 'sejong_confirmed_dates_v106';
+  var CONFIRMED_ONLY_DATES_KEY = 'sejong_confirmed_only_dates_v105';
+  var SHOPPING_STORAGE_KEY     = 'sejong_shopping_trees_v1';
+  var LAST_DATE_KEY            = 'sejong_fast_last_date_v1';
+
+  // 영구 확정 일자 Set (window 전역 공유로 어느 패치에서든 동일 참조 유지)
+  var persistentConfirmedSet = window.persistentConfirmedSetV108 = window.persistentConfirmedSetV108 || new Set();
+
+  function savePersistentConfirmedDatesV108() {
+    try {
+      var arr = Array.from(persistentConfirmedSet);
+      localStorage.setItem(CONFIRMED_DATES_V106_KEY, JSON.stringify(arr));
+    } catch (e) {}
+  }
+
+  // 1) 로컬스토리지, weeklyPlanMap, shoppingTreesMap, archiveList를 전수 조사하여
+  //    기존에 확정되어 있던 모든 식단을 단 하나도 빠짐없이 확정 상태로 자동 복원!
+  function recoverAllConfirmedDatesV108() {
+    try {
+      [CONFIRMED_DATES_V106_KEY, CONFIRMED_ONLY_DATES_KEY].forEach(function(k) {
+        var raw = localStorage.getItem(k);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(function(d) {
+              var clean = normalizeCompactDateStr(d);
+              if (clean && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(clean))) {
+                persistentConfirmedSet.add(clean);
+              }
+            });
+          }
+        }
+      });
+    } catch (e) {}
+
+    // weeklyPlanMap에 반찬(trayIds)이 들어있는 주일은 (명시적으로 새로 불러와 미확정 처리된 경우가 아니면) 모두 확정 식단으로 복원
+    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
+      Object.keys(weeklyPlanMap).forEach(function(k) {
+        var cleanK = normalizeCompactDateStr(k);
+        if (!cleanK) return;
+        if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK)) return;
+        var plan = weeklyPlanMap[k];
+        if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
+          if (plan.unconfirmedByReload !== true) {
+            plan.isConfirmedPlan = true;
+            persistentConfirmedSet.add(cleanK);
+          }
+        }
+      });
+      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    }
+
+    // shoppingTreesMap(장보기 트리)이 이미 존재하는 주일도 확정 상태로 복원
+    try {
+      var rawShop = localStorage.getItem(SHOPPING_STORAGE_KEY);
+      if (rawShop) {
+        var shopMap = JSON.parse(rawShop) || {};
+        Object.keys(shopMap).forEach(function(k) {
+          var cleanK = normalizeCompactDateStr(k);
+          if (cleanK && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK))) {
+            var tree = shopMap[k];
+            if (tree && Array.isArray(tree.groups) && tree.groups.length > 0) {
+              var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[cleanK] : null;
+              if (!plan || plan.unconfirmedByReload !== true) {
+                persistentConfirmedSet.add(cleanK);
+              }
+            }
+          }
+        });
+      }
+    } catch (e) {}
+
+    // archiveList(지난 식단 관리)에 있는 주일도 당연히 확정/완료 상태
+    if (Array.isArray(archiveList)) {
+      archiveList.forEach(function(a) {
+        if (a && a.date) {
+          var cleanD = normalizeCompactDateStr(a.date);
+          if (cleanD && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanD))) {
+            persistentConfirmedSet.add(cleanD);
+          }
+        }
+      });
+    }
+
+    savePersistentConfirmedDatesV108();
+  }
+
+  recoverAllConfirmedDatesV108();
+
+  // 2) 달력 확정 여부 판별 함수(isDateConfirmedOnCalendarV106) 재정의:
+  //    한 번 확정된 식단은 관리자가 '식단삭제'를 누르거나 '지난 식단에서 새로 불러올 때' 전까지는 절대 풀리지 않음!
+  window.isDateConfirmedOnCalendarV106 = function(dateStr) {
+    var cleanDate = normalizeCompactDateStr(dateStr);
+    if (!cleanDate) return false;
+    if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanDate)) {
+      return false;
+    }
+
+    var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[cleanDate] : null;
+    // 관리자가 지난 식단에서 새로 불러와 아직 [식단확정]을 누르지 않은 상태일 때만 false
+    if (plan && plan.unconfirmedByReload === true) {
+      return false;
+    }
+
+    // 1순위: persistentConfirmedSet에 등록되어 있는 경우
+    if (persistentConfirmedSet.has(cleanDate)) {
+      return true;
+    }
+
+    // 2순위: 지난 식단 관리(archiveList)에 존재하는 경우
+    var inArchive = Array.isArray(archiveList) && archiveList.some(function(a) {
+      return a && normalizeCompactDateStr(a.date) === cleanDate && Array.isArray(a.dishIds) && a.dishIds.length > 0;
+    });
+    if (inArchive) {
+      persistentConfirmedSet.add(cleanDate);
+      return true;
+    }
+
+    // 3순위: weeklyPlanMap에 메뉴가 저장되어 있는 경우
+    if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
+      plan.isConfirmedPlan = true;
+      persistentConfirmedSet.add(cleanDate);
+      savePersistentConfirmedDatesV108();
+      return true;
+    }
+
+    return false;
+  };
+
+  // 3) 반찬바구니에서 메뉴를 담거나 뺄 때 이미 확정된 식단의 확정 상태가 풀려버리지 않도록 보호!
+  //    (기존 v10.6에서 confirmRemoveFromTray 시 확정을 풀어버리던 동작을 제거하고, 확정 상태를 그대로 유지함)
+  confirmRemoveFromTray = async function(isYes) {
+    var modal = document.getElementById('removeTrayConfirmModal');
+    if (modal) modal.classList.add('hidden');
+
+    var targetId = window.pendingTrayTargetDishIdV101 || pendingRemoveDishId;
+    var isAddMode = false;
+    var promptEl = document.getElementById('removeTrayPromptText');
+    if (promptEl && promptEl.innerText.indexOf('올릴까요') !== -1) {
+      isAddMode = true;
+    }
+    pendingRemoveDishId = null;
+
+    if (!isYes || !targetId) return;
+
+    if (isAddMode) {
+      if (!currentTrayIds.includes(targetId)) {
+        currentTrayIds.push(targetId);
+      }
+      if (typeof window.sortTrayIdsByCategoryOrder === 'function') {
+        window.sortTrayIdsByCategoryOrder(currentTrayIds);
+      }
+      window.newlyAddedTrayDishId = targetId;
+      window.trayHighlightLockUntil = Date.now() + 650;
+      renderTray();
+      renderArchiveGrid();
+      var trayBox = document.getElementById('trayCardBox');
+      if (trayBox) {
+        requestAnimationFrame(function() {
+          trayBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+      await syncCurrentStateToDb();
+    } else {
+      await removeFromTray(targetId);
+    }
+  };
+
+  // 4) 관리자가 「지난 식단 관리」에서 다른 내용을 '식판에 올리기'로 새로 불러왔을 때만
+  //    새로 검토 후 [식단확정]을 누르도록 해당 날짜를 미확정(unconfirmedByReload = true)으로 전환
+  var _prevLoadArchiveToTrayV108 = loadArchiveToCurrentTray;
+  loadArchiveToCurrentTray = async function() {
+    var curEl = document.getElementById('currentDate');
+    var targetDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+    var beforeTrayStr = JSON.stringify(currentTrayIds || []);
+
+    if (_prevLoadArchiveToTrayV108) {
+      await _prevLoadArchiveToTrayV108();
+    }
+
+    var afterTrayStr = JSON.stringify(currentTrayIds || []);
+    // 실제로 지난 식단 불러오기가 실행된 경우
+    if (isLeader && targetDate && afterTrayStr !== beforeTrayStr) {
+      persistentConfirmedSet.delete(targetDate);
+      savePersistentConfirmedDatesV108();
+      if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap && weeklyPlanMap[targetDate]) {
+        weeklyPlanMap[targetDate].isConfirmedPlan = false;
+        weeklyPlanMap[targetDate].unconfirmedByReload = true;
+        if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+      }
+      await syncCurrentStateToDb();
+    }
+  };
+
+  // 5) [식단확정] 다이얼에서 확정을 누르면 unconfirmedByReload를 해제하고 영구 확정 목록에 등록 + 클라우드 동기화
+  var _prevExecuteDialConfirmSaveV108 = executeDialConfirmSave;
+  executeDialConfirmSave = async function() {
+    var dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
+    persistentConfirmedSet.add(dateStr);
+    savePersistentConfirmedDatesV108();
+
+    try { localStorage.setItem(LAST_DATE_KEY, dateStr); } catch (e) {}
+
+    if (_prevExecuteDialConfirmSaveV108) {
+      await _prevExecuteDialConfirmSaveV108();
+    }
+
+    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
+      weeklyPlanMap[dateStr] = weeklyPlanMap[dateStr] || {};
+      weeklyPlanMap[dateStr].trayIds = currentTrayIds.slice();
+      weeklyPlanMap[dateStr].isConfirmedPlan = true;
+      weeklyPlanMap[dateStr].confirmedOnly = true;
+      weeklyPlanMap[dateStr].unconfirmedByReload = false;
+      weeklyPlanMap[dateStr].updatedAt = Date.now();
+      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    }
+
+    await syncCurrentStateToDb();
+  };
+
+  // 6) [핵심] syncCurrentStateToDb 완벽 보호:
+  //    기존 weeklyPlanMap[selectedDate]의 속성(isConfirmedPlan, rawIngredients, supplies 등)을 절대 날리지 않고 병합 저장하며,
+  //    confirmedDatesList 배열을 Firebase currentState 문서에 함께 저장하여 패치 업데이트나 재접속 시에도 100% 복원되게 함!
+  syncCurrentStateToDb = async function() {
+    var selEl = document.getElementById('currentDate');
+    var selectedDate = normalizeCompactDateStr(selEl ? selEl.value : getCurrentWeekSundayString());
+    currentSavedPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds[0]) || currentSavedPhotoId || 'default_4';
+
+    var prevPlan = (weeklyPlanMap && weeklyPlanMap[selectedDate]) ? weeklyPlanMap[selectedDate] : {};
+    var isConfirmedNow = (prevPlan.unconfirmedByReload === true)
+      ? false
+      : Boolean(prevPlan.isConfirmedPlan || prevPlan.confirmedOnly || prevPlan.shoppingCompleted || persistentConfirmedSet.has(selectedDate));
+
+    if (isConfirmedNow && currentTrayIds && currentTrayIds.length > 0) {
+      persistentConfirmedSet.add(selectedDate);
+      savePersistentConfirmedDatesV108();
+    }
+
+    weeklyPlanMap[selectedDate] = Object.assign({}, prevPlan, {
+      trayIds: currentTrayIds.slice(),
+      photoId: currentSavedPhotoId,
+      photoIds: (currentSavedPhotoIds || []).slice(),
+      isConfirmedPlan: isConfirmedNow,
+      updatedAt: Date.now()
+    });
+    if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    populateDateDropdownOptions(selectedDate);
+
+    if (!db) return;
+    setCloudStatusLamp('saving');
+    try {
+      await db.collection('settings').doc('currentState').set({
+        date: selectedDate,
+        trayIds: currentTrayIds,
+        photoId: currentSavedPhotoId,
+        photoIds: currentSavedPhotoIds,
+        weeklyPlans: weeklyPlanMap,
+        confirmedDatesList: Array.from(persistentConfirmedSet),
+        updatedAt: Date.now()
+      }, { merge: true });
+      setCloudStatusLamp('connected');
+    } catch (e) {
+      console.error(e);
+      setCloudStatusLamp('disconnected');
+    }
+  };
+
+  // 7) Firebase currentState 실시간 리스너 보강:
+  //    클라우드에서 데이터가 내려올 때 로컬의 확정 상태(isConfirmedPlan)가 지워지지 않도록 깊은 병합(Deep Merge) 수행
+  if (db) {
+    db.collection('settings').doc('currentState').onSnapshot(function(doc) {
+      if (!doc.exists) return;
+      var data = doc.data() || {};
+
+      // 클라우드에 저장된 confirmedDatesList 복원
+      if (Array.isArray(data.confirmedDatesList)) {
+        data.confirmedDatesList.forEach(function(d) {
+          var cleanD = normalizeCompactDateStr(d);
+          if (cleanD && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanD))) {
+            persistentConfirmedSet.add(cleanD);
+          }
+        });
+      }
+
+      // 클라우드 weeklyPlans와 로컬 weeklyPlanMap 깊은 병합 (확정 플래그 보존)
+      if (data.weeklyPlans && typeof data.weeklyPlans === 'object') {
+        Object.keys(data.weeklyPlans).forEach(function(k) {
+          var cleanK = normalizeCompactDateStr(k);
+          var cloudPlan = data.weeklyPlans[k] || {};
+          var localPlan = (weeklyPlanMap && weeklyPlanMap[cleanK]) ? weeklyPlanMap[cleanK] : {};
+
+          var mergedConfirmed = Boolean(
+            localPlan.isConfirmedPlan ||
+            cloudPlan.isConfirmedPlan ||
+            localPlan.confirmedOnly ||
+            cloudPlan.confirmedOnly ||
+            persistentConfirmedSet.has(cleanK) ||
+            (Array.isArray(cloudPlan.trayIds) && cloudPlan.trayIds.length > 0 && localPlan.unconfirmedByReload !== true && cloudPlan.unconfirmedByReload !== true)
+          );
+
+          if (mergedConfirmed && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK))) {
+            persistentConfirmedSet.add(cleanK);
+          }
+
+          weeklyPlanMap[cleanK] = Object.assign({}, cloudPlan, localPlan, {
+            trayIds: (Array.isArray(localPlan.trayIds) && localPlan.trayIds.length > 0) ? localPlan.trayIds : (cloudPlan.trayIds || []),
+            isConfirmedPlan: mergedConfirmed
+          });
+        });
+        if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+      }
+
+      savePersistentConfirmedDatesV108();
+
+      // 초기 접속 시 마지막으로 확정한 일자(또는 저장된 일자)가 있으면 그 일자의 확정 식판을 그대로 유지
+      var curDateEl = document.getElementById('currentDate');
+      var savedLastDate = null;
+      try { savedLastDate = localStorage.getItem(LAST_DATE_KEY); } catch (e) {}
+      var targetActiveDate = normalizeCompactDateStr(
+        (savedLastDate && window.isDateConfirmedOnCalendarV106(savedLastDate) ? savedLastDate : null) ||
+        (data.date && window.isDateConfirmedOnCalendarV106(data.date) ? data.date : null) ||
+        (curDateEl ? curDateEl.value : '') ||
+        getCurrentWeekSundayString()
+      );
+
+      if (targetActiveDate && weeklyPlanMap[targetActiveDate] && Array.isArray(weeklyPlanMap[targetActiveDate].trayIds) && weeklyPlanMap[targetActiveDate].trayIds.length > 0) {
+        if (curDateEl) curDateEl.value = targetActiveDate;
+        currentTrayIds = weeklyPlanMap[targetActiveDate].trayIds.slice();
+        populateDateDropdownOptions(targetActiveDate);
+        renderTray();
+      }
+    });
+  }
+
+  // 8) 페이지 로드 즉시 복원 실행 및 화면 갱신
+  recoverAllConfirmedDatesV108();
+  renderTray();
+  renderArchiveGrid();
+})();
+</script>
+<!-- ================= [패치 v10.8 END] ================= -->
 </body></html>
