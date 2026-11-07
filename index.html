@@ -637,8 +637,6 @@
     </div>
   </div>
 
-  <!-- [팝업 8 제거됨: indexm.html 단일 페이지로 통합] -->
-
   <!-- [팝업 9] 식판 메뉴 제외 Y/N 확인 모달 -->
   <div id="removeTrayConfirmModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[1px] z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl max-w-xs w-full p-4 shadow-xl border border-slate-200 text-center space-y-3">
@@ -1322,8 +1320,6 @@
       renderTray();
     }
 
-    // [클린패치 v10.0] 미사용 구버전 내부 관리자 모달 함수 찌꺼기 제거됨
-
     async function logoutUser() {
       const ok = await showCustomConfirm('로그아웃 하시겠습니까?', '🚪');
       if (!ok) return;
@@ -1489,23 +1485,6 @@
       cropScale = parseFloat(document.getElementById('zoomSlider').value);
       document.getElementById('cropTargetImg').style.transform = `translate(${cropX}px, ${cropY}px) scale(${cropScale})`;
     }
-
-    const viewport = document.getElementById('cropViewport');
-    viewport.addEventListener('pointerdown', e => {
-      isDraggingCrop = true;
-      startDragX = e.clientX - cropX;
-      startDragY = e.clientY - cropY;
-      viewport.setPointerCapture(e.pointerId);
-    });
-    viewport.addEventListener('pointermove', e => {
-      if (!isDraggingCrop) return;
-      cropX = e.clientX - startDragX;
-      cropY = e.clientY - startDragY;
-      updateCropTransform();
-    });
-    viewport.addEventListener('pointerup', () => { isDraggingCrop = false; });
-
-    // [클리너 패치] 구버전 confirmCropToFrame 미사용 함수 제거됨
 
     async function savePhotoToDb() {
       if (!tempCompressedDataUrl) return;
@@ -2158,8 +2137,6 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // [클리너 패치] 구버전 recommendArchive 미사용 함수 제거됨
-
     function openPrintModal() {
       document.getElementById('printDateText').innerText = document.getElementById('currentDate').value;
       const list = document.getElementById('printList');
@@ -2169,8 +2146,6 @@
       }).join('');
       document.getElementById('printModal').classList.remove('hidden');
     }
-
-    // [클리너 패치] 구버전 printA4Menu 미사용 함수 제거됨
 
     populateDateDropdownOptions(getCurrentWeekSundayString());
     renderTray();
@@ -11387,11 +11362,11 @@
   // =========================================================================
   function escapeHtmlV105(str) {
     return String(str || '')
-      .replace(/&/g, '&')
-      .replace(/</g, '<')
-      .replace(/>/g, '>')
-      .replace(/"/g, '"')
-      .replace(/'/g, ''');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   function formatIngredientHtmlWithSubParenV105(rawText) {
