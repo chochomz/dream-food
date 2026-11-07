@@ -10941,4 +10941,142 @@
 })();
 </script>
 <!-- ================= [패치 v10.3 END] ================= -->
+
+<!-- ================= [패치 v10.4 START] ================= -->
+<style id="sejongPatchStyleV104">
+  /* 1) 지난 식단 상세창: 식수인원, 남은반찬, 재료목록, 공통품목 폰트를 식판 메뉴 사이즈(12px)와 동일하게 맞춤 */
+  #archiveModal #archExtraFieldsBox input,
+  #archiveModal #archExtraFieldsBox textarea,
+  #archiveModal #archEditHeadcount,
+  #archiveModal #archEditLeftover,
+  #archiveModal #archEditRawIng,
+  #archiveModal #archEditSupplies {
+    font-size: 12px !important;
+    line-height: 1.38 !important;
+    font-weight: 700 !important;
+    padding: 4px 7px !important;
+    min-height: 24px !important;
+  }
+
+  /* 2-1) 장보기 상단 헤더: '장보기 목록(총 00품목)' 잘림 방지 폰트 및 자간 최적화 */
+  #shoppingModalTitleText {
+    font-size: clamp(11.5px, 3.3vw, 12.5px) !important;
+    letter-spacing: -0.04em !important;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    line-height: 1.2 !important;
+  }
+  #shoppingModalDateBadge {
+    font-size: 10px !important;
+    letter-spacing: -0.03em !important;
+    padding: 2px 5px !important;
+    white-space: nowrap !important;
+  }
+
+  /* 2-2) 장보기 각 메뉴 재료의 (괄호 안 내용): 1pt 작고 두껍지 않게(보통 굵기) 구분 */
+  .shop-ing-paren-sub {
+    font-size: 11.5px !important;
+    font-weight: 400 !important;
+    color: #475569 !important;
+    letter-spacing: -0.02em !important;
+  }
+  .line-through .shop-ing-paren-sub {
+    color: #94a3b8 !important;
+  }
+</style>
+
+<script id="sejongPatchScriptV104">
+(function applyPatchV104() {
+  // =========================================================================
+  // 1) 지난 식단 상세창: 12px 폰트에 맞춘 높이 자동 계산 보정
+  // =========================================================================
+  window.autoResizeArchFieldV101 = function(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    var minH = (el.id === 'archModalDate') ? 22 : 24;
+    el.style.height = Math.max(minH, el.scrollHeight) + 'px';
+  };
+
+  var _prevOpenArchiveModalV104 = openArchiveModal;
+  openArchiveModal = function(id) {
+    if (_prevOpenArchiveModalV104) _prevOpenArchiveModalV104(id);
+    requestAnimationFrame(function() {
+      if (typeof window.autoResizeAllArchModalFieldsV101 === 'function') {
+        window.autoResizeAllArchModalFieldsV101();
+      }
+    });
+    setTimeout(function() {
+      if (typeof window.autoResizeAllArchModalFieldsV101 === 'function') {
+        window.autoResizeAllArchModalFieldsV101();
+      }
+    }, 35);
+  };
+
+  // =========================================================================
+  // 2) 장보기 창: 타이틀 '장보기 목록(총 00품목)' 잘림 방지 & 재료 (괄호) 1pt 축소·얇게 렌더링
+  // =========================================================================
+  function escapeHtmlV104(str) {
+    return String(str || '')
+      .replace(/&/g, '&')
+      .replace(/</g, '<')
+      .replace(/>/g, '>')
+      .replace(/"/g, '"')
+      .replace(/'/g, ''');
+  }
+
+  // 재료 텍스트 중 (괄호 안 내용)만 1pt 작고 두껍지 않은 span으로 변환
+  function formatIngredientWithParenV104(rawText) {
+    var safe = escapeHtmlV104(rawText);
+    return safe.replace(/\(([^)]+)\)/g, '<span class="shop-ing-paren-sub">($1)</span>');
+  }
+
+  function applyShoppingTitleAndParenFormattingV104() {
+    // 2-1) 상단 타이틀을 공백 줄인 '장보기 목록(총 00품목)'으로 업데이트하여 잘림 방지
+    var titleEl = document.getElementById('shoppingModalTitleText') || document.querySelector('#shoppingListModal h3');
+    if (titleEl) {
+      var SHOPPING_KEY = 'sejong_shopping_trees_v1';
+      var treesMap = window.shoppingTreesMap || {};
+      var curEl = document.getElementById('currentDate');
+      var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+      var tree = treesMap[cleanDate];
+      var totalCnt = 0;
+      if (tree && Array.isArray(tree.groups)) {
+        tree.groups.forEach(function(g) {
+          if (Array.isArray(g.items)) totalCnt += g.items.length;
+        });
+      }
+      titleEl.textContent = '장보기 목록(총 ' + totalCnt + '품목)';
+      titleEl.classList.remove('truncate');
+    }
+
+    // 2-2) 장보기 트리 내 각 재료 이름의 (괄호) 부분에 .shop-ing-paren-sub 적용
+    var container = document.getElementById('shoppingTreeContainer');
+    if (!container) return;
+
+    var nameSpans = container.querySelectorAll('span.text-\\[13px\\]');
+    nameSpans.forEach(function(spanEl) {
+      // 이미 변환되었거나 내부에 input이 있는 경우 건너뜀
+      if (spanEl.querySelector('.shop-ing-paren-sub')) return;
+      var rawTxt = spanEl.textContent || '';
+      if (rawTxt.indexOf('(') !== -1 && rawTxt.indexOf(')') !== -1) {
+        spanEl.innerHTML = formatIngredientWithParenV104(rawTxt);
+      }
+    });
+  }
+
+  var _prevRenderShoppingTreeV104 = window.renderShoppingTreeModal;
+  window.renderShoppingTreeModal = function() {
+    if (_prevRenderShoppingTreeV104) _prevRenderShoppingTreeV104();
+    applyShoppingTitleAndParenFormattingV104();
+  };
+
+  var _prevOpenShoppingModalV104 = window.openShoppingListModal;
+  window.openShoppingListModal = async function() {
+    if (_prevOpenShoppingModalV104) await _prevOpenShoppingModalV104();
+    applyShoppingTitleAndParenFormattingV104();
+  };
+})();
+</script>
+<!-- ================= [패치 v10.4 END] ================= -->
 </body></html>
