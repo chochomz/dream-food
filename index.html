@@ -10108,7 +10108,6 @@
 
 <!-- ================= [패치 v10.2 START] ================= -->
 <style id="sejongPatchStyleV102">
-  /* 1) 로그인 창: 좌측 '주일 식단관리 시스템' + 우측 '사용설명서' 양끝 정렬 */
   #loginGateTitleBar {
     display: flex !important;
     align-items: center !important;
@@ -10126,19 +10125,13 @@
     white-space: nowrap !important;
     text-align: left !important;
   }
-
-  /* 2) 지난식단 상세창: 상부 사진 영역 크게 확대 (기존 64px -> 112px) */
   #archiveModal > div > div.relative.bg-slate-100 {
-    height: 7rem !important; /* 112px (h-28) */
+    height: 7rem !important;
     min-height: 7rem !important;
   }
-
-  /* 2) 지난식단 상세창: 우측 메뉴 이름 입력창 숨김 (DOM 및 값은 유지하여 타 함수 영향 0%) */
   #archModalTitle {
     display: none !important;
   }
-
-  /* 2) 지난식단 상세창: 날짜 1열 전체폭 중앙정렬 & 테두리/배경 완전 제거 */
   #archModalDate {
     grid-column: span 12 / span 12 !important;
     width: 100% !important;
@@ -10157,21 +10150,17 @@
 
 <script id="sejongPatchScriptV102">
 (function applyPatchV102() {
-  // =========================================================================
-  // 1) 처음 로그인 창에서 '사용설명서'와 '주일 식단관리 시스템' 위치 맞바꾸기 및 문구 변경
-  // =========================================================================
+  // 1) 로그인 창: 좌측 '주일 식단관리 시스템' + 우측 '[? 사용설명서]' 배치
   function updateLoginHeaderOrderAndTextV102() {
     var titleBar = document.getElementById('loginGateTitleBar');
     if (titleBar) {
       var helpBtn = document.getElementById('loginHelpBtn');
       var titleSpan = document.getElementById('loginGateSystemTitle');
-
       if (!titleSpan) {
         titleSpan = document.createElement('span');
         titleSpan.id = 'loginGateSystemTitle';
       }
       titleSpan.textContent = '주일 식단관리 시스템';
-
       if (!helpBtn) {
         helpBtn = document.createElement('a');
         helpBtn.id = 'loginHelpBtn';
@@ -10179,71 +10168,35 @@
         helpBtn.title = '주일 식단관리 사용설명서 보기';
         helpBtn.innerHTML = '<span class="q-mark">?</span><span class="help-txt">사용설명서</span>';
       }
-
-      // 좌측에 '주일 식단관리 시스템', 우측에 '[? 사용설명서]' 순서로 재배치
       titleBar.innerHTML = '';
       titleBar.appendChild(titleSpan);
       titleBar.appendChild(helpBtn);
-
-      var logoRow = document.getElementById('loginTopLogoRow');
-      if (logoRow) {
-        var topLogoBox = logoRow.querySelector('div:first-child');
-        if (topLogoBox && topLogoBox.offsetWidth > 30) {
-          helpBtn.style.minWidth = topLogoBox.offsetWidth + 'px';
-        }
-      }
-    } else {
-      // 구조화 이전 기본 p 태그가 남아있을 경우 대비
-      var loginCard = document.getElementById('loginGateCard');
-      if (loginCard) {
-        var pEl = loginCard.querySelector('p');
-        if (pEl) pEl.textContent = '주일 식단관리 시스템';
-      }
     }
   }
-
   updateLoginHeaderOrderAndTextV102();
   window.addEventListener('load', updateLoginHeaderOrderAndTextV102);
-  setTimeout(updateLoginHeaderOrderAndTextV102, 60);
-  setTimeout(updateLoginHeaderOrderAndTextV102, 200);
+  setTimeout(updateLoginHeaderOrderAndTextV102, 80);
 
-  // =========================================================================
-  // 2) 지난식단 상세창: 상부 사진 메뉴명 연동 & 날짜 1열 중앙정렬 & 사진 확대
-  // 4) 하단 '양념 및 소모품/비품' -> '공통 품목 및 비품(양념,소모품, 기타)' 수정
-  // =========================================================================
+  // 2) 상세창 사진 확대 & 4) 하단 '공통 품목 및 비품(양념,소모품, 기타)' 라벨 변경
   function updateArchiveModalLayoutAndLabelsV102() {
     var archModal = document.getElementById('archiveModal');
     if (!archModal) return;
-
-    // 상부 사진 배너 클래스 h-16 -> h-28 교체
     var banner = archModal.querySelector('.relative.bg-slate-100');
     if (banner) {
       banner.classList.remove('h-16');
       banner.classList.add('h-28');
     }
-
-    // 4) 하단 '양념 및 소모품/비품' 라벨을 '공통 품목 및 비품(양념,소모품, 기타)'로 변경
     var supInput = document.getElementById('archEditSupplies');
     if (supInput && supInput.parentElement) {
       var supLabel = supInput.parentElement.querySelector('label');
-      if (supLabel) {
-        supLabel.textContent = '공통 품목 및 비품(양념,소모품, 기타)';
-      }
+      if (supLabel) supLabel.textContent = '공통 품목 및 비품(양념,소모품, 기타)';
     }
   }
-
   updateArchiveModalLayoutAndLabelsV102();
 
-  // =========================================================================
-  // 3) 지난식단 상세창 수정 시 원본 데이터 100% 보존 + '예, 닫기' 확인 후 지정된 일자 식판으로 즉시 반영
-  // =========================================================================
+  // 3) 원본 지난식단 보호 & '예, 닫기' 확인창 후 지정 일자 식판 반영
+  window.saveArchiveModalEditsIfNeeded = async function() { return; };
 
-  // [원본 보호] 상세창 내부 입력값을 수정하거나 창을 닫을 때 원본 archiveList/DB를 덮어쓰지 않도록 무효화
-  window.saveArchiveModalEditsIfNeeded = async function() {
-    return;
-  };
-
-  // [전용 확인창] "이 식단은 지정된 '일자' 식판으로 올라갑니다.?" ('예' / '닫기')
   function showLoadArchiveConfirmDialogV102(targetDateStr) {
     return new Promise(function(resolve) {
       var modal = document.getElementById('customSystemDialogModal');
@@ -10254,15 +10207,10 @@
       if (!modal) { resolve(false); return; }
 
       if (iconEl) iconEl.innerText = '🍱';
-      if (msgEl) {
-        msgEl.innerText = "이 식단은 지정된 '" + targetDateStr + "' 식판으로 올라갑니다.?";
-      }
+      if (msgEl) msgEl.innerText = "이 식단은 지정된 '" + targetDateStr + "' 식판으로 올라갑니다.?";
 
-      // 좌측에 감청색 [예], 우측에 [닫기] 배치 (기존 버튼 참조는 그대로 유지)
       var btnRow = document.getElementById('customDialogBtnRow');
-      if (btnRow && okBtn && cancelBtn) {
-        btnRow.insertBefore(okBtn, cancelBtn);
-      }
+      if (btnRow && okBtn && cancelBtn) btnRow.insertBefore(okBtn, cancelBtn);
 
       if (okBtn) {
         okBtn.innerText = '예';
@@ -10270,47 +10218,33 @@
         okBtn.style.color = '#ffffff';
         okBtn.onclick = function() {
           modal.classList.add('hidden');
-          // 다이얼로그 닫힌 뒤 원래 버튼 순서(취소 좌측, 확인 우측) 복원
-          if (btnRow && okBtn && cancelBtn) {
-            btnRow.insertBefore(cancelBtn, okBtn);
-          }
+          if (btnRow && okBtn && cancelBtn) btnRow.insertBefore(cancelBtn, okBtn);
           resolve(true);
         };
       }
-
       if (cancelBtn) {
         cancelBtn.classList.remove('hidden');
         cancelBtn.innerText = '닫기';
         cancelBtn.onclick = function() {
           modal.classList.add('hidden');
-          if (btnRow && okBtn && cancelBtn) {
-            btnRow.insertBefore(cancelBtn, okBtn);
-          }
+          if (btnRow && okBtn && cancelBtn) btnRow.insertBefore(cancelBtn, okBtn);
           resolve(false);
         };
       }
-
       modal.classList.remove('hidden');
     });
   }
 
-  // 상세창 오픈 시: 숨겨진 #archModalTitle 값을 상부 사진에 표시된 메뉴 이름으로 동기화 & 원본 보호
   var _prevOpenArchiveModalV102 = openArchiveModal;
   openArchiveModal = function(id) {
     if (_prevOpenArchiveModalV102) _prevOpenArchiveModalV102(id);
     updateArchiveModalLayoutAndLabelsV102();
-
     var item = (archiveList || []).find(function(a) { return a && String(a.id) === String(id); });
     if (item) {
-      var photoMenuName = (typeof getMainMenuDisplayTitle === 'function')
-        ? getMainMenuDisplayTitle(item)
-        : (item.title || '공동체 식단');
+      var photoMenuName = (typeof getMainMenuDisplayTitle === 'function') ? getMainMenuDisplayTitle(item) : (item.title || '공동체 식단');
       var titleEl = document.getElementById('archModalTitle');
-      if (titleEl) {
-        titleEl.value = photoMenuName;
-      }
+      if (titleEl) titleEl.value = photoMenuName;
     }
-
     var dateEl = document.getElementById('archModalDate');
     if (dateEl) {
       dateEl.style.height = 'auto';
@@ -10318,25 +10252,16 @@
     }
   };
 
-  // 상세창에서 수정한 장보기 재료 문자열 & 공통 품목 문자열을 지정된 일자의 장보기 트리에 반영하는 보조 함수
   function applyModifiedArchiveFieldsToTargetDateShoppingV102(targetDate, dishIds, modifiedRawIng, modifiedSupplies, baseItem) {
     var SHOPPING_KEY = 'sejong_shopping_trees_v1';
     var treesMap = window.shoppingTreesMap || {};
     try {
       var raw = localStorage.getItem(SHOPPING_KEY);
-      if (raw && Object.keys(treesMap).length === 0) {
-        treesMap = JSON.parse(raw) || {};
-      }
+      if (raw && Object.keys(treesMap).length === 0) treesMap = JSON.parse(raw) || {};
     } catch (e) {}
 
-    // 메뉴별 재료 파싱 (예: "• 돼지불고기: 앞다리살 40kg, 양파" 형태 또는 줄바꿈 형태 지원)
-    var ingLines = String(modifiedRawIng || '')
-      .split(/\r?\n/)
-      .map(function(s) { return s.trim(); })
-      .filter(Boolean);
-
-    var parsedLineMap = {};
-    var fallbackIngPool = [];
+    var ingLines = String(modifiedRawIng || '').split(/\r?\n/).map(function(s) { return s.trim(); }).filter(Boolean);
+    var parsedLineMap = {}, fallbackIngPool = [];
 
     ingLines.forEach(function(line) {
       var cleanLine = line.replace(/^[•\-*]\s*/, '').trim();
@@ -10344,18 +10269,10 @@
       if (colonIdx > 0) {
         var mName = cleanLine.slice(0, colonIdx).replace('(👶)', '').trim();
         var restStr = cleanLine.slice(colonIdx + 1).trim();
-        var memoStr = '';
-        var parenMatch = restStr.match(/\(([^)]+)\)\s*$/);
-        if (parenMatch) {
-          memoStr = parenMatch[1].trim();
-          restStr = restStr.slice(0, parenMatch.index).trim();
-        }
         var itemsArr = restStr.split(/[,/]+/).map(function(x) { return x.trim(); }).filter(Boolean);
-        parsedLineMap[mName] = { items: itemsArr, memo: memoStr };
+        parsedLineMap[mName] = { items: itemsArr };
       } else {
-        cleanLine.split(/[,/]+/).map(function(x) { return x.trim(); }).filter(Boolean).forEach(function(tok) {
-          fallbackIngPool.push(tok);
-        });
+        cleanLine.split(/[,/]+/).map(function(x) { return x.trim(); }).filter(Boolean).forEach(function(tok) { fallbackIngPool.push(tok); });
       }
     });
 
@@ -10364,122 +10281,55 @@
       var dish = (masterBasket || []).find(function(x) { return x.id === dId; });
       var dishName = dish ? dish.name : dId;
       var bareName = String(dishName).replace('(👶)', '').trim();
-
       var matchedParsed = parsedLineMap[bareName] || parsedLineMap[dishName];
       var groupItems = [];
       var groupMemo = (dish && dish.recipe && dish.recipe !== '기본 조리') ? dish.recipe : '';
 
       if (matchedParsed && matchedParsed.items.length > 0) {
         matchedParsed.items.forEach(function(itTxt, idx) {
-          groupItems.push({
-            id: 'ing_' + Date.now() + '_' + dIdx + '_' + idx + '_' + Math.random().toString(36).slice(2, 5),
-            name: itTxt,
-            checked: false
-          });
+          groupItems.push({ id: 'ing_' + Date.now() + '_' + dIdx + '_' + idx, name: itTxt, checked: false });
         });
-        if (matchedParsed.memo) groupMemo = matchedParsed.memo;
       } else if (dIdx === 0 && fallbackIngPool.length > 0) {
         fallbackIngPool.forEach(function(itTxt, idx) {
-          groupItems.push({
-            id: 'ing_' + Date.now() + '_fb_' + idx + '_' + Math.random().toString(36).slice(2, 5),
-            name: itTxt,
-            checked: false
-          });
+          groupItems.push({ id: 'ing_' + Date.now() + '_fb_' + idx, name: itTxt, checked: false });
         });
       } else if (baseItem && baseItem.shoppingTree && Array.isArray(baseItem.shoppingTree.groups)) {
         var origGrp = baseItem.shoppingTree.groups.find(function(g) { return g.id === dId || g.name === dishName; });
         if (origGrp && Array.isArray(origGrp.items)) {
-          groupItems = origGrp.items.map(function(it, idx) {
-            return {
-              id: 'ing_' + Date.now() + '_cp_' + idx + '_' + Math.random().toString(36).slice(2, 5),
-              name: it.name,
-              checked: false
-            };
-          });
+          groupItems = origGrp.items.map(function(it, idx) { return { id: 'ing_' + Date.now() + '_cp_' + idx, name: it.name, checked: false }; });
           if (origGrp.memo) groupMemo = origGrp.memo;
         }
       }
-
       if (groupItems.length === 0 && dish) {
         var defaultLabel = bareName + (dish.kg && dish.kg !== '적당량' ? ' (' + dish.kg + ')' : ' 주재료');
-        groupItems.push({
-          id: 'ing_' + Date.now() + '_def_' + dIdx + '_' + Math.random().toString(36).slice(2, 5),
-          name: defaultLabel,
-          checked: false
-        });
+        groupItems.push({ id: 'ing_' + Date.now() + '_def_' + dIdx, name: defaultLabel, checked: false });
       }
-
-      newGroups.push({
-        id: dId,
-        name: dishName,
-        isCommon: false,
-        locked: false,
-        memo: groupMemo,
-        items: groupItems
-      });
+      newGroups.push({ id: dId, name: dishName, isCommon: false, locked: false, memo: groupMemo, items: groupItems });
     });
 
-    // 공통 품목 및 비품 반영
-    var commonItems = [];
-    var supTokens = String(modifiedSupplies || '')
-      .split(/[,/\n]+/)
-      .map(function(s) { return s.trim(); })
-      .filter(Boolean);
-
-    supTokens.forEach(function(txt, idx) {
-      commonItems.push({
-        id: 'com_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).slice(2, 5),
-        name: txt,
-        checked: false
-      });
+    var commonItems = String(modifiedSupplies || '').split(/[,/\n]+/).map(function(s) { return s.trim(); }).filter(Boolean).map(function(txt, idx) {
+      return { id: 'com_' + Date.now() + '_' + idx, name: txt, checked: false };
     });
+    newGroups.push({ id: 'common_group', name: '공통재료', isCommon: true, locked: false, memo: '', items: commonItems });
 
-    newGroups.push({
-      id: 'common_group',
-      name: '공통재료',
-      isCommon: true,
-      locked: false,
-      memo: '',
-      items: commonItems
-    });
-
-    treesMap[targetDate] = {
-      date: targetDate,
-      groups: newGroups,
-      updatedAt: Date.now()
-    };
+    treesMap[targetDate] = { date: targetDate, groups: newGroups, updatedAt: Date.now() };
     window.shoppingTreesMap = treesMap;
-    try {
-      localStorage.setItem(SHOPPING_KEY, JSON.stringify(treesMap));
-    } catch (e) {}
+    try { localStorage.setItem(SHOPPING_KEY, JSON.stringify(treesMap)); } catch (e) {}
   }
 
-  // [핵심 3번] "식판에 올리기" 클릭 시 실행 함수 재정의
   loadArchiveToCurrentTray = async function() {
-    if (!isLeader) {
-      return await showCustomAlert('식단이 확정 되었습니다.', '😊');
-    }
-
+    if (!isLeader) return await showCustomAlert('식단이 확정 되었습니다.', '😊');
     var item = (archiveList || []).find(function(a) { return a && String(a.id) === String(selectedArchiveId); });
     if (!item) return;
 
-    // 현재 메인 화면 상단에 지정된 '일자' 가져오기
     var curDateEl = document.getElementById('currentDate');
     var rawTargetDate = curDateEl && curDateEl.value ? curDateEl.value : getCurrentWeekSundayString();
     var targetDateStr = normalizeCompactDateStr(rawTargetDate);
 
-    // "이 식단은 지정된 '일자' 식판으로 올라갑니다.?" ('예' / '닫기')
     var confirmed = await showLoadArchiveConfirmDialogV102(targetDateStr);
-    if (!confirmed) {
-      // '닫기'를 누르면 확인창만 닫고 현재 상세창 유지
-      return;
-    }
+    if (!confirmed) return;
 
-    // 상세창에서 수정한 값 읽기 (주의: 원본 item 객체는 절대 덮어쓰지 않고 그대로 보존!)
-    var photoMenuTitle = (typeof getMainMenuDisplayTitle === 'function')
-      ? getMainMenuDisplayTitle(item)
-      : (item.title || '공동체 식단');
-
+    var photoMenuTitle = (typeof getMainMenuDisplayTitle === 'function') ? getMainMenuDisplayTitle(item) : (item.title || '공동체 식단');
     var modifiedSeason   = document.getElementById('archEditSeason') ? document.getElementById('archEditSeason').value : (item.season || '가을');
     var modifiedMenuType = document.getElementById('archEditType') ? document.getElementById('archEditType').value : (item.menuType || '육류');
     var modifiedHc       = document.getElementById('archEditHeadcount') ? document.getElementById('archEditHeadcount').value.replace(/\s*\(기준\)/g, '').trim() : (item.headcount || '');
@@ -10487,14 +10337,10 @@
     var modifiedRawIng   = document.getElementById('archEditRawIng') ? document.getElementById('archEditRawIng').value.trim() : (item.rawIngredients || '');
     var modifiedSupplies = document.getElementById('archEditSupplies') ? document.getElementById('archEditSupplies').value.trim() : (item.supplies || '');
 
-    // 식판 메뉴 ID 배열 복사 및 카테고리 순서 정렬
     var nextTrayIds = Array.isArray(item.dishIds) ? item.dishIds.slice() : [];
-    if (typeof window.sortTrayIdsByCategoryOrder === 'function') {
-      window.sortTrayIdsByCategoryOrder(nextTrayIds);
-    }
+    if (typeof window.sortTrayIdsByCategoryOrder === 'function') window.sortTrayIdsByCategoryOrder(nextTrayIds);
     currentTrayIds = nextTrayIds;
 
-    // 사진 복사
     if (Array.isArray(item.photoIds) && item.photoIds.length > 0) {
       currentSavedPhotoIds = item.photoIds.filter(function(pid) { return pid && !String(pid).startsWith('default_'); }).slice(0, 5);
     } else if (item.photoId && !String(item.photoId).startsWith('default_')) {
@@ -10504,34 +10350,17 @@
     }
     currentSavedPhotoId = currentSavedPhotoIds[0] || item.photoId || 'default_4';
 
-    // 지정된 '일자'의 주간 계획(weeklyPlanMap)에 수정된 메타데이터 함께 기록 (원본 지난 식단 archiveList는 건드리지 않음)
     if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
       weeklyPlanMap[targetDateStr] = {
-        trayIds: currentTrayIds.slice(),
-        photoId: currentSavedPhotoId,
-        photoIds: currentSavedPhotoIds.slice(),
-        title: photoMenuTitle,
-        season: modifiedSeason,
-        menuType: modifiedMenuType,
-        headcount: modifiedHc,
-        leftoverNote: modifiedLeftover,
-        rawIngredients: modifiedRawIng,
-        supplies: modifiedSupplies,
+        trayIds: currentTrayIds.slice(), photoId: currentSavedPhotoId, photoIds: currentSavedPhotoIds.slice(),
+        title: photoMenuTitle, season: modifiedSeason, menuType: modifiedMenuType,
+        headcount: modifiedHc, leftoverNote: modifiedLeftover, rawIngredients: modifiedRawIng, supplies: modifiedSupplies,
         updatedAt: Date.now()
       };
       if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
     }
 
-    // 수정한 장보기 재료 및 공통 품목을 지정된 '일자'의 장보기 트리에 즉시 반영
-    applyModifiedArchiveFieldsToTargetDateShoppingV102(
-      targetDateStr,
-      currentTrayIds,
-      modifiedRawIng,
-      modifiedSupplies,
-      item
-    );
-
-    // 상세창 닫기 및 메인 화면 식판 즉시 렌더링 (원본 archiveList는 수정 전 그대로 유지됨)
+    applyModifiedArchiveFieldsToTargetDateShoppingV102(targetDateStr, currentTrayIds, modifiedRawIng, modifiedSupplies, item);
     var modal = document.getElementById('archiveModal');
     if (modal) modal.classList.add('hidden');
 
@@ -10539,8 +10368,60 @@
     renderTray();
     renderArchiveGrid();
     await syncCurrentStateToDb();
-
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // [추가] CSV 불러오기 시 쉼표(,)가 포함된 주재료(note) 열이 밀리지 않도록 parseCsvLineRespectQuotes 적용
+  importCsvFile = async function() {
+    var file = document.getElementById('csvFileInput').files[0];
+    if (!file) return await showCustomAlert('불러올 CSV 파일을 선택해주세요!', '📂');
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      var buffer = e.target.result;
+      var text = new TextDecoder('utf-8').decode(buffer);
+      if (text.includes('\uFFFD')) text = new TextDecoder('euc-kr').decode(buffer);
+      var lines = text.split(/\r?\n/);
+      var added = 0, newItems = [];
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        var cols = (typeof window.parseCsvLineRespectQuotes === 'function')
+          ? window.parseCsvLineRespectQuotes(line)
+          : line.split(',');
+        if (i === 0 && (cols[0].includes('카테고리') || cols[0].includes('분류') || (cols[1] && cols[1].includes('이름')))) continue;
+        if (cols.length >= 2) {
+          var cat = normalizeCategoryName(cols[0]);
+          var name = (cols[1] || '').trim();
+          if (!name) continue;
+          if (cat === '어린이반찬' && !name.includes('👶')) name += '(👶)';
+          var newId = 'csv_' + Date.now() + '_' + i;
+          var kgVal = (cols[2] || '적당량').trim();
+          var noteVal = (cols.length >= 5 ? (cols[3] || '') : '').trim();
+          var recipeVal = (cols.length >= 5 ? cols[4] : (cols[3] || '기본 조리')).trim();
+          var newItem = { id: newId, cat: cat, name: name, kg: kgVal, price: 0, note: noteVal, recipe: recipeVal, createdAt: Date.now() + i };
+          masterBasket.unshift(newItem);
+          newItems.push(newItem);
+          added++;
+        }
+      }
+
+      if (db && newItems.length > 0) {
+        try {
+          for (var c = 0; c < newItems.length; c += 350) {
+            var chunk = newItems.slice(c, c + 350);
+            var batch = db.batch();
+            chunk.forEach(function(item) { batch.set(db.collection('basket').doc(item.id), item); });
+            await batch.commit();
+          }
+        } catch (err) { console.warn(err); }
+      }
+      await syncCurrentStateToDb();
+      closeCsvModal();
+      renderTray();
+      await showCustomAlert('총 ' + added + '개의 반찬이 등록되어 모든 기기에 동기화되었습니다!', '🎉');
+    };
+    reader.readAsArrayBuffer(file);
   };
 })();
 </script>
