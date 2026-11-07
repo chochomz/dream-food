@@ -8352,6 +8352,8 @@
     shoppingTreesMap[cleanDate] = {
       date: cleanDate,
       groups: newGroups,
+      shoppingCompleted: Boolean(existingTree && existingTree.shoppingCompleted),
+      autoCleaned: Boolean(existingTree && existingTree.autoCleaned),
       updatedAt: Date.now()
     };
     saveShoppingTreesToLocal();
@@ -11462,629 +11464,9 @@
 </script>
 <!-- ================= [패치 v10.5 END] ================= -->
 
-<!-- ================= [패치 v10.6 START: 1)~8) 식단관리 표준 프로세스 완벽 적용] ================= -->
-<script id="sejongPatchScriptV106">
-(function applyStandardProcessPatchV106() {
-  var SHOPPING_STORAGE_KEY = 'sejong_shopping_trees_v1';
-  var CONFIRMED_DATES_V106_KEY = 'sejong_confirmed_dates_v106';
-  var CONFIRMED_ONLY_DATES_KEY = 'sejong_confirmed_only_dates_v105';
-
-  // [5단계 & 6단계] 실제 '식단확정'이 완료된 주일 목록 관리
-  var confirmedDatesSetV106 = new Set();
-
-  function loadConfirmedDatesV106() {
-    try {
-      var raw106 = localStorage.getItem(CONFIRMED_DATES_V106_KEY);
-      if (raw106) {
-        var arr106 = JSON.parse(raw106);
-        if (Array.isArray(arr106)) {
-          arr106.forEach(function(d) { if (d) confirmedDatesSetV106.add(normalizeCompactDateStr(d)); });
-        }
-      }
-      // 기존 v10.5의 확정 목록 및 weeklyPlanMap에서 confirmedOnly/isConfirmedPlan=true 인 항목 승계
-      var raw105 = localStorage.getItem(CONFIRMED_ONLY_DATES_KEY);
-      if (raw105) {
-        var arr105 = JSON.parse(raw105);
-        if (Array.isArray(arr105)) {
-          arr105.forEach(function(d) { if (d) confirmedDatesSetV106.add(normalizeCompactDateStr(d)); });
-        }
-      }
-      if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
-        Object.keys(weeklyPlanMap).forEach(function(k) {
-          var p = weeklyPlanMap[k];
-          if (p && (p.isConfirmedPlan === true || p.confirmedOnly === true || p.shoppingCompleted === true)) {
-            confirmedDatesSetV106.add(normalizeCompactDateStr(k));
-          }
-        });
-      }
-      if (Array.isArray(archiveList)) {
-        archiveList.forEach(function(a) {
-          if (a && a.date) confirmedDatesSetV106.add(normalizeCompactDateStr(a.date));
-        });
-      }
-    } catch (e) {}
-  }
-
-  function saveConfirmedDatesV106() {
-    try {
-      localStorage.setItem(CONFIRMED_DATES_V106_KEY, JSON.stringify(Array.from(confirmedDatesSetV106)));
-    } catch (e) {}
-  }
-
-  loadConfirmedDatesV106();
-
-  // 특정 일자가 달력에 [확정 / 예정 / 완료]로 정식 등록된 상태인지 엄격히 판별하는 핵심 함수
-  window.isDateConfirmedOnCalendarV106 = function(dateStr) {
-    var cleanDate = normalizeCompactDateStr(dateStr);
-    if (!cleanDate) return false;
-    if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanDate)) {
-      return false;
-    }
-    var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[cleanDate] : null;
-    // 식판 메뉴를 담거나 빼서 수정 중인 상태(isConfirmedPlan === false)이면 미확정으로 판별
-    if (plan && plan.isConfirmedPlan === false) {
-      return false;
-    }
-    // 1) 지난 식단 관리(archiveList)에 이미 존재하는 완료/확정 식단인 경우
-    var inArchive = Array.isArray(archiveList) && archiveList.some(function(a) {
-      return a && normalizeCompactDateStr(a.date) === cleanDate && Array.isArray(a.dishIds) && a.dishIds.length > 0;
-    });
-    if (inArchive) return true;
-
-    // 2) 식단확정 다이얼을 통해 정식 확정(isConfirmedPlan: true)된 주간 계획인 경우
-    if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
-      if (plan.isConfirmedPlan === true || plan.confirmedOnly === true || plan.shoppingCompleted === true || confirmedDatesSetV106.has(cleanDate)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  // =========================================================================
-  // [2단계 연동] 반찬바구니에서 식판에 메뉴를 담거나 제외할 때:
-  // 식판 구성이 변경되었으므로 다시 4단계 [식단확정]을 누르도록 해당 일자를 '조립중(미확정)'으로 전환
-  // =========================================================================
-  function markCurrentDateAsEditingV106() {
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    if (!cleanDate) return;
-    confirmedDatesSetV106.delete(cleanDate);
-    saveConfirmedDatesV106();
-    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap && weeklyPlanMap[cleanDate]) {
-      weeklyPlanMap[cleanDate].isConfirmedPlan = false;
-      weeklyPlanMap[cleanDate].confirmedOnly = false;
-      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    }
-  }
-
-  var _prevConfirmRemoveFromTrayV106 = confirmRemoveFromTray;
-  confirmRemoveFromTray = async function(isYes) {
-    if (isYes && isLeader) {
-      markCurrentDateAsEditingV106();
-    }
-    if (_prevConfirmRemoveFromTrayV106) {
-      await _prevConfirmRemoveFromTrayV106(isYes);
-    }
-    if (isYes && isLeader) {
-      markCurrentDateAsEditingV106();
-      if (typeof syncCurrentStateToDb === 'function') await syncCurrentStateToDb();
-    }
-  };
-
-  // syncCurrentStateToDb 호출 시 기존 확정 여부(isConfirmedPlan)가 유실되지 않도록 보존
-  var _prevSyncCurrentStateToDbV106 = syncCurrentStateToDb;
-  syncCurrentStateToDb = async function() {
-    var selEl = document.getElementById('currentDate');
-    var selectedDate = normalizeCompactDateStr(selEl ? selEl.value : getCurrentWeekSundayString());
-    var prevPlan = (weeklyPlanMap && weeklyPlanMap[selectedDate]) ? weeklyPlanMap[selectedDate] : {};
-    var keepConfirmed = (prevPlan.isConfirmedPlan === true) || confirmedDatesSetV106.has(selectedDate);
-
-    if (_prevSyncCurrentStateToDbV106) {
-      await _prevSyncCurrentStateToDbV106();
-    }
-
-    if (weeklyPlanMap && weeklyPlanMap[selectedDate]) {
-      weeklyPlanMap[selectedDate].isConfirmedPlan = keepConfirmed;
-      if (keepConfirmed) {
-        weeklyPlanMap[selectedDate].confirmedOnly = Boolean(prevPlan.confirmedOnly);
-        weeklyPlanMap[selectedDate].shoppingCompleted = Boolean(prevPlan.shoppingCompleted);
-      }
-      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    }
-  };
-
-  // =========================================================================
-  // [4단계 & 5단계] 식단확정 다이얼 저장 시:
-  // 확정 일자를 달력에 [확정 / 예정]으로 즉시 기록하고, 추후 1)번 기능 및 6)번 장보기 진입을 허용
-  // =========================================================================
-  var _prevExecuteDialConfirmSaveV106 = executeDialConfirmSave;
-  executeDialConfirmSave = async function() {
-    var dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
-    confirmedDatesSetV106.add(dateStr);
-    saveConfirmedDatesV106();
-
-    if (_prevExecuteDialConfirmSaveV106) {
-      await _prevExecuteDialConfirmSaveV106();
-    }
-
-    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
-      weeklyPlanMap[dateStr] = weeklyPlanMap[dateStr] || {};
-      weeklyPlanMap[dateStr].trayIds = currentTrayIds.slice();
-      weeklyPlanMap[dateStr].isConfirmedPlan = true;
-      weeklyPlanMap[dateStr].confirmedOnly = true;
-      weeklyPlanMap[dateStr].shoppingCompleted = false;
-      weeklyPlanMap[dateStr].updatedAt = Date.now();
-      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    }
-
-    // 장보기 트리에서 이전 완료 흔적 초기화 (새로 확정된 식판 기준)
-    var treesMap = window.shoppingTreesMap || {};
-    if (treesMap[dateStr]) {
-      treesMap[dateStr].shoppingCompleted = false;
-      treesMap[dateStr].autoCleaned = false;
-      try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(treesMap)); } catch (e) {}
-    }
-
-    if (db && weeklyPlanMap) {
-      db.collection('settings').doc('currentState').set({
-        weeklyPlans: weeklyPlanMap,
-        updatedAt: Date.now()
-      }, { merge: true }).catch(function() {});
-    }
-  };
-
-  // 식단삭제 시 확정 목록에서도 깨끗하게 제거
-  var _prevDeleteCurrentDateMenuV106 = deleteCurrentDateMenu;
-  deleteCurrentDateMenu = async function() {
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    if (_prevDeleteCurrentDateMenuV106) {
-      await _prevDeleteCurrentDateMenuV106();
-    }
-    if (cleanDate && (!currentTrayIds || currentTrayIds.length === 0)) {
-      confirmedDatesSetV106.delete(cleanDate);
-      saveConfirmedDatesV106();
-    }
-  };
-
-  // [5단계 달력 표시 보정] 달력에서 단순 임시 담기(미확정)는 제외하고, 실제 식단확정(isDateConfirmedOnCalendarV106)된 주일만 확정/예정/완료 표시
-  var _prevGetConfirmedSundaySetV106 = getConfirmedSundaySet;
-  getConfirmedSundaySet = function() {
-    var set = _prevGetConfirmedSundaySetV106 ? _prevGetConfirmedSundaySetV106() : new Set();
-    confirmedDatesSetV106.forEach(function(d) {
-      if (window.isDateConfirmedOnCalendarV106(d)) {
-        set.add(d);
-      }
-    });
-    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
-      Object.keys(weeklyPlanMap).forEach(function(k) {
-        var cleanK = normalizeCompactDateStr(k);
-        if (window.isDateConfirmedOnCalendarV106(cleanK)) {
-          set.add(cleanK);
-        } else {
-          set.delete(cleanK);
-        }
-      });
-    }
-    return set;
-  };
-
-  var _prevGetSundayStatusFootnoteV106 = getSundayStatusFootnote;
-  getSundayStatusFootnote = function(sundayDateObj, isConfirmedFlag) {
-    var sunStr = formatWeekOptionString(sundayDateObj);
-    var strictlyConfirmed = window.isDateConfirmedOnCalendarV106(sunStr);
-    return _prevGetSundayStatusFootnoteV106(sundayDateObj, strictlyConfirmed);
-  };
-
-  // =========================================================================
-  // [6단계 핵심 구현] 식단확정이 완료되고 장보기를 누를 때,
-  // 달력에 확정·예정되지 않은 상태이면 장보기로 넘어가지 못하고 차단!
-  // 확정·예정이 완료된 후에야 장보기 기능을 즉시 사용할 수 있음!
-  // =========================================================================
-  window.openShoppingListModal = async function() {
-    try {
-      var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
-      if (raw) window.shoppingTreesMap = JSON.parse(raw) || window.shoppingTreesMap;
-    } catch (e) {}
-
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-
-    if (!currentTrayIds || currentTrayIds.length === 0) {
-      await showCustomAlert('식판에 모아진 메뉴가 없습니다.\n반찬바구니에서 메뉴를 먼저 담아주세요.', '🍱');
-      return;
-    }
-
-    // 달력에 확정·예정(또는 완료)되어 있는지 엄격 검증
-    if (!window.isDateConfirmedOnCalendarV106(cleanDate)) {
-      await showCustomAlert(
-        '[' + cleanDate + ']\n아직 식단확정이 되지 않은 상태입니다.\n\n먼저 [식단확정]을 눌러 달력에 확정·예정이 기록된 후에야 장보기 기능을 사용할 수 있습니다.',
-        '🔒'
-      );
-      return;
-    }
-
-    if (typeof window.closeShoppingSharePullup === 'function') {
-      window.closeShoppingSharePullup();
-    }
-
-    var badgeEl = document.getElementById('shoppingModalDateBadge');
-    if (badgeEl) {
-      var shortDate = cleanDate.replace(/^\d{4}년\s*/, '').trim();
-      badgeEl.textContent = shortDate || cleanDate;
-    }
-
-    window.activeAddInputGroupIdV10 = null;
-    window.activeEditIngTargetV10 = null;
-    window.activeMemoGroupIdV10 = null;
-
-    if (typeof window.renderShoppingTreeModal === 'function') {
-      window.renderShoppingTreeModal();
-    }
-    updateShoppingCompleteBtnUIV106(cleanDate);
-
-    var modal = document.getElementById('shoppingListModal');
-    if (modal) modal.classList.remove('hidden');
-  };
-
-  function updateShoppingCompleteBtnUIV106(cleanDate) {
-    var btn = document.getElementById('shoppingCompleteActionBtn');
-    if (!btn) return;
-    var treesMap = window.shoppingTreesMap || {};
-    var tree = treesMap[cleanDate];
-    if (tree && tree.shoppingCompleted) {
-      btn.innerHTML = '✅ 완료됨 (공유가능)';
-      btn.className = 'bg-emerald-700 hover:bg-emerald-800 border-2 border-emerald-500 text-white font-black py-2 rounded-xl text-[10.5px] shadow-2xs whitespace-nowrap transition active:scale-95';
-    } else {
-      btn.innerHTML = '✅ 장보기 완료';
-      btn.className = 'bg-teal-600 hover:bg-teal-700 border-2 border-teal-500 text-white font-black py-2 rounded-xl text-[11px] shadow-2xs whitespace-nowrap transition active:scale-95';
-    }
-  }
-
-  // 장보기 트리에서 체크박스나 재료/설명을 수정하면 다시 [장보기 완료]를 누르도록 상태 갱신
-  var _prevRenderShoppingTreeV106 = window.renderShoppingTreeModal;
-  window.renderShoppingTreeModal = function() {
-    if (_prevRenderShoppingTreeV106) _prevRenderShoppingTreeV106();
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    updateShoppingCompleteBtnUIV106(cleanDate);
-  };
-
-  // =========================================================================
-  // [7단계 - 전반부] '장보기 완료' 버튼 클릭 시:
-  // 품목과 빠진 내용이 없는지 확인 후 체크된 그룹들을 잠금(locked) 및 완료 상태(shoppingCompleted = true)로 확정!
-  // (미체크 재료와 메뉴의 자동 삭제 및 DB 저장은 '결과 공유'를 눌러 넘어갈 때 수행됨!)
-  // =========================================================================
-  window.completeShoppingAndCommit = async function() {
-    if (!isLeader) {
-      return await showCustomAlert('장보기 완료되어 수정이 안됩니다.', '😊');
-    }
-
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    var treesMap = window.shoppingTreesMap || {};
-    var tree = treesMap[cleanDate];
-
-    if (!tree || !Array.isArray(tree.groups)) {
-      await showCustomAlert('장보기 목록 데이터가 없습니다.', '⚠️');
-      return;
-    }
-
-    var checkedItemCount = 0;
-    var checkedMenuCount = 0;
-    tree.groups.forEach(function(g) {
-      var cItems = (g.items || []).filter(function(it) { return Boolean(it && it.checked); });
-      checkedItemCount += cItems.length;
-      if (!g.isCommon && g.id !== 'common_group' && cItems.length > 0) {
-        checkedMenuCount++;
-      }
-    });
-
-    if (checkedItemCount === 0) {
-      await showCustomAlert('체크된 품목이 없습니다.\n장보기 목록에 빠진 내용이 없도록 품목을 체크한 후 [장보기 완료]를 눌러주세요.', '☑️');
-      return;
-    }
-
-    // 체크된 품목이 있는 그룹들을 자동으로 잠금(locked = true) 처리하고 장보기 완료 플래그 설정
-    tree.groups.forEach(function(g) {
-      var hasChecked = (g.items || []).some(function(it) { return Boolean(it && it.checked); });
-      if (hasChecked) {
-        g.locked = true;
-      }
-    });
-
-    tree.shoppingCompleted = true;
-    tree.autoCleaned = false; // 결과 공유를 눌러 넘어갈 때 미체크 자동 삭제가 실행되도록 대기
-    tree.updatedAt = Date.now();
-
-    treesMap[cleanDate] = tree;
-    window.shoppingTreesMap = treesMap;
-    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(treesMap)); } catch (e) {}
-
-    window.activeAddInputGroupIdV10 = null;
-    window.activeEditIngTargetV10 = null;
-    window.activeMemoGroupIdV10 = null;
-
-    window.renderShoppingTreeModal();
-    updateShoppingCompleteBtnUIV106(cleanDate);
-
-    await showCustomAlert(
-      '✅ 장보기 완료가 확인되었습니다!\n(선택 메뉴 ' + checkedMenuCount + '종 · 품목 ' + checkedItemCount + '개 잠금 완료)\n\n이제 우측 [결과 공유]를 누르시면 체크되지 않은 재료와 메뉴가 자동 삭제되어 저장된 후 공유 화면으로 넘어갑니다.',
-      '🛒'
-    );
-  };
-
-  // =========================================================================
-  // [7단계 - 후반부 & 8단계] '결과 공유'를 눌러 넘어갈 때:
-  // 1) 먼저 '장보기 완료'가 되었는지 확인
-  // 2) 체크가 완료되지 않은 재료와 메뉴를 자동 삭제하여 식판·장보기목록·지난식단관리(DB)에 즉시 저장!
-  // 3) 공유 옵션 풀업 메뉴(초경량/표준/고화질 이미지 저장, 문자 복사)를 열어 8단계 보고 진행
-  // =========================================================================
-  async function autoDeleteUncheckedAndSaveOnShareV106(cleanDate) {
-    var treesMap = window.shoppingTreesMap || {};
-    var tree = treesMap[cleanDate];
-    if (!tree || !Array.isArray(tree.groups)) return false;
-
-    var keptMenuGroups = [];
-    var deletedMenuIds = [];
-    var deletedIngredientCount = 0;
-    var checkedCommonItems = [];
-    var commonMemo = '';
-
-    tree.groups.forEach(function(group) {
-      var allItems = Array.isArray(group.items) ? group.items : [];
-      var checkedItems = allItems.filter(function(it) { return Boolean(it && it.checked); });
-      deletedIngredientCount += (allItems.length - checkedItems.length);
-
-      if (group.isCommon || group.id === 'common_group') {
-        checkedCommonItems = checkedItems;
-        commonMemo = group.memo || '';
-      } else {
-        if (checkedItems.length > 0) {
-          keptMenuGroups.push({
-            id: group.id,
-            name: group.name,
-            isCommon: false,
-            locked: true,
-            memo: group.memo || '',
-            items: checkedItems
-          });
-        } else {
-          deletedMenuIds.push(String(group.id));
-        }
-      }
-    });
-
-    // 식판 및 장보기에서 빠진 메뉴의 재료 메모를 반찬바구니(masterBasket)에 동기화
-    var menuIngSummaryLines = [];
-    var updatedDishIds = [];
-    var modifiedBasketDishes = [];
-
-    keptMenuGroups.forEach(function(kGroup) {
-      updatedDishIds.push(kGroup.id);
-      var checkedNames = kGroup.items.map(function(it) { return it.name; }).filter(Boolean);
-      var lineStr = '• ' + kGroup.name.replace('(👶)', '') + ': ' + checkedNames.join(', ');
-      if (kGroup.memo) {
-        lineStr += ' (' + kGroup.memo.replace(/\r?\n/g, ' / ') + ')';
-      }
-      menuIngSummaryLines.push(lineStr);
-
-      var dishObj = (masterBasket || []).find(function(d) { return String(d.id) === String(kGroup.id); });
-      if (dishObj) {
-        dishObj.note = checkedNames.join(', ');
-        if (kGroup.memo) {
-          dishObj.recipe = kGroup.memo.split(/\r?\n/).slice(0, 2).join('\n').trim();
-        }
-        modifiedBasketDishes.push(dishObj);
-      }
-    });
-
-    if (typeof window.sortTrayIdsByCategoryOrder === 'function') {
-      window.sortTrayIdsByCategoryOrder(updatedDishIds);
-    }
-
-    var commonNames = checkedCommonItems.map(function(it) { return it.name; }).filter(Boolean);
-    var finalRawIngredients = menuIngSummaryLines.join('\n');
-    var finalSupplies = commonNames.join(', ') + (commonMemo ? (' (' + commonMemo.replace(/\r?\n/g, ' / ') + ')') : '');
-
-    // 미체크 항목이 모두 제거된 깨끗한 장보기 트리 구성
-    var cleanedGroups = keptMenuGroups.slice();
-    cleanedGroups.push({
-      id: 'common_group',
-      name: '공통재료',
-      isCommon: true,
-      locked: checkedCommonItems.length > 0,
-      memo: commonMemo,
-      items: checkedCommonItems
-    });
-
-    var cleanedTree = {
-      date: cleanDate,
-      groups: cleanedGroups,
-      shoppingCompleted: true,
-      autoCleaned: true,
-      updatedAt: Date.now()
-    };
-    treesMap[cleanDate] = cleanedTree;
-    window.shoppingTreesMap = treesMap;
-    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(treesMap)); } catch (e) {}
-
-    // 현재 식판(currentTrayIds) 및 주간계획(weeklyPlanMap)에서 미체크 메뉴 자동 삭제 반영
-    currentTrayIds = updatedDishIds.slice();
-    var firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || 'default_4');
-
-    confirmedDatesSetV106.add(cleanDate);
-    saveConfirmedDatesV106();
-
-    try {
-      var rawConfOnly = localStorage.getItem(CONFIRMED_ONLY_DATES_KEY);
-      if (rawConfOnly) {
-        var parsedOnly = JSON.parse(rawConfOnly).filter(function(d) { return normalizeCompactDateStr(d) !== cleanDate; });
-        localStorage.setItem(CONFIRMED_ONLY_DATES_KEY, JSON.stringify(parsedOnly));
-      }
-    } catch (e) {}
-
-    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
-      weeklyPlanMap[cleanDate] = {
-        trayIds: currentTrayIds.slice(),
-        photoId: firstPhotoId,
-        photoIds: (currentSavedPhotoIds || []).slice(),
-        rawIngredients: finalRawIngredients,
-        supplies: finalSupplies,
-        isConfirmedPlan: true,
-        confirmedOnly: false,
-        shoppingCompleted: true,
-        updatedAt: Date.now()
-      };
-      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    }
-
-    // 지난 식단 관리(archiveList)에 최종 완료 식단으로 저장
-    var existingArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
-    var oldArchIdsToDelete = [];
-    (archiveList || []).forEach(function(a) {
-      if (a && normalizeCompactDateStr(a.date) === cleanDate) {
-        oldArchIdsToDelete.push(String(a.id));
-      }
-    });
-
-    var firstMain = (masterBasket || []).find(function(d) { return currentTrayIds.indexOf(d.id) !== -1 && d.cat === '메인반찬'; }) ||
-                    (masterBasket || []).find(function(d) { return d.id === currentTrayIds[0]; });
-    var newArchId = existingArch ? String(existingArch.id) : String(Date.now());
-
-    var updatedArchive = {
-      id: newArchId,
-      date: cleanDate,
-      title: existingArch && existingArch.title ? existingArch.title : ((firstMain ? firstMain.name.replace('(👶)', '') : '공동체') + ' 식단'),
-      season: existingArch && existingArch.season ? existingArch.season : (typeof inferSeasonFromDateStr === 'function' ? inferSeasonFromDateStr(cleanDate) : '가을'),
-      menuType: existingArch && existingArch.menuType ? existingArch.menuType : '육류',
-      dishIds: currentTrayIds.slice(),
-      headcount: existingArch && existingArch.headcount ? String(existingArch.headcount).replace(/\s*\(기준\)/g, '').trim() : '300명',
-      leftoverNote: existingArch && existingArch.leftoverNote ? existingArch.leftoverNote : '장보기 완료',
-      rawIngredients: finalRawIngredients,
-      supplies: finalSupplies,
-      shoppingTree: cleanedTree,
-      shoppingCompletedAt: Date.now(),
-      likes: existingArch && existingArch.likes ? existingArch.likes : 9,
-      photoId: existingArch && existingArch.photoId && String(existingArch.photoId).indexOf('default_') !== 0 ? existingArch.photoId : firstPhotoId,
-      photoIds: existingArch && Array.isArray(existingArch.photoIds) && existingArch.photoIds.length > 0 ? existingArch.photoIds : (currentSavedPhotoIds || []).slice(),
-      createdAt: Date.now()
-    };
-
-    archiveList = (archiveList || []).filter(function(a) {
-      return !(a && normalizeCompactDateStr(a.date) === cleanDate);
-    });
-    if (currentTrayIds.length > 0 || commonNames.length > 0) {
-      archiveList.unshift(updatedArchive);
-    }
-
-    try {
-      localStorage.setItem('sejong_fast_basket_cache_v1', JSON.stringify(masterBasket));
-      localStorage.setItem('sejong_fast_archive_cache_v1', JSON.stringify(archiveList));
-    } catch (e) {}
-
-    // 장보기 화면 및 배경 식판/아카이브 즉시 갱신 (체크 안 된 재료·메뉴가 눈앞에서 깔끔히 사라짐)
-    window.renderShoppingTreeModal();
-    renderTray();
-    renderBasket();
-    renderArchiveGrid();
-
-    if (db) {
-      setCloudStatusLamp('saving');
-      try {
-        var promises = [];
-        modifiedBasketDishes.forEach(function(dObj) {
-          promises.push(db.collection('basket').doc(String(dObj.id)).set(dObj, { merge: true }).catch(function() {}));
-        });
-        oldArchIdsToDelete.forEach(function(oldId) {
-          if (String(oldId) !== String(newArchId) || (currentTrayIds.length === 0 && commonNames.length === 0)) {
-            promises.push(db.collection('archives').doc(String(oldId)).delete().catch(function() {}));
-          }
-        });
-        if (currentTrayIds.length > 0 || commonNames.length > 0) {
-          promises.push(db.collection('archives').doc(String(newArchId)).set(updatedArchive));
-        }
-        promises.push(syncCurrentStateToDb());
-        await Promise.all(promises);
-        setCloudStatusLamp('connected');
-      } catch (err) {
-        console.error(err);
-        setCloudStatusLamp('disconnected');
-      }
-    } else {
-      await syncCurrentStateToDb();
-    }
-
-    return true;
-  }
-
-  // [7단계 -> 8단계 연결] '결과 공유' 버튼 클릭 시 동작
-  window.toggleShoppingSharePullup = async function(e) {
-    if (e) { e.stopPropagation(); e.preventDefault(); }
-    var pullup = document.getElementById('shoppingSharePullupMenu');
-    var arrow = document.getElementById('shoppingShareArrow');
-    if (!pullup) return;
-
-    if (!pullup.classList.contains('hidden')) {
-      window.closeShoppingSharePullup();
-      return;
-    }
-
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    var treesMap = window.shoppingTreesMap || {};
-    var tree = treesMap[cleanDate];
-
-    var hasChecked = tree && Array.isArray(tree.groups) && tree.groups.some(function(g) {
-      return Array.isArray(g.items) && g.items.some(function(it) { return Boolean(it && it.checked); });
-    });
-
-    if (!hasChecked) {
-      await showCustomAlert('체크된 품목이 없습니다.\n장보기 품목을 체크하고 [✅ 장보기 완료]를 먼저 눌러주세요.', '🛒');
-      return;
-    }
-
-    // 7)번 사항('장보기 완료')이 아직 안 눌린 상태라면 먼저 완료하도록 안내
-    if (!tree || !tree.shoppingCompleted) {
-      await showCustomAlert('먼저 좌측의 [✅ 장보기 완료] 버튼을 눌러 장보기를 완료해 주세요.\n(완료 후 결과 공유를 누르면 미체크 항목이 자동 삭제 저장됩니다)', '🛒');
-      return;
-    }
-
-    // '결과 공유'를 눌러 넘어갈 때 미체크 재료와 메뉴를 자동 삭제하여 즉시 저장!
-    if (isLeader && !tree.autoCleaned) {
-      await autoDeleteUncheckedAndSaveOnShareV106(cleanDate);
-    }
-
-    pullup.classList.remove('hidden');
-    if (arrow) arrow.style.transform = 'rotate(180deg)';
-  };
-
-  // 공유 미리보기(이미지 저장 / 문자 복사)로 넘어갈 때도 혹시 미정리된 미체크 항목이 있다면 2중 보장 정리
-  var _prevOpenOrderSharePreviewV106 = window.openOrderSharePreview;
-  window.openOrderSharePreview = async function(mode, qualityKey) {
-    var curEl = document.getElementById('currentDate');
-    var cleanDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    var treesMap = window.shoppingTreesMap || {};
-    var tree = treesMap[cleanDate];
-
-    if (isLeader && tree && tree.shoppingCompleted && !tree.autoCleaned) {
-      await autoDeleteUncheckedAndSaveOnShareV106(cleanDate);
-    }
-    if (_prevOpenOrderSharePreviewV106) {
-      await _prevOpenOrderSharePreviewV106(mode, qualityKey);
-    }
-  };
-
-  // 초기 화면 동기화
-  renderTray();
-  renderArchiveGrid();
-})();
-</script>
-<!-- ================= [패치 v10.6 END] ================= -->
-
-<!-- ================= [패치 v10.7 START: 장보기 UI · 문자복사 · 슬림 JPG 레이아웃 전면 개편] ================= -->
-<style id="sejongPatchStyleV107">
-  /* 1-1) 장보기 목록(총 00품목) +2pt 크고 두껍게 & 오른쪽 월일(2주) +1pt 크게 & 목록과 겹침 완벽 방지 */
+<!-- ================= [패치 v10.9 START: 장보기 완료·결과공유·식단확정 단일 통합 엔진] ================= -->
+<style id="sejongPatchStyleV109">
+  /* 1) 장보기 목록 상단 타이틀(+2pt 굵게) & 오른쪽 월일(2주)(+1pt 크게) & 겹침 방지 */
   #shoppingListModal > #shoppingModalInnerCard > div:first-child {
     padding: 9px 10px !important;
     background-color: #f0fdfa !important;
@@ -12118,8 +11500,8 @@
     padding-top: 8px !important;
   }
 
-  /* 1-3) '최종완료됨' 이후 '결과 공유' 버튼 테두리가 확대되며 터치를 유도하는 펄스 애니메이션 */
-  @keyframes induceShareBorderPulseV107 {
+  /* 2) '최종완료됨' 이후 '결과 공유' 버튼 테두리 확대 펄스 애니메이션 */
+  @keyframes induceShareBorderPulseV109 {
     0% {
       box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.85), 0 0 0 2px #be185d;
       transform: scale(1);
@@ -12133,14 +11515,14 @@
       transform: scale(1);
     }
   }
-  .share-btn-induce-pulse-v107 {
-    animation: induceShareBorderPulseV107 1.35s ease-in-out infinite !important;
+  .share-btn-induce-pulse-v109 {
+    animation: induceShareBorderPulseV109 1.35s ease-in-out infinite !important;
     border-color: #be185d !important;
     background-color: #db2777 !important;
     z-index: 35 !important;
   }
 
-  /* 1-4) 결과 공유 풀업 메뉴: 가로폭 축소(w-36) & 문자복사 / 이미지 저장 색상 분리 */
+  /* 3) 결과 공유 풀업 메뉴: 가로폭 축소(146px) & 문자복사 / 이미지 저장 색상 분리 */
   #shoppingSharePullupMenu {
     width: 146px !important;
     min-width: 146px !important;
@@ -12153,28 +11535,232 @@
     background-color: #ffffff !important;
     box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25) !important;
     overflow: hidden !important;
+    z-index: 60 !important;
   }
 </style>
 
-<script id="sejongPatchScriptV107">
-(function applyPatchV107() {
-  var SHOPPING_STORAGE_KEY = 'sejong_shopping_trees_v1';
+<script id="sejongPatchScriptV109">
+(function applyUnifiedMasterPatchV109() {
+  var SHOPPING_STORAGE_KEY     = 'sejong_shopping_trees_v1';
+  var SHOP_DONE_MAP_KEY        = 'sejong_shopping_done_map_v109';
+  var CONFIRMED_DATES_V109_KEY = 'sejong_confirmed_dates_v106';
+  var CONFIRMED_ONLY_DATES_KEY = 'sejong_confirmed_only_dates_v105';
+  var LAST_DATE_KEY            = 'sejong_fast_last_date_v1';
 
   // =========================================================================
-  // [1-4] 결과 공유 풀업 메뉴 및 미리보기 화질 탭(표준 / 고화질 / 초고화질) UI 재구성
-  //       - 가로폭 축소, '문자 복사'와 '이미지 저장' 색상 다르게 구분
-  //       - '이미지 저장' 문구는 단 하나만 두고 아래에 (표준, 고화질, 초고화질) 배치
+  // 파트 A: '장보기 완료' 상태 전용 영구 저장소 (v10.1이 덮어써도 절대 지워지지 않음!)
   // =========================================================================
-  function upgradeSharePullupAndPreviewUIV107() {
+  var shoppingDoneMapV109 = {};
+  try {
+    var rawDone = localStorage.getItem(SHOP_DONE_MAP_KEY);
+    if (rawDone) shoppingDoneMapV109 = JSON.parse(rawDone) || {};
+  } catch (e) { shoppingDoneMapV109 = {}; }
+
+  function saveShoppingDoneMapV109() {
+    try {
+      localStorage.setItem(SHOP_DONE_MAP_KEY, JSON.stringify(shoppingDoneMapV109));
+    } catch (e) {}
+  }
+
+  function isShoppingMarkedDoneV109(cleanDate) {
+    if (!cleanDate) return false;
+    if (shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].completed === true) {
+      return true;
+    }
+    var map = window.shoppingTreesMap || {};
+    if (map[cleanDate] && map[cleanDate].shoppingCompleted === true) {
+      return true;
+    }
+    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap && weeklyPlanMap[cleanDate] && weeklyPlanMap[cleanDate].shoppingCompleted === true) {
+      return true;
+    }
+    var arch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
+    if (arch && (arch.shoppingCompletedAt || arch.leftoverNote === '장보기 완료')) {
+      return true;
+    }
+    return false;
+  }
+
+  function setShoppingMarkedDoneV109(cleanDate, isDone, isAutoCleaned) {
+    if (!cleanDate) return;
+    shoppingDoneMapV109[cleanDate] = {
+      completed: Boolean(isDone),
+      autoCleaned: Boolean(isAutoCleaned),
+      updatedAt: Date.now()
+    };
+    saveShoppingDoneMapV109();
+  }
+
+  function getActiveCleanDateV109() {
+    var curEl = document.getElementById('currentDate');
+    return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
+  }
+
+  // =========================================================================
+  // 파트 B: 식단확정 영구 유지 (패치 업데이트나 재접속 시에도 절대 풀리지 않음)
+  // =========================================================================
+  var persistentConfirmedSet = window.persistentConfirmedSetV108 = window.persistentConfirmedSetV108 || new Set();
+
+  function savePersistentConfirmedDatesV109() {
+    try {
+      localStorage.setItem(CONFIRMED_DATES_V109_KEY, JSON.stringify(Array.from(persistentConfirmedSet)));
+    } catch (e) {}
+  }
+
+  function recoverAllConfirmedDatesV109() {
+    try {
+      [CONFIRMED_DATES_V109_KEY, CONFIRMED_ONLY_DATES_KEY].forEach(function(k) {
+        var raw = localStorage.getItem(k);
+        if (raw) {
+          var parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(function(d) {
+              var clean = normalizeCompactDateStr(d);
+              if (clean && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(clean))) {
+                persistentConfirmedSet.add(clean);
+              }
+            });
+          }
+        }
+      });
+    } catch (e) {}
+
+    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
+      Object.keys(weeklyPlanMap).forEach(function(k) {
+        var cleanK = normalizeCompactDateStr(k);
+        if (!cleanK) return;
+        if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK)) return;
+        var plan = weeklyPlanMap[k];
+        if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0 && plan.unconfirmedByReload !== true) {
+          plan.isConfirmedPlan = true;
+          persistentConfirmedSet.add(cleanK);
+        }
+      });
+      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    }
+
+    if (Array.isArray(archiveList)) {
+      archiveList.forEach(function(a) {
+        if (a && a.date) {
+          var cleanD = normalizeCompactDateStr(a.date);
+          if (cleanD && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanD))) {
+            persistentConfirmedSet.add(cleanD);
+          }
+        }
+      });
+    }
+    savePersistentConfirmedDatesV109();
+  }
+
+  recoverAllConfirmedDatesV109();
+
+  window.isDateConfirmedOnCalendarV106 = function(dateStr) {
+    var cleanDate = normalizeCompactDateStr(dateStr);
+    if (!cleanDate) return false;
+    if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanDate)) return false;
+
+    var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[cleanDate] : null;
+    if (plan && plan.unconfirmedByReload === true) return false;
+    if (persistentConfirmedSet.has(cleanDate)) return true;
+
+    var inArchive = Array.isArray(archiveList) && archiveList.some(function(a) {
+      return a && normalizeCompactDateStr(a.date) === cleanDate && Array.isArray(a.dishIds) && a.dishIds.length > 0;
+    });
+    if (inArchive) {
+      persistentConfirmedSet.add(cleanDate);
+      return true;
+    }
+
+    if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
+      plan.isConfirmedPlan = true;
+      persistentConfirmedSet.add(cleanDate);
+      savePersistentConfirmedDatesV109();
+      return true;
+    }
+    return false;
+  };
+
+  // 식단확정 다이얼 저장 시 확정 상태 영구 보존
+  var _prevExecuteDialConfirmSaveV109 = executeDialConfirmSave;
+  executeDialConfirmSave = async function() {
+    var dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
+    persistentConfirmedSet.add(dateStr);
+    savePersistentConfirmedDatesV109();
+    setShoppingMarkedDoneV109(dateStr, false, false);
+    try { localStorage.setItem(LAST_DATE_KEY, dateStr); } catch (e) {}
+
+    if (_prevExecuteDialConfirmSaveV109) {
+      await _prevExecuteDialConfirmSaveV109();
+    }
+
+    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
+      weeklyPlanMap[dateStr] = weeklyPlanMap[dateStr] || {};
+      weeklyPlanMap[dateStr].trayIds = currentTrayIds.slice();
+      weeklyPlanMap[dateStr].isConfirmedPlan = true;
+      weeklyPlanMap[dateStr].confirmedOnly = true;
+      weeklyPlanMap[dateStr].unconfirmedByReload = false;
+      weeklyPlanMap[dateStr].updatedAt = Date.now();
+      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    }
+    await syncCurrentStateToDb();
+  };
+
+  // syncCurrentStateToDb 보호
+  syncCurrentStateToDb = async function() {
+    var selEl = document.getElementById('currentDate');
+    var selectedDate = normalizeCompactDateStr(selEl ? selEl.value : getCurrentWeekSundayString());
+    currentSavedPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds[0]) || currentSavedPhotoId || 'default_4';
+
+    var prevPlan = (weeklyPlanMap && weeklyPlanMap[selectedDate]) ? weeklyPlanMap[selectedDate] : {};
+    var isConfirmedNow = (prevPlan.unconfirmedByReload === true)
+      ? false
+      : Boolean(prevPlan.isConfirmedPlan || prevPlan.confirmedOnly || prevPlan.shoppingCompleted || persistentConfirmedSet.has(selectedDate));
+
+    if (isConfirmedNow && currentTrayIds && currentTrayIds.length > 0) {
+      persistentConfirmedSet.add(selectedDate);
+      savePersistentConfirmedDatesV109();
+    }
+
+    weeklyPlanMap[selectedDate] = Object.assign({}, prevPlan, {
+      trayIds: currentTrayIds.slice(),
+      photoId: currentSavedPhotoId,
+      photoIds: (currentSavedPhotoIds || []).slice(),
+      isConfirmedPlan: isConfirmedNow,
+      updatedAt: Date.now()
+    });
+    if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    populateDateDropdownOptions(selectedDate);
+
+    if (!db) return;
+    setCloudStatusLamp('saving');
+    try {
+      await db.collection('settings').doc('currentState').set({
+        date: selectedDate,
+        trayIds: currentTrayIds,
+        photoId: currentSavedPhotoId,
+        photoIds: currentSavedPhotoIds,
+        weeklyPlans: weeklyPlanMap,
+        confirmedDatesList: Array.from(persistentConfirmedSet),
+        updatedAt: Date.now()
+      }, { merge: true });
+      setCloudStatusLamp('connected');
+    } catch (e) {
+      console.error(e);
+      setCloudStatusLamp('disconnected');
+    }
+  };
+
+  // =========================================================================
+  // 파트 C: 장보기 데이터 동기화 & '장보기 완료' ➔ '최종완료됨' ➔ '결과 공유' 완벽 연동
+  // =========================================================================
+  function upgradeSharePullupAndPreviewUIV109() {
     var pullup = document.getElementById('shoppingSharePullupMenu');
     if (pullup) {
       pullup.innerHTML =
-        '<!-- 상단: 문자 복사 (진한 감청/인디고 테마) -->' +
         '<button type="button" onclick="openOrderSharePreview(\'text\', null)" ' +
           'class="w-full px-2.5 py-2.5 text-center text-[12px] font-black text-white bg-indigo-900 hover:bg-indigo-950 active:scale-98 border-b-2 border-slate-700 block transition tracking-tight">' +
           '📋 문자 복사' +
         '</button>' +
-        '<!-- 하단: 이미지 저장 (에메랄드/틸 테마, 이미지 저장 문구는 1개만 표시) -->' +
         '<div class="bg-teal-50 p-1.5 text-center">' +
           '<div class="text-[11.5px] font-black text-teal-950 pb-1 border-b border-teal-200 tracking-tight">' +
             '🖼️ 이미지 저장' +
@@ -12196,7 +11782,6 @@
         '</div>';
     }
 
-    // 미리보기 모달의 3단계 화질 탭도 [표준 / 고화질 / 초고화질]로 업그레이드
     var qualBar = document.getElementById('orderPreviewQualityBar');
     if (qualBar) {
       var tabGrid = qualBar.querySelector('.grid.grid-cols-3');
@@ -12208,36 +11793,26 @@
       }
     }
   }
-  upgradeSharePullupAndPreviewUIV107();
+  upgradeSharePullupAndPreviewUIV109();
 
-  // =========================================================================
-  // [1-2 & 1-3] 장보기 체크박스 상태 완벽 동기화 (버그 수정) & '최종완료됨' + '결과 공유' 터치 유도
-  // =========================================================================
-  function getActiveCleanDateV107() {
-    var curEl = document.getElementById('currentDate');
-    return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-  }
-
-  // 로컬스토리지와 window.shoppingTreesMap 및 DOM 상의 체크박스(.shop-tree-checkbox.checked)를 완벽 동기화하는 헬퍼
-  function getSyncedShoppingTreeV107(cleanDate) {
-    var map = window.shoppingTreesMap || {};
+  // v10.1의 지역변수 shoppingTreesMap이 저장한 localStorage와 현재 화면 DOM 체크박스를 100% 읽어오는 함수
+  function getSyncedShoppingTreeV109(cleanDate) {
+    var allTrees = {};
     try {
       var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        if (parsed && parsed[cleanDate]) {
-          if (!map[cleanDate] || (parsed[cleanDate].updatedAt || 0) >= (map[cleanDate].updatedAt || 0)) {
-            map[cleanDate] = parsed[cleanDate];
-          }
-        }
-      }
+      if (raw) allTrees = JSON.parse(raw) || {};
     } catch (e) {}
 
-    var tree = map[cleanDate];
+    if (window.shoppingTreesMap && window.shoppingTreesMap[cleanDate]) {
+      if (!allTrees[cleanDate]) {
+        allTrees[cleanDate] = window.shoppingTreesMap[cleanDate];
+      }
+    }
+
+    var tree = allTrees[cleanDate];
     if (!tree || !Array.isArray(tree.groups)) return null;
 
-    // 화면 DOM에 렌더링되어 있는 실제 체크박스(.shop-tree-checkbox) 상태를 읽어 데이터 모델에 100% 반영
-    // (점선 안 '+' 비고창 .shop-memo-plus-box 는 체크 대상에서 완전 제외됨)
+    // 화면 DOM에 렌더링되어 있는 실제 체크박스(.shop-tree-checkbox) 상태를 읽어 데이터 모델에 반영
     var container = document.getElementById('shoppingTreeContainer');
     if (container) {
       var domChkBoxes = container.querySelectorAll('.shop-tree-checkbox');
@@ -12249,40 +11824,27 @@
       });
       if (domChkBoxes.length === flatItems.length && domChkBoxes.length > 0) {
         domChkBoxes.forEach(function(boxEl, idx) {
-          if (boxEl.classList.contains('checked')) {
-            flatItems[idx].checked = true;
-          }
-        });
-      } else if (domChkBoxes.length > 0) {
-        // 개수가 다를 경우 재료 이름 매칭으로 보조 동기화
-        domChkBoxes.forEach(function(boxEl) {
-          if (!boxEl.classList.contains('checked')) return;
-          var touchArea = boxEl.parentElement;
-          if (!touchArea) return;
-          var nameSpan = touchArea.lastElementChild;
-          var rawName = nameSpan ? (nameSpan.getAttribute('data-raw-ing-name') || nameSpan.textContent || '').trim() : '';
-          if (rawName) {
-            flatItems.forEach(function(it) {
-              if (String(it.name || '').trim() === rawName) it.checked = true;
-            });
-          }
+          flatItems[idx].checked = boxEl.classList.contains('checked');
         });
       }
     }
 
-    map[cleanDate] = tree;
-    window.shoppingTreesMap = map;
-    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(map)); } catch (e) {}
+    // 전용 완료 저장소(shoppingDoneMapV109)에 완료 기록이 있으면 복원 (v10.1이 지워버려도 여기서 자동 부활!)
+    if (isShoppingMarkedDoneV109(cleanDate)) {
+      tree.shoppingCompleted = true;
+      tree.autoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+    }
+
+    allTrees[cleanDate] = tree;
+    window.shoppingTreesMap = allTrees;
+    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(allTrees)); } catch (e) {}
     return tree;
   }
 
-  // 완료 버튼('최종완료됨') 및 '결과 공유' 테두리 확대 애니메이션 상태 업데이트
-  window.updateShoppingFooterButtonsV107 = function(cleanDate) {
+  window.updateShoppingFooterButtonsV109 = function(cleanDate) {
     var completeBtn = document.getElementById('shoppingCompleteActionBtn');
     var shareBtn = document.getElementById('shoppingShareTriggerBtn');
-    var map = window.shoppingTreesMap || {};
-    var tree = map[cleanDate];
-    var isCompleted = Boolean(tree && tree.shoppingCompleted);
+    var isCompleted = isShoppingMarkedDoneV109(cleanDate);
 
     if (completeBtn) {
       if (isCompleted) {
@@ -12296,30 +11858,43 @@
 
     if (shareBtn) {
       if (isCompleted) {
-        shareBtn.classList.add('share-btn-induce-pulse-v107');
+        shareBtn.classList.add('share-btn-induce-pulse-v109');
       } else {
-        shareBtn.classList.remove('share-btn-induce-pulse-v107');
+        shareBtn.classList.remove('share-btn-induce-pulse-v109');
       }
     }
   };
 
-  // 장보기 트리 렌더링 후 항상 window.shoppingTreesMap과 localStorage를 최신으로 일치시키고 상단 타이틀/배지 갱신
-  var _prevRenderShoppingTreeV107 = window.renderShoppingTreeModal;
+  // v10.1의 renderShoppingTreeModal 실행 후 완료 상태가 날아가지 않도록 즉시 복구 및 타이틀/버튼 업데이트
+  var _baseRenderShoppingTreeV109 = window.renderShoppingTreeModal;
   window.renderShoppingTreeModal = function() {
-    if (_prevRenderShoppingTreeV107) _prevRenderShoppingTreeV107();
-    var cleanDate = getActiveCleanDateV107();
-    try {
-      var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
-      if (raw) {
-        var parsed = JSON.parse(raw);
-        if (parsed && parsed[cleanDate]) {
-          window.shoppingTreesMap = window.shoppingTreesMap || {};
-          window.shoppingTreesMap[cleanDate] = parsed[cleanDate];
-        }
-      }
-    } catch (e) {}
+    var cleanDate = getActiveCleanDateV109();
+    var wasDone = isShoppingMarkedDoneV109(cleanDate);
+    var wasAutoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
 
-    // 상단 타이틀 '장보기 목록(총 00품목)' & 우측 '월일(2주)' 배지 겹침 방지 및 텍스트 보정
+    if (_baseRenderShoppingTreeV109) {
+      _baseRenderShoppingTreeV109();
+    }
+
+    // v10.1이 덮어쓴 localStorage에 shoppingCompleted를 다시 박아넣음
+    if (wasDone) {
+      setShoppingMarkedDoneV109(cleanDate, true, wasAutoCleaned);
+      try {
+        var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
+        if (raw) {
+          var parsed = JSON.parse(raw) || {};
+          if (parsed[cleanDate]) {
+            parsed[cleanDate].shoppingCompleted = true;
+            parsed[cleanDate].autoCleaned = wasAutoCleaned;
+            localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(parsed));
+            window.shoppingTreesMap = parsed;
+          }
+        }
+      } catch (e) {}
+    } else {
+      getSyncedShoppingTreeV109(cleanDate);
+    }
+
     var badgeEl = document.getElementById('shoppingModalDateBadge');
     if (badgeEl) {
       var shortDate = cleanDate.replace(/^\d{4}년\s*/, '').trim();
@@ -12337,17 +11912,48 @@
       titleEl.textContent = '장보기 목록(총 ' + totalCnt + '품목)';
     }
 
-    window.updateShoppingFooterButtonsV107(cleanDate);
+    window.updateShoppingFooterButtonsV109(cleanDate);
   };
 
-  // [1-2 & 1-3 핵심] '장보기 완료' 클릭 시 체크 인식 오류 해결 및 '최종완료됨' + '결과 공유' 펄스 유도
+  // [장보기 열기] 달력에 확정·예정된 상태인지 확인 후 오픈
+  window.openShoppingListModal = async function() {
+    var cleanDate = getActiveCleanDateV109();
+    if (!currentTrayIds || currentTrayIds.length === 0) {
+      await showCustomAlert('식판에 모아진 메뉴가 없습니다.\n반찬바구니에서 메뉴를 먼저 담아주세요.', '🍱');
+      return;
+    }
+
+    if (!window.isDateConfirmedOnCalendarV106(cleanDate)) {
+      await showCustomAlert(
+        '[' + cleanDate + ']\n아직 식단확정이 되지 않은 상태입니다.\n\n먼저 [식단확정]을 눌러 달력에 확정·예정이 기록된 후에야 장보기 기능을 사용할 수 있습니다.',
+        '🔒'
+      );
+      return;
+    }
+
+    if (typeof window.closeShoppingSharePullup === 'function') {
+      window.closeShoppingSharePullup();
+    }
+
+    window.activeAddInputGroupIdV10 = null;
+    window.activeEditIngTargetV10 = null;
+    window.activeMemoGroupIdV10 = null;
+
+    window.renderShoppingTreeModal();
+    window.updateShoppingFooterButtonsV109(cleanDate);
+
+    var modal = document.getElementById('shoppingListModal');
+    if (modal) modal.classList.remove('hidden');
+  };
+
+  // [✅ 장보기 완료 버튼 클릭]
   window.completeShoppingAndCommit = async function() {
     if (!isLeader) {
       return await showCustomAlert('장보기 완료되어 수정이 안됩니다.', '😊');
     }
 
-    var cleanDate = getActiveCleanDateV107();
-    var tree = getSyncedShoppingTreeV107(cleanDate);
+    var cleanDate = getActiveCleanDateV109();
+    var tree = getSyncedShoppingTreeV109(cleanDate);
 
     if (!tree || !Array.isArray(tree.groups)) {
       await showCustomAlert('장보기 목록 데이터가 없습니다.', '⚠️');
@@ -12355,13 +11961,9 @@
     }
 
     var checkedItemCount = 0;
-    var checkedMenuCount = 0;
     tree.groups.forEach(function(g) {
       var cItems = (g.items || []).filter(function(it) { return Boolean(it && it.checked); });
       checkedItemCount += cItems.length;
-      if (!g.isCommon && g.id !== 'common_group' && cItems.length > 0) {
-        checkedMenuCount++;
-      }
     });
 
     if (checkedItemCount === 0) {
@@ -12369,47 +11971,261 @@
       return;
     }
 
-    // 체크된 품목이 있는 그룹들을 잠금(locked = true) 처리하고 완료 상태 기록
+    // 체크된 품목이 있는 그룹들을 자동으로 잠금(locked = true) 처리
     tree.groups.forEach(function(g) {
       var hasChecked = (g.items || []).some(function(it) { return Boolean(it && it.checked); });
-      if (hasChecked) {
-        g.locked = true;
-      }
+      if (hasChecked) g.locked = true;
     });
 
+    // 전용 완료 저장소와 트리 양쪽에 완료 상태 기록!
+    setShoppingMarkedDoneV109(cleanDate, true, false);
     tree.shoppingCompleted = true;
     tree.autoCleaned = false;
     tree.updatedAt = Date.now();
 
-    window.shoppingTreesMap = window.shoppingTreesMap || {};
-    window.shoppingTreesMap[cleanDate] = tree;
-    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(window.shoppingTreesMap)); } catch (e) {}
+    var allTrees = {};
+    try {
+      var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
+      if (raw) allTrees = JSON.parse(raw) || {};
+    } catch (e) {}
+    allTrees[cleanDate] = tree;
+    window.shoppingTreesMap = allTrees;
+    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(allTrees)); } catch (e) {}
 
     window.activeAddInputGroupIdV10 = null;
     window.activeEditIngTargetV10 = null;
     window.activeMemoGroupIdV10 = null;
 
     window.renderShoppingTreeModal();
-    window.updateShoppingFooterButtonsV107(cleanDate);
+    window.updateShoppingFooterButtonsV109(cleanDate);
   };
 
-  // '결과 공유' 클릭 시 유도 펄스를 잠시 멈추거나 풀업을 열고 미체크 항목 자동 삭제 저장 수행
-  var _prevToggleShoppingSharePullupV107 = window.toggleShoppingSharePullup;
-  window.toggleShoppingSharePullup = async function(e) {
-    var cleanDate = getActiveCleanDateV107();
-    getSyncedShoppingTreeV107(cleanDate);
-    if (_prevToggleShoppingSharePullupV107) {
-      await _prevToggleShoppingSharePullupV107(e);
+  // [결과 공유 클릭 시 미체크 재료·메뉴 자동 삭제 및 DB 저장 함수]
+  async function autoDeleteUncheckedAndSaveOnShareV109(cleanDate) {
+    var tree = getSyncedShoppingTreeV109(cleanDate);
+    if (!tree || !Array.isArray(tree.groups)) return false;
+
+    var keptMenuGroups = [];
+    var checkedCommonItems = [];
+    var commonMemo = '';
+
+    tree.groups.forEach(function(group) {
+      var allItems = Array.isArray(group.items) ? group.items : [];
+      var checkedItems = allItems.filter(function(it) { return Boolean(it && it.checked); });
+
+      if (group.isCommon || group.id === 'common_group') {
+        checkedCommonItems = checkedItems;
+        commonMemo = group.memo || '';
+      } else {
+        if (checkedItems.length > 0) {
+          keptMenuGroups.push({
+            id: group.id,
+            name: group.name,
+            isCommon: false,
+            locked: true,
+            memo: group.memo || '',
+            items: checkedItems
+          });
+        }
+      }
+    });
+
+    var menuIngSummaryLines = [];
+    var updatedDishIds = [];
+    var modifiedBasketDishes = [];
+
+    keptMenuGroups.forEach(function(kGroup) {
+      updatedDishIds.push(kGroup.id);
+      var checkedNames = kGroup.items.map(function(it) { return it.name; }).filter(Boolean);
+      var lineStr = '• ' + kGroup.name.replace('(👶)', '') + ': ' + checkedNames.join(', ');
+      if (kGroup.memo) lineStr += ' (' + kGroup.memo.replace(/\r?\n/g, ' / ') + ')';
+      menuIngSummaryLines.push(lineStr);
+
+      var dishObj = (masterBasket || []).find(function(d) { return String(d.id) === String(kGroup.id); });
+      if (dishObj) {
+        dishObj.note = checkedNames.join(', ');
+        if (kGroup.memo) dishObj.recipe = kGroup.memo.split(/\r?\n/).slice(0, 2).join('\n').trim();
+        modifiedBasketDishes.push(dishObj);
+      }
+    });
+
+    if (typeof window.sortTrayIdsByCategoryOrder === 'function') {
+      window.sortTrayIdsByCategoryOrder(updatedDishIds);
     }
-    window.updateShoppingFooterButtonsV107(cleanDate);
+
+    var commonNames = checkedCommonItems.map(function(it) { return it.name; }).filter(Boolean);
+    var finalRawIngredients = menuIngSummaryLines.join('\n');
+    var finalSupplies = commonNames.join(', ') + (commonMemo ? (' (' + commonMemo.replace(/\r?\n/g, ' / ') + ')') : '');
+
+    var cleanedGroups = keptMenuGroups.slice();
+    cleanedGroups.push({
+      id: 'common_group',
+      name: '공통재료',
+      isCommon: true,
+      locked: checkedCommonItems.length > 0,
+      memo: commonMemo,
+      items: checkedCommonItems
+    });
+
+    var cleanedTree = {
+      date: cleanDate,
+      groups: cleanedGroups,
+      shoppingCompleted: true,
+      autoCleaned: true,
+      updatedAt: Date.now()
+    };
+
+    setShoppingMarkedDoneV109(cleanDate, true, true);
+    var allTrees = {};
+    try {
+      var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
+      if (raw) allTrees = JSON.parse(raw) || {};
+    } catch (e) {}
+    allTrees[cleanDate] = cleanedTree;
+    window.shoppingTreesMap = allTrees;
+    try { localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(allTrees)); } catch (e) {}
+
+    currentTrayIds = updatedDishIds.slice();
+    var firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || 'default_4');
+
+    persistentConfirmedSet.add(cleanDate);
+    savePersistentConfirmedDatesV109();
+
+    try {
+      var rawConfOnly = localStorage.getItem(CONFIRMED_ONLY_DATES_KEY);
+      if (rawConfOnly) {
+        var parsedOnly = JSON.parse(rawConfOnly).filter(function(d) { return normalizeCompactDateStr(d) !== cleanDate; });
+        localStorage.setItem(CONFIRMED_ONLY_DATES_KEY, JSON.stringify(parsedOnly));
+      }
+    } catch (e) {}
+
+    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
+      weeklyPlanMap[cleanDate] = Object.assign({}, weeklyPlanMap[cleanDate] || {}, {
+        trayIds: currentTrayIds.slice(),
+        photoId: firstPhotoId,
+        photoIds: (currentSavedPhotoIds || []).slice(),
+        rawIngredients: finalRawIngredients,
+        supplies: finalSupplies,
+        isConfirmedPlan: true,
+        confirmedOnly: false,
+        shoppingCompleted: true,
+        updatedAt: Date.now()
+      });
+      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
+    }
+
+    var existingArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
+    var firstMain = (masterBasket || []).find(function(d) { return currentTrayIds.indexOf(d.id) !== -1 && d.cat === '메인반찬'; }) ||
+                    (masterBasket || []).find(function(d) { return d.id === currentTrayIds[0]; });
+    var newArchId = existingArch ? String(existingArch.id) : String(Date.now());
+
+    var updatedArchive = {
+      id: newArchId,
+      date: cleanDate,
+      title: existingArch && existingArch.title ? existingArch.title : ((firstMain ? firstMain.name.replace('(👶)', '') : '공동체') + ' 식단'),
+      season: existingArch && existingArch.season ? existingArch.season : (typeof inferSeasonFromDateStr === 'function' ? inferSeasonFromDateStr(cleanDate) : '가을'),
+      menuType: existingArch && existingArch.menuType ? existingArch.menuType : '육류',
+      dishIds: currentTrayIds.slice(),
+      headcount: existingArch && existingArch.headcount ? String(existingArch.headcount).replace(/\s*\(기준\)/g, '').trim() : '300명',
+      leftoverNote: existingArch && existingArch.leftoverNote ? existingArch.leftoverNote : '장보기 완료',
+      rawIngredients: finalRawIngredients,
+      supplies: finalSupplies,
+      shoppingTree: cleanedTree,
+      shoppingCompletedAt: Date.now(),
+      likes: existingArch && existingArch.likes ? existingArch.likes : 9,
+      photoId: existingArch && existingArch.photoId && String(existingArch.photoId).indexOf('default_') !== 0 ? existingArch.photoId : firstPhotoId,
+      photoIds: existingArch && Array.isArray(existingArch.photoIds) && existingArch.photoIds.length > 0 ? existingArch.photoIds : (currentSavedPhotoIds || []).slice(),
+      createdAt: Date.now()
+    };
+
+    archiveList = (archiveList || []).filter(function(a) {
+      return !(a && normalizeCompactDateStr(a.date) === cleanDate);
+    });
+    if (currentTrayIds.length > 0 || commonNames.length > 0) {
+      archiveList.unshift(updatedArchive);
+    }
+
+    window.renderShoppingTreeModal();
+    renderTray();
+    renderBasket();
+    renderArchiveGrid();
+
+    if (db) {
+      setCloudStatusLamp('saving');
+      try {
+        var promises = [];
+        modifiedBasketDishes.forEach(function(dObj) {
+          promises.push(db.collection('basket').doc(String(dObj.id)).set(dObj, { merge: true }).catch(function() {}));
+        });
+        if (currentTrayIds.length > 0 || commonNames.length > 0) {
+          promises.push(db.collection('archives').doc(String(newArchId)).set(updatedArchive));
+        }
+        promises.push(syncCurrentStateToDb());
+        await Promise.all(promises);
+        setCloudStatusLamp('connected');
+      } catch (err) {
+        console.error(err);
+        setCloudStatusLamp('disconnected');
+      }
+    } else {
+      await syncCurrentStateToDb();
+    }
+    return true;
+  }
+
+  // [결과 공유 버튼 클릭] 막힘 없이 풀업 메뉴 즉시 오픈!
+  window.toggleShoppingSharePullup = async function(e) {
+    if (e) { e.stopPropagation(); e.preventDefault(); }
+    var pullup = document.getElementById('shoppingSharePullupMenu');
+    var arrow = document.getElementById('shoppingShareArrow');
+    if (!pullup) return;
+
+    if (!pullup.classList.contains('hidden')) {
+      window.closeShoppingSharePullup();
+      return;
+    }
+
+    upgradeSharePullupAndPreviewUIV109();
+
+    var cleanDate = getActiveCleanDateV109();
+    var tree = getSyncedShoppingTreeV109(cleanDate);
+
+    var hasChecked = tree && Array.isArray(tree.groups) && tree.groups.some(function(g) {
+      return Array.isArray(g.items) && g.items.some(function(it) { return Boolean(it && it.checked); });
+    });
+
+    if (!hasChecked) {
+      await showCustomAlert('체크된 품목이 없습니다.\n장보기 품목을 체크하고 [✅ 장보기 완료]를 먼저 눌러주세요.', '🛒');
+      return;
+    }
+
+    var completeBtn = document.getElementById('shoppingCompleteActionBtn');
+    var isBtnShowingDone = completeBtn && completeBtn.innerText.indexOf('완료됨') !== -1;
+
+    // '장보기 완료'가 이미 눌렸거나 버튼에 '최종완료됨'이 표시되어 있으면 통과!
+    if (!isShoppingMarkedDoneV109(cleanDate) && !isBtnShowingDone) {
+      await showCustomAlert('먼저 가운데 [✅ 장보기 완료] 버튼을 눌러 장보기를 완료해 주세요.', '🛒');
+      return;
+    }
+
+    // 혹시 완료 플래그가 누락되었더라도 강제 동기화
+    setShoppingMarkedDoneV109(cleanDate, true, Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned));
+
+    // 미체크 재료와 메뉴 자동 삭제 저장 수행
+    var isAlreadyAutoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+    if (isLeader && !isAlreadyAutoCleaned) {
+      await autoDeleteUncheckedAndSaveOnShareV109(cleanDate);
+    }
+
+    pullup.classList.remove('hidden');
+    if (arrow) arrow.style.transform = 'rotate(180deg)';
   };
 
   // =========================================================================
-  // [2-1 & 3-1~5 공통] 날짜 포맷 변환기 및 주문 데이터 추출기
+  // 파트 D: 문자 복사 (10자 구분선) & 슬림 직사각형 JPG 캔버스 렌더링 (진한 감청색 + 품목 개수)
   // =========================================================================
-  function formatOrderDatesV107(cleanDateStr) {
+  function formatOrderDatesV109(cleanDateStr) {
     var raw = String(cleanDateStr || '').trim();
-    // 예: '2026년 11월8일(2주)'
     var m = raw.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
     if (m) {
       var y = parseInt(m[1], 10);
@@ -12419,21 +12235,18 @@
       var dowNames = ['일', '월', '화', '수', '목', '금', '토'];
       var dow = dowNames[dateObj.getDay()] || '일';
       return {
-        textDate: y + '년 ' + mo + '월' + d + '일',          // 문자복사용: 2026년 11월8일
-        imageDate: y + '년 ' + mo + '월 ' + d + '일(' + dow + ')' // 이미지용: 2026년 11월 8일(일)
+        textDate: y + '년 ' + mo + '월' + d + '일',
+        imageDate: y + '년 ' + mo + '월 ' + d + '일(' + dow + ')'
       };
     }
     var fallback = raw.replace(/\s*\(\d+주\)/g, '').trim();
-    return {
-      textDate: fallback,
-      imageDate: fallback + '(일)'
-    };
+    return { textDate: fallback, imageDate: fallback + '(일)' };
   }
 
-  function extractOrderSharePayloadV107() {
-    var cleanDate = getActiveCleanDateV107();
-    var dateInfo = formatOrderDatesV107(cleanDate);
-    var tree = getSyncedShoppingTreeV107(cleanDate);
+  function extractOrderSharePayloadV109() {
+    var cleanDate = getActiveCleanDateV109();
+    var dateInfo = formatOrderDatesV109(cleanDate);
+    var tree = getSyncedShoppingTreeV109(cleanDate);
     var groupsOut = [];
     var totalItemsCount = 0;
 
@@ -12467,21 +12280,9 @@
     };
   }
 
-  // =========================================================================
-  // [2-1] 장보기 문자 복사 기능 개편
-  //  - 모든 구분선은 카톡/문자 공유 시 2열로 넘어가지 않도록 문자 10자 길이('──────────')로 통일
-  //  - 상하 순서:
-  //    '2026년 11월8일' (바로밑줄)
-  //    '세종꿈의교회'
-  //    (한칸 띄어 구분선)
-  //    '-주문 목록(총16 품목)-'
-  //    (목록)
-  //    (조금 띄우고 구분선)
-  //    '-식당 사역팀 제공-'
-  // =========================================================================
   var LINE_10_CHARS = '──────────';
 
-  function buildCompactOrderTextV107(payload) {
+  function buildCompactOrderTextV109(payload) {
     var lines = [
       payload.displayDate,
       LINE_10_CHARS,
@@ -12490,56 +12291,37 @@
       LINE_10_CHARS,
       '-주문 목록(총' + payload.totalItemsCount + ' 품목)-'
     ];
-
     payload.groups.forEach(function(g) {
       lines.push('● ' + g.name + ' (' + g.count + ')');
-      g.items.forEach(function(itName) {
-        lines.push('  ' + itName);
-      });
-      g.memoLines.forEach(function(mLine) {
-        lines.push('  * ' + mLine);
-      });
+      g.items.forEach(function(itName) { lines.push('  ' + itName); });
+      g.memoLines.forEach(function(mLine) { lines.push('  * ' + mLine); });
     });
-
     lines.push('');
     lines.push(LINE_10_CHARS);
     lines.push('-식당 사역팀 제공-');
     return lines.join('\n');
   }
 
-  // =========================================================================
-  // [3-1 ~ 3-5] 장보기 이미지 저장(JPG) 레이아웃 전면 개편
-  //  - 화질 등급: 표준(standard) / 고화질(high) / 초고화질(ultra)
-  //  - 좌우·전체 여백을 줄인 슬림하고 긴 직사각형(BASE_W = 320px)으로 용량 최소화 & 선명도 극대화
-  //  - 위 구분선(가는선)과 아래 구분선(굵은선)의 길이를 동일하게 맞춤
-  //  - 품목의 시작 위치를 아래 구분선의 시작 시점(lineStartX)과 상하 수직 기준 일치
-  //  - 각 메뉴 이름은 진한 감청색(#1e3a8a) + '짜장밥 (7)'처럼 품목 개수 표시
-  //  - 순서: 로고 타이틀 -> 가는 구분선 -> 년월일(요일)(타이틀보다 1pt 작게) -> -주문 목록(총 16 품목)- -> 굵은 구분선 -> 목록 나열 -> '끝.' -> 한줄 띄우고 '- 식당 사역팀 제공 -' 중앙정렬
-  // =========================================================================
-  var QUALITY_PRESETS_V107 = {
+  var QUALITY_PRESETS_V109 = {
     standard: { label: '표준',     baseWidth: 480, quality: 0.78 },
     high:     { label: '고화질',   baseWidth: 680, quality: 0.88 },
     ultra:    { label: '초고화질', baseWidth: 920, quality: 0.95 }
   };
 
-  function wrapCanvasLinesV107(ctx, text, maxWidth) {
+  function wrapCanvasLinesV109(ctx, text, maxWidth) {
     var str = String(text || '');
     if (!str || ctx.measureText(str).width <= maxWidth) return [str];
     var res = [], cur = '';
     for (var i = 0; i < str.length; i++) {
       var test = cur + str[i];
-      if (ctx.measureText(test).width > maxWidth && cur.length > 0) {
-        res.push(cur);
-        cur = str[i];
-      } else {
-        cur = test;
-      }
+      if (ctx.measureText(test).width > maxWidth && cur.length > 0) { res.push(cur); cur = str[i]; }
+      else { cur = test; }
     }
     if (cur) res.push(cur);
     return res;
   }
 
-  function strokeRoundedRectV107(ctx, x, y, w, h, r) {
+  function strokeRoundedRectV109(ctx, x, y, w, h, r) {
     var radius = Math.min(r, w / 2, h / 2);
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
@@ -12555,75 +12337,58 @@
     ctx.stroke();
   }
 
-  function renderCompactOrderCanvasV107(payload, qualityKey) {
-    var preset = QUALITY_PRESETS_V107[qualityKey] || QUALITY_PRESETS_V107.standard;
-
-    // 3-5) 비고란 설명문자보다 조금만 더 여유를 둔 슬림한 직사각형 폭 (320px) 및 최소 상하 여백
+  function renderCompactOrderCanvasV109(payload, qualityKey) {
+    var preset = QUALITY_PRESETS_V109[qualityKey] || QUALITY_PRESETS_V109.standard;
     var BASE_W = 320;
     var scale = preset.baseWidth / BASE_W;
 
-    // 3-1 & 3-2) 위 구분선과 아래 굵은 구분선의 길이를 동일하게 맞추고, 그 시작점(lineStartX)에 품목 시작 위치를 일치시킴
-    var sideMargin = 16;                 // 좌우 최소 여백 (16px)
-    var lineStartX = sideMargin;         // 구분선 시작 X좌표 = 품목(메뉴) 시작 X좌표 (16px)
-    var lineEndX   = BASE_W - sideMargin; // 구분선 끝 X좌표 (304px)
-    var branchX    = lineStartX + 4;     // 트리 기호(├, └) X좌표
-    var itemTextX  = lineStartX + 17;    // 재료/비고 텍스트 시작 X좌표
+    var sideMargin = 16;
+    var lineStartX = sideMargin;
+    var lineEndX   = BASE_W - sideMargin;
+    var branchX    = lineStartX + 4;
+    var itemTextX  = lineStartX + 17;
     var menuMaxW   = lineEndX - (lineStartX + 13);
     var itemMaxW   = lineEndX - itemTextX;
 
     var mCtx = document.createElement('canvas').getContext('2d');
-
-    var topPad = 12;
-    var bottomPad = 12;
-    // 헤더 높이: 로고타이틀(24) + 간격(7) + 가는구분선후간격(8) + 년월일요일(19) + 주문목록(20) + 굵은구분선후간격(9) = 87
-    var headerH = 87;
-    // 푸터 높이: '끝.'(18) + 한줄띄움(14) + '- 식당 사역팀 제공 -'(18) = 50
-    var footerH = 50;
+    var topPad = 12, bottomPad = 12, headerH = 87, footerH = 50;
     var totalBaseH = topPad + headerH;
 
     var preparedGroups = [];
     payload.groups.forEach(function(g) {
       var menuHeaderStr = g.name + ' (' + g.count + ')';
       mCtx.font = '900 13.5px Pretendard, sans-serif';
-      var wrappedTitle = wrapCanvasLinesV107(mCtx, menuHeaderStr, menuMaxW);
+      var wrappedTitle = wrapCanvasLinesV109(mCtx, menuHeaderStr, menuMaxW);
       totalBaseH += wrappedTitle.length * 17 + 1;
 
-      var treeRows = [];
-      var totalChildren = g.items.length + g.memoLines.length;
-      var childIdx = 0;
-
+      var treeRows = [], totalChildren = g.items.length + g.memoLines.length, childIdx = 0;
       mCtx.font = '800 12.5px Pretendard, sans-serif';
       g.items.forEach(function(itName) {
         childIdx++;
-        var wrapped = wrapCanvasLinesV107(mCtx, itName, itemMaxW);
+        var wrapped = wrapCanvasLinesV109(mCtx, itName, itemMaxW);
         treeRows.push({ branch: childIdx === totalChildren ? '└' : '├', lines: wrapped, isMemo: false });
         totalBaseH += wrapped.length * 15.5;
       });
-
       mCtx.font = '700 11.5px Pretendard, sans-serif';
       g.memoLines.forEach(function(mLine) {
         childIdx++;
-        var wrapped = wrapCanvasLinesV107(mCtx, mLine, itemMaxW);
+        var wrapped = wrapCanvasLinesV109(mCtx, mLine, itemMaxW);
         treeRows.push({ branch: childIdx === totalChildren ? '└' : '├', lines: wrapped, isMemo: true });
         totalBaseH += wrapped.length * 14.5;
       });
-
       totalBaseH += 4;
       preparedGroups.push({ titleLines: wrappedTitle, rows: treeRows });
     });
 
     totalBaseH += footerH + bottomPad;
 
-    var outW = Math.round(BASE_W * scale);
-    var outH = Math.ceil(totalBaseH * scale);
+    var outW = Math.round(BASE_W * scale), outH = Math.ceil(totalBaseH * scale);
     var canvas = document.createElement('canvas');
-    canvas.width = outW;
-    canvas.height = outH;
+    canvas.width = outW; canvas.height = outH;
     var ctx = canvas.getContext('2d');
     ctx.scale(scale, scale);
     ctx.textBaseline = 'top';
 
-    // 흰색 배경 및 슬림 외곽 테두리
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, BASE_W, totalBaseH);
     ctx.strokeStyle = '#cbd5e1';
@@ -12632,12 +12397,11 @@
 
     var curY = topPad;
 
-    // 1. 로고 타이틀 (가운데 정렬, 타이틀 높이 24px / 텍스트 폴백 시 16px)
+    // 1. 로고 타이틀
     var logoImg = document.getElementById('printLogoImg') || document.querySelector('header img[src*="tlogo"]');
     var titleImg = document.getElementById('printTitleImg') || document.querySelector('header img[src*="ttitle"]');
     if (logoImg && logoImg.complete && logoImg.naturalWidth > 0 && titleImg && titleImg.complete && titleImg.naturalWidth > 0) {
-      var targetH = 24;
-      var innerLogoH = 18;
+      var targetH = 24, innerLogoH = 18;
       var innerLogoW = (logoImg.naturalWidth / logoImg.naturalHeight) * innerLogoH;
       var boxW = innerLogoW + 7;
       var tW = (titleImg.naturalWidth / titleImg.naturalHeight) * targetH;
@@ -12646,20 +12410,18 @@
 
       ctx.strokeStyle = '#cbd5e1';
       ctx.lineWidth = 1.1;
-      strokeRoundedRectV107(ctx, startX, curY, boxW, targetH, 5);
+      strokeRoundedRectV109(ctx, startX, curY, boxW, targetH, 5);
       try {
         ctx.drawImage(logoImg, startX + 3.5, curY + (targetH - innerLogoH) / 2, innerLogoW, innerLogoH);
         ctx.drawImage(titleImg, startX + boxW + gap, curY, tW, targetH);
       } catch (e) {}
     } else {
-      ctx.fillStyle = '#0f172a';
-      ctx.font = '900 16px Pretendard, sans-serif';
-      ctx.textAlign = 'center';
+      ctx.fillStyle = '#0f172a'; ctx.font = '900 16px Pretendard, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('세종꿈의교회', BASE_W / 2, curY + 3);
     }
     curY += 24 + 7;
 
-    // 2. 가는 구분선 (아래 굵은 구분선과 동일한 좌우 길이: lineStartX ~ lineEndX)
+    // 2. 가는 구분선
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 1.0;
     ctx.beginPath();
@@ -12668,7 +12430,7 @@
     ctx.stroke();
     curY += 8;
 
-    // 3. 년월일(요일) - 타이틀(16px 상당)보다 1포인트 작게 (14.5px)
+    // 3. 년월일(요일) (타이틀보다 1pt 작게)
     ctx.fillStyle = '#0f766e';
     ctx.font = '900 14.5px Pretendard, sans-serif';
     ctx.textAlign = 'center';
@@ -12682,7 +12444,7 @@
     ctx.fillText('-주문 목록(총 ' + payload.totalItemsCount + ' 품목)-', BASE_W / 2, curY);
     curY += 20;
 
-    // 5. 굵은 구분선 (위 가는 구분선과 동일한 길이: lineStartX ~ lineEndX, 두께 2.2px)
+    // 5. 굵은 구분선 (위 구분선과 동일 길이)
     ctx.strokeStyle = '#475569';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -12691,16 +12453,13 @@
     ctx.stroke();
     curY += 9;
 
-    // 6. 목록 나열 (품목의 시작 위치를 아래 구분선의 시작시점 lineStartX 와 상하 수직 기준 일치!)
-    //    각 메뉴 이름은 진한 감청색(#1e3a8a) + '짜장밥 (7)' 형태로 표시
+    // 6. 목록 나열 (진한 감청색 + 품목 개수, 아래 구분선 시작점과 수직 정렬 일치)
     ctx.textAlign = 'left';
     preparedGroups.forEach(function(grp) {
-      ctx.fillStyle = '#1e3a8a'; // 진한 감청색
+      ctx.fillStyle = '#1e3a8a';
       ctx.font = '900 13.5px Pretendard, sans-serif';
       grp.titleLines.forEach(function(tLine, tIdx) {
-        if (tIdx === 0) {
-          ctx.fillText('●', lineStartX, curY + 0.5);
-        }
+        if (tIdx === 0) ctx.fillText('●', lineStartX, curY + 0.5);
         ctx.fillText(tLine, lineStartX + 13, curY + 0.5);
         curY += 17;
       });
@@ -12710,8 +12469,7 @@
         var stepH = row.isMemo ? 14.5 : 15.5;
         row.lines.forEach(function(lineStr, lIdx) {
           if (lIdx === 0) {
-            ctx.fillStyle = '#94a3b8';
-            ctx.font = '700 11px monospace';
+            ctx.fillStyle = '#94a3b8'; ctx.font = '700 11px monospace';
             ctx.fillText(row.branch, branchX, curY + 1);
           }
           ctx.fillStyle = row.isMemo ? '#0f766e' : '#1e293b';
@@ -12723,7 +12481,7 @@
       curY += 4;
     });
 
-    // 7. 목록 끝 '끝.' 문자 표시 (품목 시작 기준선에 맞춰 깔끔하게 표시)
+    // 7. '끝.'
     curY += 2;
     ctx.fillStyle = '#334155';
     ctx.font = '900 12.5px Pretendard, sans-serif';
@@ -12731,7 +12489,7 @@
     ctx.fillText('끝.', lineStartX, curY);
     curY += 18;
 
-    // 8. 한 줄 띄우고 '- 식당 사역팀 제공 -' 중앙 정렬
+    // 8. 한 줄 띄우고 '- 식당 사역팀 제공 -' 중앙정렬
     curY += 14;
     ctx.fillStyle = '#475569';
     ctx.font = '800 12px Pretendard, sans-serif';
@@ -12740,61 +12498,45 @@
 
     var dataUrl = canvas.toDataURL('image/jpeg', preset.quality);
     var kbStr = (Math.round((dataUrl.length - dataUrl.indexOf(',') - 1) * 0.75) / 1024).toFixed(1) + ' KB';
-    return {
-      dataUrl: dataUrl,
-      width: outW,
-      height: outH,
-      kbStr: kbStr,
-      ext: 'jpg',
-      mime: 'image/jpeg',
-      preset: preset
-    };
+    return { dataUrl: dataUrl, width: outW, height: outH, kbStr: kbStr, ext: 'jpg', mime: 'image/jpeg', preset: preset };
   }
 
-  // =========================================================================
-  // 미리보기 모달 및 확정(저장/복사) 함수 연결
-  // =========================================================================
-  var curShareModeV107 = 'image';
-  var curQualKeyV107 = 'standard';
-  var curImgObjV107 = null;
-  var curTextStrV107 = '';
-  var curPayloadV107 = null;
+  var curShareModeV109 = 'image', curQualKeyV109 = 'standard', curImgObjV109 = null, curTextStrV109 = '', curPayloadV109 = null;
 
   window.switchOrderImageQuality = function(qualityKey) {
-    if (!QUALITY_PRESETS_V107[qualityKey]) qualityKey = 'standard';
-    curQualKeyV107 = qualityKey;
+    if (!QUALITY_PRESETS_V109[qualityKey]) qualityKey = 'standard';
+    curQualKeyV109 = qualityKey;
     ['standard', 'high', 'ultra'].forEach(function(k) {
       var btn = document.getElementById('tabQual_' + k);
-      if (btn) {
-        btn.className = (k === qualityKey)
-          ? 'py-1 rounded-lg border-2 border-teal-600 bg-teal-600 text-white font-extrabold shadow-2xs transition'
-          : 'py-1 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold hover:bg-slate-50 transition';
-      }
+      if (btn) btn.className = (k === qualityKey)
+        ? 'py-1 rounded-lg border-2 border-teal-600 bg-teal-600 text-white font-extrabold shadow-2xs transition'
+        : 'py-1 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold hover:bg-slate-50 transition';
     });
-    if (!curPayloadV107) curPayloadV107 = extractOrderSharePayloadV107();
-    curImgObjV107 = renderCompactOrderCanvasV107(curPayloadV107, qualityKey);
-    var imgTag = document.getElementById('orderPreviewImgTag');
-    if (imgTag) imgTag.src = curImgObjV107.dataUrl;
-    var specEl = document.getElementById('orderPreviewSpecText');
-    if (specEl) specEl.innerText = curImgObjV107.preset.label + ' JPG (' + curImgObjV107.width + '×' + curImgObjV107.height + 'px)';
-    var sizeEl = document.getElementById('orderPreviewSizeBadge');
-    if (sizeEl) sizeEl.innerText = '크기: ' + curImgObjV107.kbStr;
+    if (!curPayloadV109) curPayloadV109 = extractOrderSharePayloadV109();
+    curImgObjV109 = renderCompactOrderCanvasV109(curPayloadV109, qualityKey);
+    var imgTag = document.getElementById('orderPreviewImgTag'); if (imgTag) imgTag.src = curImgObjV109.dataUrl;
+    var specEl = document.getElementById('orderPreviewSpecText'); if (specEl) specEl.innerText = curImgObjV109.preset.label + ' JPG (' + curImgObjV109.width + '×' + curImgObjV109.height + 'px)';
+    var sizeEl = document.getElementById('orderPreviewSizeBadge'); if (sizeEl) sizeEl.innerText = '크기: ' + curImgObjV109.kbStr;
   };
 
   window.openOrderSharePreview = async function(mode, qualityKey) {
-    if (typeof window.closeShoppingSharePullup === 'function') {
-      window.closeShoppingSharePullup();
-    }
-    upgradeSharePullupAndPreviewUIV107();
+    if (typeof window.closeShoppingSharePullup === 'function') window.closeShoppingSharePullup();
+    upgradeSharePullupAndPreviewUIV109();
 
-    var payload = extractOrderSharePayloadV107();
+    var cleanDate = getActiveCleanDateV109();
+    var isAlreadyAutoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+    if (isLeader && !isAlreadyAutoCleaned) {
+      await autoDeleteUncheckedAndSaveOnShareV109(cleanDate);
+    }
+
+    var payload = extractOrderSharePayloadV109();
     if (!payload.groups || payload.groups.length === 0 || payload.totalItemsCount === 0) {
-      await showCustomAlert('공유할 주문 품목이 없습니다.\n재료를 체크한 뒤 [장보기 완료]를 진행해 주세요.', '🛒');
+      await showCustomAlert('공유할 주문 품목이 없습니다.', '🛒');
       return;
     }
 
-    curPayloadV107 = payload;
-    curShareModeV107 = mode;
+    curPayloadV109 = payload;
+    curShareModeV109 = mode;
 
     var modal = document.getElementById('shoppingOrderPreviewModal');
     var titleEl = document.getElementById('orderPreviewHeaderTitle');
@@ -12816,9 +12558,9 @@
       if (imgWrap) imgWrap.classList.add('hidden');
       if (txtWrap) txtWrap.classList.remove('hidden');
       if (confirmBtn) confirmBtn.innerText = '확정 (문자 복사)';
-      curTextStrV107 = buildCompactOrderTextV107(payload);
+      curTextStrV109 = buildCompactOrderTextV109(payload);
       var preEl = document.getElementById('orderPreviewTextContent');
-      if (preEl) preEl.textContent = curTextStrV107;
+      if (preEl) preEl.textContent = curTextStrV109;
     }
 
     if (modal) {
@@ -12829,412 +12571,46 @@
   };
 
   window.confirmAndExecuteOrderShare = async function() {
-    var payload = curPayloadV107 || extractOrderSharePayloadV107();
-    if (curShareModeV107 === 'text') {
-      var txt = curTextStrV107 || buildCompactOrderTextV107(payload);
+    var payload = curPayloadV109 || extractOrderSharePayloadV109();
+    if (curShareModeV109 === 'text') {
+      var txt = curTextStrV109 || buildCompactOrderTextV109(payload);
       try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(txt);
-        } else {
-          var ta = document.createElement('textarea');
-          ta.value = txt;
-          ta.style.position = 'fixed';
-          ta.style.left = '-9999px';
-          document.body.appendChild(ta);
-          ta.select();
-          document.execCommand('copy');
-          document.body.removeChild(ta);
+        if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(txt); }
+        else {
+          var ta = document.createElement('textarea'); ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
         }
         window.closeShoppingOrderPreviewModal();
-        await showCustomAlert('주문 목록(총 ' + payload.totalItemsCount + '품목) 문자가 복사되었습니다.\n카톡이나 문자에 바로 붙여넣기 하세요!', '✅');
-      } catch (e) {
-        await showCustomAlert('복사 중 오류가 발생했습니다.', '⚠️');
-      }
+        await showCustomAlert('주문 목록(총 ' + payload.totalItemsCount + '품목) 문자가 복사되었습니다!', '✅');
+      } catch (e) { await showCustomAlert('복사 중 오류가 발생했습니다.', '⚠️'); }
       return;
     }
 
-    var imgObj = curImgObjV107 || renderCompactOrderCanvasV107(payload, curQualKeyV107);
+    var imgObj = curImgObjV109 || renderCompactOrderCanvasV109(payload, curQualKeyV109);
     var safeDate = payload.displayDate.replace(/[^0-9가-힣a-zA-Z_-]/g, '_');
     var fileName = '주문목록_' + safeDate + '_' + imgObj.preset.label + '.jpg';
-
     try {
-      var parts = imgObj.dataUrl.split(',');
-      var bstr = atob(parts[1]);
-      var n = bstr.length;
-      var u8 = new Uint8Array(n);
+      var parts = imgObj.dataUrl.split(','), bstr = atob(parts[1]), n = bstr.length, u8 = new Uint8Array(n);
       while (n--) u8[n] = bstr.charCodeAt(n);
       var blob = new Blob([u8], { type: 'image/jpeg' });
       var file = new File([blob], fileName, { type: 'image/jpeg' });
 
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
 
       window.closeShoppingOrderPreviewModal();
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-          await navigator.share({ title: '주문 목록 (' + payload.displayDate + ')', files: [file] });
-          return;
-        } catch (sErr) {
-          if (sErr && sErr.name === 'AbortError') return;
-        }
+        try { await navigator.share({ title: '주문 목록 (' + payload.displayDate + ')', files: [file] }); return; }
+        catch (sErr) { if (sErr && sErr.name === 'AbortError') return; }
       }
       await showCustomAlert('[' + imgObj.preset.label + ' JPG · ' + imgObj.kbStr + ']\n주문 목록 이미지가 저장되었습니다.', '✅');
-    } catch (e) {
-      await showCustomAlert('이미지 저장 중 오류가 발생했습니다.', '⚠️');
-    }
-  };
-})();
-</script>
-<!-- ================= [패치 v10.7 END] ================= -->
-
-<!-- ================= [패치 v10.8 START: 식단확정 영구 유지 및 클라우드 덮어쓰기 방지] ================= -->
-<script id="sejongPatchScriptV108">
-(function applyPersistentConfirmPatchV108() {
-  var CONFIRMED_DATES_V106_KEY = 'sejong_confirmed_dates_v106';
-  var CONFIRMED_ONLY_DATES_KEY = 'sejong_confirmed_only_dates_v105';
-  var SHOPPING_STORAGE_KEY     = 'sejong_shopping_trees_v1';
-  var LAST_DATE_KEY            = 'sejong_fast_last_date_v1';
-
-  // 영구 확정 일자 Set (window 전역 공유로 어느 패치에서든 동일 참조 유지)
-  var persistentConfirmedSet = window.persistentConfirmedSetV108 = window.persistentConfirmedSetV108 || new Set();
-
-  function savePersistentConfirmedDatesV108() {
-    try {
-      var arr = Array.from(persistentConfirmedSet);
-      localStorage.setItem(CONFIRMED_DATES_V106_KEY, JSON.stringify(arr));
-    } catch (e) {}
-  }
-
-  // 1) 로컬스토리지, weeklyPlanMap, shoppingTreesMap, archiveList를 전수 조사하여
-  //    기존에 확정되어 있던 모든 식단을 단 하나도 빠짐없이 확정 상태로 자동 복원!
-  function recoverAllConfirmedDatesV108() {
-    try {
-      [CONFIRMED_DATES_V106_KEY, CONFIRMED_ONLY_DATES_KEY].forEach(function(k) {
-        var raw = localStorage.getItem(k);
-        if (raw) {
-          var parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            parsed.forEach(function(d) {
-              var clean = normalizeCompactDateStr(d);
-              if (clean && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(clean))) {
-                persistentConfirmedSet.add(clean);
-              }
-            });
-          }
-        }
-      });
-    } catch (e) {}
-
-    // weeklyPlanMap에 반찬(trayIds)이 들어있는 주일은 (명시적으로 새로 불러와 미확정 처리된 경우가 아니면) 모두 확정 식단으로 복원
-    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
-      Object.keys(weeklyPlanMap).forEach(function(k) {
-        var cleanK = normalizeCompactDateStr(k);
-        if (!cleanK) return;
-        if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK)) return;
-        var plan = weeklyPlanMap[k];
-        if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
-          if (plan.unconfirmedByReload !== true) {
-            plan.isConfirmedPlan = true;
-            persistentConfirmedSet.add(cleanK);
-          }
-        }
-      });
-      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    }
-
-    // shoppingTreesMap(장보기 트리)이 이미 존재하는 주일도 확정 상태로 복원
-    try {
-      var rawShop = localStorage.getItem(SHOPPING_STORAGE_KEY);
-      if (rawShop) {
-        var shopMap = JSON.parse(rawShop) || {};
-        Object.keys(shopMap).forEach(function(k) {
-          var cleanK = normalizeCompactDateStr(k);
-          if (cleanK && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK))) {
-            var tree = shopMap[k];
-            if (tree && Array.isArray(tree.groups) && tree.groups.length > 0) {
-              var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[cleanK] : null;
-              if (!plan || plan.unconfirmedByReload !== true) {
-                persistentConfirmedSet.add(cleanK);
-              }
-            }
-          }
-        });
-      }
-    } catch (e) {}
-
-    // archiveList(지난 식단 관리)에 있는 주일도 당연히 확정/완료 상태
-    if (Array.isArray(archiveList)) {
-      archiveList.forEach(function(a) {
-        if (a && a.date) {
-          var cleanD = normalizeCompactDateStr(a.date);
-          if (cleanD && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanD))) {
-            persistentConfirmedSet.add(cleanD);
-          }
-        }
-      });
-    }
-
-    savePersistentConfirmedDatesV108();
-  }
-
-  recoverAllConfirmedDatesV108();
-
-  // 2) 달력 확정 여부 판별 함수(isDateConfirmedOnCalendarV106) 재정의:
-  //    한 번 확정된 식단은 관리자가 '식단삭제'를 누르거나 '지난 식단에서 새로 불러올 때' 전까지는 절대 풀리지 않음!
-  window.isDateConfirmedOnCalendarV106 = function(dateStr) {
-    var cleanDate = normalizeCompactDateStr(dateStr);
-    if (!cleanDate) return false;
-    if (typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanDate)) {
-      return false;
-    }
-
-    var plan = (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) ? weeklyPlanMap[cleanDate] : null;
-    // 관리자가 지난 식단에서 새로 불러와 아직 [식단확정]을 누르지 않은 상태일 때만 false
-    if (plan && plan.unconfirmedByReload === true) {
-      return false;
-    }
-
-    // 1순위: persistentConfirmedSet에 등록되어 있는 경우
-    if (persistentConfirmedSet.has(cleanDate)) {
-      return true;
-    }
-
-    // 2순위: 지난 식단 관리(archiveList)에 존재하는 경우
-    var inArchive = Array.isArray(archiveList) && archiveList.some(function(a) {
-      return a && normalizeCompactDateStr(a.date) === cleanDate && Array.isArray(a.dishIds) && a.dishIds.length > 0;
-    });
-    if (inArchive) {
-      persistentConfirmedSet.add(cleanDate);
-      return true;
-    }
-
-    // 3순위: weeklyPlanMap에 메뉴가 저장되어 있는 경우
-    if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
-      plan.isConfirmedPlan = true;
-      persistentConfirmedSet.add(cleanDate);
-      savePersistentConfirmedDatesV108();
-      return true;
-    }
-
-    return false;
+    } catch (e) { await showCustomAlert('이미지 저장 중 오류가 발생했습니다.', '⚠️'); }
   };
 
-  // 3) 반찬바구니에서 메뉴를 담거나 뺄 때 이미 확정된 식단의 확정 상태가 풀려버리지 않도록 보호!
-  //    (기존 v10.6에서 confirmRemoveFromTray 시 확정을 풀어버리던 동작을 제거하고, 확정 상태를 그대로 유지함)
-  confirmRemoveFromTray = async function(isYes) {
-    var modal = document.getElementById('removeTrayConfirmModal');
-    if (modal) modal.classList.add('hidden');
-
-    var targetId = window.pendingTrayTargetDishIdV101 || pendingRemoveDishId;
-    var isAddMode = false;
-    var promptEl = document.getElementById('removeTrayPromptText');
-    if (promptEl && promptEl.innerText.indexOf('올릴까요') !== -1) {
-      isAddMode = true;
-    }
-    pendingRemoveDishId = null;
-
-    if (!isYes || !targetId) return;
-
-    if (isAddMode) {
-      if (!currentTrayIds.includes(targetId)) {
-        currentTrayIds.push(targetId);
-      }
-      if (typeof window.sortTrayIdsByCategoryOrder === 'function') {
-        window.sortTrayIdsByCategoryOrder(currentTrayIds);
-      }
-      window.newlyAddedTrayDishId = targetId;
-      window.trayHighlightLockUntil = Date.now() + 650;
-      renderTray();
-      renderArchiveGrid();
-      var trayBox = document.getElementById('trayCardBox');
-      if (trayBox) {
-        requestAnimationFrame(function() {
-          trayBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-      }
-      await syncCurrentStateToDb();
-    } else {
-      await removeFromTray(targetId);
-    }
-  };
-
-  // 4) 관리자가 「지난 식단 관리」에서 다른 내용을 '식판에 올리기'로 새로 불러왔을 때만
-  //    새로 검토 후 [식단확정]을 누르도록 해당 날짜를 미확정(unconfirmedByReload = true)으로 전환
-  var _prevLoadArchiveToTrayV108 = loadArchiveToCurrentTray;
-  loadArchiveToCurrentTray = async function() {
-    var curEl = document.getElementById('currentDate');
-    var targetDate = normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
-    var beforeTrayStr = JSON.stringify(currentTrayIds || []);
-
-    if (_prevLoadArchiveToTrayV108) {
-      await _prevLoadArchiveToTrayV108();
-    }
-
-    var afterTrayStr = JSON.stringify(currentTrayIds || []);
-    // 실제로 지난 식단 불러오기가 실행된 경우
-    if (isLeader && targetDate && afterTrayStr !== beforeTrayStr) {
-      persistentConfirmedSet.delete(targetDate);
-      savePersistentConfirmedDatesV108();
-      if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap && weeklyPlanMap[targetDate]) {
-        weeklyPlanMap[targetDate].isConfirmedPlan = false;
-        weeklyPlanMap[targetDate].unconfirmedByReload = true;
-        if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-      }
-      await syncCurrentStateToDb();
-    }
-  };
-
-  // 5) [식단확정] 다이얼에서 확정을 누르면 unconfirmedByReload를 해제하고 영구 확정 목록에 등록 + 클라우드 동기화
-  var _prevExecuteDialConfirmSaveV108 = executeDialConfirmSave;
-  executeDialConfirmSave = async function() {
-    var dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
-    persistentConfirmedSet.add(dateStr);
-    savePersistentConfirmedDatesV108();
-
-    try { localStorage.setItem(LAST_DATE_KEY, dateStr); } catch (e) {}
-
-    if (_prevExecuteDialConfirmSaveV108) {
-      await _prevExecuteDialConfirmSaveV108();
-    }
-
-    if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
-      weeklyPlanMap[dateStr] = weeklyPlanMap[dateStr] || {};
-      weeklyPlanMap[dateStr].trayIds = currentTrayIds.slice();
-      weeklyPlanMap[dateStr].isConfirmedPlan = true;
-      weeklyPlanMap[dateStr].confirmedOnly = true;
-      weeklyPlanMap[dateStr].unconfirmedByReload = false;
-      weeklyPlanMap[dateStr].updatedAt = Date.now();
-      if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    }
-
-    await syncCurrentStateToDb();
-  };
-
-  // 6) [핵심] syncCurrentStateToDb 완벽 보호:
-  //    기존 weeklyPlanMap[selectedDate]의 속성(isConfirmedPlan, rawIngredients, supplies 등)을 절대 날리지 않고 병합 저장하며,
-  //    confirmedDatesList 배열을 Firebase currentState 문서에 함께 저장하여 패치 업데이트나 재접속 시에도 100% 복원되게 함!
-  syncCurrentStateToDb = async function() {
-    var selEl = document.getElementById('currentDate');
-    var selectedDate = normalizeCompactDateStr(selEl ? selEl.value : getCurrentWeekSundayString());
-    currentSavedPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds[0]) || currentSavedPhotoId || 'default_4';
-
-    var prevPlan = (weeklyPlanMap && weeklyPlanMap[selectedDate]) ? weeklyPlanMap[selectedDate] : {};
-    var isConfirmedNow = (prevPlan.unconfirmedByReload === true)
-      ? false
-      : Boolean(prevPlan.isConfirmedPlan || prevPlan.confirmedOnly || prevPlan.shoppingCompleted || persistentConfirmedSet.has(selectedDate));
-
-    if (isConfirmedNow && currentTrayIds && currentTrayIds.length > 0) {
-      persistentConfirmedSet.add(selectedDate);
-      savePersistentConfirmedDatesV108();
-    }
-
-    weeklyPlanMap[selectedDate] = Object.assign({}, prevPlan, {
-      trayIds: currentTrayIds.slice(),
-      photoId: currentSavedPhotoId,
-      photoIds: (currentSavedPhotoIds || []).slice(),
-      isConfirmedPlan: isConfirmedNow,
-      updatedAt: Date.now()
-    });
-    if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-    populateDateDropdownOptions(selectedDate);
-
-    if (!db) return;
-    setCloudStatusLamp('saving');
-    try {
-      await db.collection('settings').doc('currentState').set({
-        date: selectedDate,
-        trayIds: currentTrayIds,
-        photoId: currentSavedPhotoId,
-        photoIds: currentSavedPhotoIds,
-        weeklyPlans: weeklyPlanMap,
-        confirmedDatesList: Array.from(persistentConfirmedSet),
-        updatedAt: Date.now()
-      }, { merge: true });
-      setCloudStatusLamp('connected');
-    } catch (e) {
-      console.error(e);
-      setCloudStatusLamp('disconnected');
-    }
-  };
-
-  // 7) Firebase currentState 실시간 리스너 보강:
-  //    클라우드에서 데이터가 내려올 때 로컬의 확정 상태(isConfirmedPlan)가 지워지지 않도록 깊은 병합(Deep Merge) 수행
-  if (db) {
-    db.collection('settings').doc('currentState').onSnapshot(function(doc) {
-      if (!doc.exists) return;
-      var data = doc.data() || {};
-
-      // 클라우드에 저장된 confirmedDatesList 복원
-      if (Array.isArray(data.confirmedDatesList)) {
-        data.confirmedDatesList.forEach(function(d) {
-          var cleanD = normalizeCompactDateStr(d);
-          if (cleanD && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanD))) {
-            persistentConfirmedSet.add(cleanD);
-          }
-        });
-      }
-
-      // 클라우드 weeklyPlans와 로컬 weeklyPlanMap 깊은 병합 (확정 플래그 보존)
-      if (data.weeklyPlans && typeof data.weeklyPlans === 'object') {
-        Object.keys(data.weeklyPlans).forEach(function(k) {
-          var cleanK = normalizeCompactDateStr(k);
-          var cloudPlan = data.weeklyPlans[k] || {};
-          var localPlan = (weeklyPlanMap && weeklyPlanMap[cleanK]) ? weeklyPlanMap[cleanK] : {};
-
-          var mergedConfirmed = Boolean(
-            localPlan.isConfirmedPlan ||
-            cloudPlan.isConfirmedPlan ||
-            localPlan.confirmedOnly ||
-            cloudPlan.confirmedOnly ||
-            persistentConfirmedSet.has(cleanK) ||
-            (Array.isArray(cloudPlan.trayIds) && cloudPlan.trayIds.length > 0 && localPlan.unconfirmedByReload !== true && cloudPlan.unconfirmedByReload !== true)
-          );
-
-          if (mergedConfirmed && !(typeof deletedDatesSet !== 'undefined' && deletedDatesSet && deletedDatesSet.has(cleanK))) {
-            persistentConfirmedSet.add(cleanK);
-          }
-
-          weeklyPlanMap[cleanK] = Object.assign({}, cloudPlan, localPlan, {
-            trayIds: (Array.isArray(localPlan.trayIds) && localPlan.trayIds.length > 0) ? localPlan.trayIds : (cloudPlan.trayIds || []),
-            isConfirmedPlan: mergedConfirmed
-          });
-        });
-        if (typeof saveLocalWeeklyPlans === 'function') saveLocalWeeklyPlans();
-      }
-
-      savePersistentConfirmedDatesV108();
-
-      // 초기 접속 시 마지막으로 확정한 일자(또는 저장된 일자)가 있으면 그 일자의 확정 식판을 그대로 유지
-      var curDateEl = document.getElementById('currentDate');
-      var savedLastDate = null;
-      try { savedLastDate = localStorage.getItem(LAST_DATE_KEY); } catch (e) {}
-      var targetActiveDate = normalizeCompactDateStr(
-        (savedLastDate && window.isDateConfirmedOnCalendarV106(savedLastDate) ? savedLastDate : null) ||
-        (data.date && window.isDateConfirmedOnCalendarV106(data.date) ? data.date : null) ||
-        (curDateEl ? curDateEl.value : '') ||
-        getCurrentWeekSundayString()
-      );
-
-      if (targetActiveDate && weeklyPlanMap[targetActiveDate] && Array.isArray(weeklyPlanMap[targetActiveDate].trayIds) && weeklyPlanMap[targetActiveDate].trayIds.length > 0) {
-        if (curDateEl) curDateEl.value = targetActiveDate;
-        currentTrayIds = weeklyPlanMap[targetActiveDate].trayIds.slice();
-        populateDateDropdownOptions(targetActiveDate);
-        renderTray();
-      }
-    });
-  }
-
-  // 8) 페이지 로드 즉시 복원 실행 및 화면 갱신
-  recoverAllConfirmedDatesV108();
   renderTray();
   renderArchiveGrid();
 })();
 </script>
-<!-- ================= [패치 v10.8 END] ================= -->
+<!-- ================= [패치 v10.9 END] ================= -->
 </body></html>
