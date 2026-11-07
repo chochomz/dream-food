@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>세종꿈의교회 주간 식단관리 - 사용설명서</title>
+<title>세종꿈의교회 주일 식단관리 - 사용설명서</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
 <style>
   :root{
@@ -198,7 +198,7 @@
   <!-- 첫 화면: 식판 4칸 = 4단계 -->
   <section class="hero">
     <p class="k">처음 쓰는 분도 바로 따라 해요</p>
-    <h1>4단계로 끝나는 주간 식단</h1>
+    <h1>4단계로 끝나는 주일 식단</h1>
     <p class="s">아래 칸을 누르면 그 설명으로 이동해요</p>
     <nav class="tray" aria-label="4단계 바로가기">
       <a class="cell s1" href="#s1"><i class="n">1</i><span class="e">🔍</span><b>찾기</b><small>식단 검색</small></a>
@@ -220,8 +220,8 @@
       <p class="sum">지난 식단을 그대로 가져와요</p>
       <ol class="acts">
         <li><b>아래 「지난 식단 관리」에서</b><em>검색하거나 계절·메뉴를 골라요</em></li>
-        <li><b>카드를 꾹 눌러요</b><em>자세한 내용을 열어 고칠 수 있어요</em></li>
-        <li><b>[식판에 올리기]를 눌러요</b><em>메뉴가 위쪽 식판으로 올라가요</em></li>
+        <li><b>카드를 꾹 눌러요</b><em>내용을 고쳐도 지난 식단 원본은 보존돼요</em></li>
+        <li><b>[식판에 올리기] ➔ [예]를 눌러요</b><em>지정된 '일자' 식판으로 바로 올라가요</em></li>
       </ol>
       <div class="mock">
         <span class="mk">화면 예시</span>
@@ -238,9 +238,9 @@
           <div class="mflow">
             <span class="hint pulse">👆 꾹 누르기</span>
             <i>▼</i>
-            <span>세부 수정</span>
+            <span>수정 (원본보존)</span>
             <i>▼</i>
-            <span class="mbtn">식판에 올리기</span>
+            <span class="mbtn">식판에 올리기 ➔ 예</span>
           </div>
         </div>
       </div>
@@ -259,8 +259,8 @@
       <p class="sum">메뉴를 고치고 반찬을 더해요</p>
       <ol class="acts">
         <li><b>식판 위 메뉴 이름을 눌러요</b><em>양(kg)·구매처·조리법을 고쳐요</em></li>
-        <li><b>「반찬 바구니」에서 ＋담기</b><em>노란색으로 식판에 추가돼요</em></li>
-        <li><b>뺄 메뉴는 ✕를 눌러요</b><em>식판에서 바로 빠져요</em></li>
+        <li><b>「반찬 바구니」에서 ＋담기</b><em>[예]를 누르면 노란색으로 식판에 추가돼요</em></li>
+        <li><b>뺄 메뉴는 ✕를 눌러요</b><em>[예]를 누르면 식판에서 바로 빠져요</em></li>
       </ol>
       <div class="mock free">
         <span class="mk">화면 예시</span>
@@ -336,19 +336,23 @@
         <h2>장보기 체크하기</h2>
         <span class="tag">체크리스트</span>
       </div>
-      <p class="sum">사야 할 것을 체크하며 장봐요</p>
+      <p class="sum">사야 할 것을 체크하고 결과를 공유해요</p>
       <ol class="acts">
-        <li><b>[장보기]를 눌러요</b><em>메뉴·식재료·양념·소모품 목록</em></li>
-        <li><b>산 것은 ☑ 체크해요</b><em>하나씩 확인하며 장을 봐요</em></li>
-        <li><b>[장보기 완료]를 눌러요</b><em>체크한 내용이 자동 저장돼요</em></li>
+        <li><b>[장보기]를 눌러요</b><em>메뉴별 재료·공통 품목 및 비품(양념,소모품, 기타)</em></li>
+        <li><b>산 것은 ☑ 체크해요</b><em>체크한 메뉴와 품목만 최종 반영돼요</em></li>
+        <li><b>[장보기 완료] 후 [결과 공유]</b><em>주문 내역 이미지 저장·문자 복사로 공유해요</em></li>
       </ol>
       <div class="mock">
         <span class="mk">화면 예시</span>
-        <div class="ckh"><b>🛒 11월 8일 장보기</b><span>2/3 완료</span></div>
-        <div class="ck done"><span class="box">✓</span><div><b>돼지불고기용 앞다리살 (40kg)</b><small>싱싱정육점 · 완료</small></div></div>
-        <div class="ck done"><span class="box">✓</span><div><b>비엔나소시지 15kg · 케첩</b><small>식자재마트 · 완료</small></div></div>
-        <div class="ck wait"><span class="box"></span><div><b>양배추 1망, 대파 3단, 위생장갑</b><small>구매 대기</small></div></div>
-        <button class="gobtn pulse" type="button">✅ 장보기 완료 · 자동저장</button>
+        <div class="ckh"><b>🛒 장보기 목록 (총 3 품목)</b><span>11월8일(2주)</span></div>
+        <div class="ck done"><span class="box">✓</span><div><b>돼지불고기용 앞다리살 (40kg)</b><small>🍽️ 돼지불고기 · 체크됨</small></div></div>
+        <div class="ck done"><span class="box">✓</span><div><b>비엔나소시지 15kg · 케첩</b><small>🍽️ 비엔나볶음(👶) · 체크됨</small></div></div>
+        <div class="ck wait"><span class="box"></span><div><b>양배추 1망, 대파 3단, 위생장갑</b><small>🧺 공통 품목 및 비품(양념,소모품, 기타)</small></div></div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px">
+          <button type="button" style="border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9;color:#334155;font-family:inherit;font-weight:800;font-size:11px;padding:9px 2px;white-space:nowrap">임시저장 닫기</button>
+          <button type="button" class="pulse" style="border:2px solid #14b8a6;border-radius:10px;background:#0d9488;color:#fff;font-family:inherit;font-weight:900;font-size:11px;padding:9px 2px;white-space:nowrap">✅ 장보기 완료</button>
+          <button type="button" style="border:2px solid #f472b6;border-radius:10px;background:#ec4899;color:#fff;font-family:inherit;font-weight:800;font-size:11px;padding:9px 2px;white-space:nowrap">결과 공유 ▲</button>
+        </div>
       </div>
     </section>
 
