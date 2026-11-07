@@ -162,7 +162,6 @@
   .ck div{min-width:0;flex:1}
   .ck b{display:block;font-size:12px;font-weight:800;color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .ck small{display:block;font-size:10.5px;color:#64748b;font-weight:700;white-space:nowrap}
-  .gobtn{margin-top:10px;width:100%;border:0;border-radius:12px;background:var(--c);color:#fff;font-family:inherit;font-weight:900;font-size:13px;padding:11px 6px;white-space:nowrap}
 
   /* ===== 부가 기능 ===== */
   .more{padding:24px 12px 0}
@@ -215,13 +214,13 @@
       <div class="sh">
         <span class="num">1</span>
         <h2>비슷한 식단 찾기</h2>
-        <span class="tag">화면 아래쪽</span>
+        <span class="tag">위 달력·아래 목록</span>
       </div>
-      <p class="sum">지난 식단을 그대로 가져와요</p>
+      <p class="sum">완료된 식단을 보면서 그대로 불러와요</p>
       <ol class="acts">
-        <li><b>아래 「지난 식단 관리」에서</b><em>검색하거나 계절·메뉴를 골라요</em></li>
-        <li><b>카드를 꾹 눌러요</b><em>내용을 고쳐도 지난 식단 원본은 보존돼요</em></li>
-        <li><b>[식판에 올리기] ➔ [예]를 눌러요</b><em>지정된 '일자' 식판으로 바로 올라가요</em></li>
+        <li><b>위 「일자 선택」이나 아래 「지난 식단 관리」</b><em>달력에서 고르거나 지난 식단 카드를 보며 찾아요</em></li>
+        <li><b>카드를 꾹 눌러 내용을 확인해요</b><em>고쳐도 원본은 보존되고 바둑판·목록 보기도 돼요</em></li>
+        <li><b>[식판에 올리기] ➔ [예]를 눌러요</b><em>지정된 '일자' 식판으로 메뉴와 재료가 올라가요</em></li>
       </ol>
       <div class="mock">
         <span class="mk">화면 예시</span>
@@ -238,7 +237,7 @@
           <div class="mflow">
             <span class="hint pulse">👆 꾹 누르기</span>
             <i>▼</i>
-            <span>수정 (원본보존)</span>
+            <span>확인·수정 (원본보존)</span>
             <i>▼</i>
             <span class="mbtn">식판에 올리기 ➔ 예</span>
           </div>
@@ -256,11 +255,11 @@
         <h2>식판 꾸미기</h2>
         <span class="tag">화면 위·가운데</span>
       </div>
-      <p class="sum">메뉴를 고치고 반찬을 더해요</p>
+      <p class="sum">메뉴·재료를 살피고 반찬을 더해요</p>
       <ol class="acts">
-        <li><b>식판 위 메뉴 이름을 눌러요</b><em>양(kg)·구매처·조리법을 고쳐요</em></li>
-        <li><b>「반찬 바구니」에서 ＋담기</b><em>[예]를 누르면 노란색으로 식판에 추가돼요</em></li>
-        <li><b>뺄 메뉴는 ✕를 눌러요</b><em>[예]를 누르면 식판에서 바로 빠져요</em></li>
+        <li><b>식판에 모인 메뉴와 재료를 확인해요</b><em>메뉴 이름을 누르면 양(kg)·구매처·조리법을 고쳐요</em></li>
+        <li><b>「반찬 바구니」에서 확인하며 ＋담기</b><em>재료 안내창을 보고 [예]를 누르면 식판에 담겨요</em></li>
+        <li><b>없는 메뉴는 반찬등록 · CSV 불러오기</b><em>직접 등록하거나 엑셀(CSV)로 한 번에 대량 입력해요</em></li>
       </ol>
       <div class="mock free">
         <span class="mk">화면 예시</span>
@@ -286,7 +285,7 @@
           <div class="dish"><span>된장국</span><span class="add pulse">＋담기</span></div>
         </div>
       </div>
-      <p class="tip">💡 노란색 메뉴가 새로 담은 반찬이에요</p>
+      <p class="tip">💡 뺄 메뉴는 ✕를 누르고, 새로 담은 반찬은 노란색이에요</p>
     </section>
 
     <div class="next"><span>다음은 3단계 ▼</span></div>
@@ -298,11 +297,11 @@
         <h2>날짜 정해서 확정</h2>
         <span class="tag">달력에 표시</span>
       </div>
-      <p class="sum">일요일 날짜를 맞추고 저장해요</p>
+      <p class="sum">메뉴·재료를 검토한 뒤 확정일자를 저장해요</p>
       <ol class="acts">
-        <li><b>[식단확정]을 눌러요</b><em>메뉴 구성이 끝났을 때 눌러요</em></li>
-        <li><b>날짜를 위아래로 돌려요</b><em>붉은 칸이 저장될 주일 날짜예요</em></li>
-        <li><b>[확정]을 누르면 끝!</b><em>달력에 바로 표시돼요</em></li>
+        <li><b>식판의 메뉴·재료를 검토 후 [식단확정]</b><em>구성이 모두 끝났을 때 눌러요</em></li>
+        <li><b>날짜 다이얼을 위아래로 돌려 맞춰요</b><em>붉은 칸이 저장될 주일(일요일) 날짜예요</em></li>
+        <li><b>[확정]을 누르면 달력에 확정·예정 기록!</b><em>달력에 기록되어 나중에 다시 불러올 수 있어요</em></li>
       </ol>
       <div class="mock free">
         <span class="mk">화면 예시</span>
@@ -316,7 +315,7 @@
           <p class="ar">▼</p>
           <div class="bt"><span class="no">취소</span><span class="go pulse">확정</span></div>
         </div>
-        <p class="flow">확정하면 달력에 이렇게 ▼</p>
+        <p class="flow">확정하면 달력에 이렇게 기록돼요 ▼</p>
         <div class="panel cal">
           <h4>📅 달력 주일(일요일) 표시</h4>
           <div class="row"><span class="d">1일</span><span class="st done">완료</span><span class="cap">지난주</span></div>
@@ -324,7 +323,7 @@
           <div class="row"><span class="d">15일</span><span class="st plan">예정</span><span class="cap">다음 주 이후</span></div>
         </div>
       </div>
-      <p class="tip">💡 달력 글자 누르면 미리보기가 떠요</p>
+      <p class="tip">💡 달력에 확정·예정이 완료된 후에야 [장보기]를 쓸 수 있어요</p>
     </section>
 
     <div class="next"><span>다음은 4단계 ▼</span></div>
@@ -334,26 +333,27 @@
       <div class="sh">
         <span class="num">4</span>
         <h2>장보기 체크하기</h2>
-        <span class="tag">체크리스트</span>
+        <span class="tag">체크·결과공유</span>
       </div>
-      <p class="sum">사야 할 것을 체크하고 결과를 공유해요</p>
+      <p class="sum">품목을 체크·잠금하고 결과를 공유해요</p>
       <ol class="acts">
-        <li><b>[장보기]를 눌러요</b><em>메뉴별 재료·공통 품목 및 비품(양념,소모품, 기타)</em></li>
-        <li><b>산 것은 ☑ 체크해요</b><em>체크한 메뉴와 품목만 최종 반영돼요</em></li>
-        <li><b>[장보기 완료] 후 [결과 공유]</b><em>주문 내역 이미지 저장·문자 복사로 공유해요</em></li>
+        <li><b>확정 후 [장보기]를 눌러 체크·잠금해요</b><em>빠진 품목이 없도록 ☑ 체크하고 🔒잠금을 한 뒤 [장보기 완료]!</em></li>
+        <li><b>[결과 공유]를 눌러 다음으로 넘어가요</b><em>체크 안 된 재료·메뉴는 이때 자동 삭제되어 저장돼요</em></li>
+        <li><b>문자 복사 · 이미지 저장으로 보고해요</b><em>주문 내역을 저장해 카톡방이나 실장님께 보고해요</em></li>
       </ol>
       <div class="mock">
         <span class="mk">화면 예시</span>
         <div class="ckh"><b>🛒 장보기 목록 (총 3 품목)</b><span>11월8일(2주)</span></div>
-        <div class="ck done"><span class="box">✓</span><div><b>돼지불고기용 앞다리살 (40kg)</b><small>🍽️ 돼지불고기 · 체크됨</small></div></div>
-        <div class="ck done"><span class="box">✓</span><div><b>비엔나소시지 15kg · 케첩</b><small>🍽️ 비엔나볶음(👶) · 체크됨</small></div></div>
-        <div class="ck wait"><span class="box"></span><div><b>양배추 1망, 대파 3단, 위생장갑</b><small>🧺 공통 품목 및 비품(양념,소모품, 기타)</small></div></div>
+        <div class="ck done"><span class="box">✓</span><div><b>돼지불고기용 앞다리살 (40kg)</b><small>🔒 돼지불고기 · 체크·잠금됨</small></div></div>
+        <div class="ck done"><span class="box">✓</span><div><b>비엔나소시지 15kg · 케첩</b><small>🔒 비엔나볶음(👶) · 체크·잠금됨</small></div></div>
+        <div class="ck wait"><span class="box"></span><div><b>양배추 1망, 대파 3단 (미체크 자동삭제)</b><small>🧺 공통 품목 및 비품(양념,소모품, 기타)</small></div></div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px">
           <button type="button" style="border:1px solid #cbd5e1;border-radius:10px;background:#f1f5f9;color:#334155;font-family:inherit;font-weight:800;font-size:11px;padding:9px 2px;white-space:nowrap">임시저장 닫기</button>
           <button type="button" class="pulse" style="border:2px solid #14b8a6;border-radius:10px;background:#0d9488;color:#fff;font-family:inherit;font-weight:900;font-size:11px;padding:9px 2px;white-space:nowrap">✅ 장보기 완료</button>
           <button type="button" style="border:2px solid #f472b6;border-radius:10px;background:#ec4899;color:#fff;font-family:inherit;font-weight:800;font-size:11px;padding:9px 2px;white-space:nowrap">결과 공유 ▲</button>
         </div>
       </div>
+      <p class="tip">💡 [결과 공유]를 누를 때 미체크 항목은 자동 정리돼요</p>
     </section>
 
   </main>
