@@ -11464,9 +11464,9 @@
 </script>
 <!-- ================= [패치 v10.5 END] ================= -->
 
-<!-- ================= [패치 v10.9 START: 장보기 완료·결과공유·식단확정 단일 통합 엔진] ================= -->
-<style id="sejongPatchStyleV109">
-  /* 1) 장보기 목록 상단 타이틀(+2pt 굵게) & 오른쪽 월일(2주)(+1pt 크게) & 겹침 방지 */
+<!-- ================= [패치 v10.10 START: 장보기 완료·결과공유·식단확정 단일 통합 엔진] ================= -->
+<style id="sejongPatchStyleV110">
+  /* 장보기 목록 상단 타이틀(+2pt 굵게) & 오른쪽 월일(2주)(+1pt 크게) & 겹침 방지 */
   #shoppingListModal > #shoppingModalInnerCard > div:first-child {
     padding: 9px 10px !important;
     background-color: #f0fdfa !important;
@@ -11500,8 +11500,8 @@
     padding-top: 8px !important;
   }
 
-  /* 2) '최종완료됨' 이후 '결과 공유' 버튼 테두리 확대 펄스 애니메이션 */
-  @keyframes induceShareBorderPulseV109 {
+  /* '최종완료됨' 이후 '결과 공유' 버튼 테두리 확대 펄스 애니메이션 */
+  @keyframes induceShareBorderPulseV110 {
     0% {
       box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.85), 0 0 0 2px #be185d;
       transform: scale(1);
@@ -11515,32 +11515,32 @@
       transform: scale(1);
     }
   }
-  .share-btn-induce-pulse-v109 {
-    animation: induceShareBorderPulseV109 1.35s ease-in-out infinite !important;
+  .share-btn-induce-pulse-v110 {
+    animation: induceShareBorderPulseV110 1.35s ease-in-out infinite !important;
     border-color: #be185d !important;
     background-color: #db2777 !important;
     z-index: 35 !important;
   }
 
-  /* 3) 결과 공유 풀업 메뉴: 가로폭 축소(146px) & 문자복사 / 이미지 저장 색상 분리 */
+  /* 1) 결과 공유 풀업 메뉴: 기본 앱 컨셉 색상(연한 에메랄드/민트 테두리) & 슬림 가로폭 */
   #shoppingSharePullupMenu {
-    width: 146px !important;
-    min-width: 146px !important;
-    max-width: 146px !important;
+    width: 138px !important;
+    min-width: 138px !important;
+    max-width: 138px !important;
     right: 6px !important;
     bottom: 54px !important;
     padding: 0 !important;
     border-radius: 14px !important;
-    border: 2px solid #475569 !important;
-    background-color: #ffffff !important;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25) !important;
+    border: 2px solid #5eead4 !important;
+    background-color: #f0fdfa !important;
+    box-shadow: 0 8px 22px rgba(15, 118, 110, 0.18) !important;
     overflow: hidden !important;
     z-index: 60 !important;
   }
 </style>
 
-<script id="sejongPatchScriptV109">
-(function applyUnifiedMasterPatchV109() {
+<script id="sejongPatchScriptV110">
+(function applyUnifiedMasterPatchV110() {
   var SHOPPING_STORAGE_KEY     = 'sejong_shopping_trees_v1';
   var SHOP_DONE_MAP_KEY        = 'sejong_shopping_done_map_v109';
   var CONFIRMED_DATES_V109_KEY = 'sejong_confirmed_dates_v106';
@@ -11548,23 +11548,23 @@
   var LAST_DATE_KEY            = 'sejong_fast_last_date_v1';
 
   // =========================================================================
-  // 파트 A: '장보기 완료' 상태 전용 영구 저장소 (v10.1이 덮어써도 절대 지워지지 않음!)
+  // 파트 A: '장보기 완료' 상태 전용 영구 저장소
   // =========================================================================
-  var shoppingDoneMapV109 = {};
+  var shoppingDoneMapV110 = {};
   try {
     var rawDone = localStorage.getItem(SHOP_DONE_MAP_KEY);
-    if (rawDone) shoppingDoneMapV109 = JSON.parse(rawDone) || {};
-  } catch (e) { shoppingDoneMapV109 = {}; }
+    if (rawDone) shoppingDoneMapV110 = JSON.parse(rawDone) || {};
+  } catch (e) { shoppingDoneMapV110 = {}; }
 
-  function saveShoppingDoneMapV109() {
+  function saveShoppingDoneMapV110() {
     try {
-      localStorage.setItem(SHOP_DONE_MAP_KEY, JSON.stringify(shoppingDoneMapV109));
+      localStorage.setItem(SHOP_DONE_MAP_KEY, JSON.stringify(shoppingDoneMapV110));
     } catch (e) {}
   }
 
-  function isShoppingMarkedDoneV109(cleanDate) {
+  function isShoppingMarkedDoneV110(cleanDate) {
     if (!cleanDate) return false;
-    if (shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].completed === true) {
+    if (shoppingDoneMapV110[cleanDate] && shoppingDoneMapV110[cleanDate].completed === true) {
       return true;
     }
     var map = window.shoppingTreesMap || {};
@@ -11581,33 +11581,33 @@
     return false;
   }
 
-  function setShoppingMarkedDoneV109(cleanDate, isDone, isAutoCleaned) {
+  function setShoppingMarkedDoneV110(cleanDate, isDone, isAutoCleaned) {
     if (!cleanDate) return;
-    shoppingDoneMapV109[cleanDate] = {
+    shoppingDoneMapV110[cleanDate] = {
       completed: Boolean(isDone),
       autoCleaned: Boolean(isAutoCleaned),
       updatedAt: Date.now()
     };
-    saveShoppingDoneMapV109();
+    saveShoppingDoneMapV110();
   }
 
-  function getActiveCleanDateV109() {
+  function getActiveCleanDateV110() {
     var curEl = document.getElementById('currentDate');
     return normalizeCompactDateStr(curEl ? curEl.value : getCurrentWeekSundayString());
   }
 
   // =========================================================================
-  // 파트 B: 식단확정 영구 유지 (패치 업데이트나 재접속 시에도 절대 풀리지 않음)
+  // 파트 B: 식단확정 영구 유지
   // =========================================================================
   var persistentConfirmedSet = window.persistentConfirmedSetV108 = window.persistentConfirmedSetV108 || new Set();
 
-  function savePersistentConfirmedDatesV109() {
+  function savePersistentConfirmedDatesV110() {
     try {
       localStorage.setItem(CONFIRMED_DATES_V109_KEY, JSON.stringify(Array.from(persistentConfirmedSet)));
     } catch (e) {}
   }
 
-  function recoverAllConfirmedDatesV109() {
+  function recoverAllConfirmedDatesV110() {
     try {
       [CONFIRMED_DATES_V109_KEY, CONFIRMED_ONLY_DATES_KEY].forEach(function(k) {
         var raw = localStorage.getItem(k);
@@ -11649,10 +11649,10 @@
         }
       });
     }
-    savePersistentConfirmedDatesV109();
+    savePersistentConfirmedDatesV110();
   }
 
-  recoverAllConfirmedDatesV109();
+  recoverAllConfirmedDatesV110();
 
   window.isDateConfirmedOnCalendarV106 = function(dateStr) {
     var cleanDate = normalizeCompactDateStr(dateStr);
@@ -11674,23 +11674,22 @@
     if (plan && Array.isArray(plan.trayIds) && plan.trayIds.length > 0) {
       plan.isConfirmedPlan = true;
       persistentConfirmedSet.add(cleanDate);
-      savePersistentConfirmedDatesV109();
+      savePersistentConfirmedDatesV110();
       return true;
     }
     return false;
   };
 
-  // 식단확정 다이얼 저장 시 확정 상태 영구 보존
-  var _prevExecuteDialConfirmSaveV109 = executeDialConfirmSave;
+  var _prevExecuteDialConfirmSaveV110 = executeDialConfirmSave;
   executeDialConfirmSave = async function() {
     var dateStr = normalizeCompactDateStr(dialSelectedDateStr || document.getElementById('currentDate').value || getCurrentWeekSundayString());
     persistentConfirmedSet.add(dateStr);
-    savePersistentConfirmedDatesV109();
-    setShoppingMarkedDoneV109(dateStr, false, false);
+    savePersistentConfirmedDatesV110();
+    setShoppingMarkedDoneV110(dateStr, false, false);
     try { localStorage.setItem(LAST_DATE_KEY, dateStr); } catch (e) {}
 
-    if (_prevExecuteDialConfirmSaveV109) {
-      await _prevExecuteDialConfirmSaveV109();
+    if (_prevExecuteDialConfirmSaveV110) {
+      await _prevExecuteDialConfirmSaveV110();
     }
 
     if (typeof weeklyPlanMap !== 'undefined' && weeklyPlanMap) {
@@ -11705,7 +11704,6 @@
     await syncCurrentStateToDb();
   };
 
-  // syncCurrentStateToDb 보호
   syncCurrentStateToDb = async function() {
     var selEl = document.getElementById('currentDate');
     var selectedDate = normalizeCompactDateStr(selEl ? selEl.value : getCurrentWeekSundayString());
@@ -11718,7 +11716,7 @@
 
     if (isConfirmedNow && currentTrayIds && currentTrayIds.length > 0) {
       persistentConfirmedSet.add(selectedDate);
-      savePersistentConfirmedDatesV109();
+      savePersistentConfirmedDatesV110();
     }
 
     weeklyPlanMap[selectedDate] = Object.assign({}, prevPlan, {
@@ -11751,34 +11749,40 @@
   };
 
   // =========================================================================
-  // 파트 C: 장보기 데이터 동기화 & '장보기 완료' ➔ '최종완료됨' ➔ '결과 공유' 완벽 연동
+  // 파트 C: [1번 요구사항] 결과 공유 풀업 디자인 개편
+  //  - 제일 상부: '이미지 저장' 타이틀 밑에 표준, 고화질, 초고화질
+  //  - 구분선 아래: 배경 색상 연하게 다르게 하여 '문자로 복사' 배치 (전체 색상은 기본 컨셉과 조화)
   // =========================================================================
-  function upgradeSharePullupAndPreviewUIV109() {
+  function upgradeSharePullupAndPreviewUIV110() {
     var pullup = document.getElementById('shoppingSharePullupMenu');
     if (pullup) {
       pullup.innerHTML =
-        '<button type="button" onclick="openOrderSharePreview(\'text\', null)" ' +
-          'class="w-full px-2.5 py-2.5 text-center text-[12px] font-black text-white bg-indigo-900 hover:bg-indigo-950 active:scale-98 border-b-2 border-slate-700 block transition tracking-tight">' +
-          '📋 문자 복사' +
-        '</button>' +
-        '<div class="bg-teal-50 p-1.5 text-center">' +
-          '<div class="text-[11.5px] font-black text-teal-950 pb-1 border-b border-teal-200 tracking-tight">' +
-            '🖼️ 이미지 저장' +
+        '<!-- 상단: 이미지 저장 타이틀 + 표준 / 고화질 / 초고화질 (기본 에메랄드/틸 컨셉) -->' +
+        '<div class="bg-teal-50/90 p-1.5 text-center">' +
+          '<div class="text-[11.5px] font-black text-teal-900 pb-1 border-b border-teal-200/90 tracking-tight">' +
+            '이미지 저장' +
           '</div>' +
           '<div class="flex flex-col gap-1 mt-1.5">' +
             '<button type="button" onclick="openOrderSharePreview(\'image\', \'standard\')" ' +
-              'class="w-full py-1.5 rounded-lg bg-white hover:bg-teal-100 active:bg-teal-200 border border-teal-300 text-[11px] font-extrabold text-teal-900 shadow-2xs transition">' +
+              'class="w-full py-1.5 rounded-lg bg-white hover:bg-teal-100/80 active:bg-teal-200/60 border border-teal-200 text-[11px] font-extrabold text-slate-700 shadow-2xs transition">' +
               '표준' +
             '</button>' +
             '<button type="button" onclick="openOrderSharePreview(\'image\', \'high\')" ' +
-              'class="w-full py-1.5 rounded-lg bg-white hover:bg-teal-100 active:bg-teal-200 border border-teal-300 text-[11px] font-extrabold text-teal-900 shadow-2xs transition">' +
+              'class="w-full py-1.5 rounded-lg bg-white hover:bg-teal-100/80 active:bg-teal-200/60 border border-teal-200 text-[11px] font-extrabold text-slate-700 shadow-2xs transition">' +
               '고화질' +
             '</button>' +
             '<button type="button" onclick="openOrderSharePreview(\'image\', \'ultra\')" ' +
-              'class="w-full py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 active:bg-teal-900 border border-teal-800 text-[11px] font-black text-white shadow-2xs transition">' +
+              'class="w-full py-1.5 rounded-lg bg-teal-100/90 hover:bg-teal-200 active:bg-teal-300 border border-teal-300 text-[11px] font-black text-teal-950 shadow-2xs transition">' +
               '초고화질' +
             '</button>' +
           '</div>' +
+        '</div>' +
+        '<!-- 구분선 및 하단: 배경 색상을 연한 핑크 파스텔로 다르게 한 문자로 복사 -->' +
+        '<div class="border-t-2 border-teal-200 bg-pink-50/90 p-1.5">' +
+          '<button type="button" onclick="openOrderSharePreview(\'text\', null)" ' +
+            'class="w-full py-1.5 rounded-lg bg-white/90 hover:bg-pink-100 active:bg-pink-200/70 border border-pink-200 text-center text-[11.5px] font-black text-pink-900 shadow-2xs block transition tracking-tight">' +
+            '문자로 복사' +
+          '</button>' +
         '</div>';
     }
 
@@ -11793,10 +11797,9 @@
       }
     }
   }
-  upgradeSharePullupAndPreviewUIV109();
+  upgradeSharePullupAndPreviewUIV110();
 
-  // v10.1의 지역변수 shoppingTreesMap이 저장한 localStorage와 현재 화면 DOM 체크박스를 100% 읽어오는 함수
-  function getSyncedShoppingTreeV109(cleanDate) {
+  function getSyncedShoppingTreeV110(cleanDate) {
     var allTrees = {};
     try {
       var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
@@ -11812,7 +11815,6 @@
     var tree = allTrees[cleanDate];
     if (!tree || !Array.isArray(tree.groups)) return null;
 
-    // 화면 DOM에 렌더링되어 있는 실제 체크박스(.shop-tree-checkbox) 상태를 읽어 데이터 모델에 반영
     var container = document.getElementById('shoppingTreeContainer');
     if (container) {
       var domChkBoxes = container.querySelectorAll('.shop-tree-checkbox');
@@ -11829,10 +11831,9 @@
       }
     }
 
-    // 전용 완료 저장소(shoppingDoneMapV109)에 완료 기록이 있으면 복원 (v10.1이 지워버려도 여기서 자동 부활!)
-    if (isShoppingMarkedDoneV109(cleanDate)) {
+    if (isShoppingMarkedDoneV110(cleanDate)) {
       tree.shoppingCompleted = true;
-      tree.autoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+      tree.autoCleaned = Boolean(shoppingDoneMapV110[cleanDate] && shoppingDoneMapV110[cleanDate].autoCleaned);
     }
 
     allTrees[cleanDate] = tree;
@@ -11841,10 +11842,10 @@
     return tree;
   }
 
-  window.updateShoppingFooterButtonsV109 = function(cleanDate) {
+  window.updateShoppingFooterButtonsV110 = function(cleanDate) {
     var completeBtn = document.getElementById('shoppingCompleteActionBtn');
     var shareBtn = document.getElementById('shoppingShareTriggerBtn');
-    var isCompleted = isShoppingMarkedDoneV109(cleanDate);
+    var isCompleted = isShoppingMarkedDoneV110(cleanDate);
 
     if (completeBtn) {
       if (isCompleted) {
@@ -11858,27 +11859,25 @@
 
     if (shareBtn) {
       if (isCompleted) {
-        shareBtn.classList.add('share-btn-induce-pulse-v109');
+        shareBtn.classList.add('share-btn-induce-pulse-v110');
       } else {
-        shareBtn.classList.remove('share-btn-induce-pulse-v109');
+        shareBtn.classList.remove('share-btn-induce-pulse-v110');
       }
     }
   };
 
-  // v10.1의 renderShoppingTreeModal 실행 후 완료 상태가 날아가지 않도록 즉시 복구 및 타이틀/버튼 업데이트
-  var _baseRenderShoppingTreeV109 = window.renderShoppingTreeModal;
+  var _baseRenderShoppingTreeV110 = window.renderShoppingTreeModal;
   window.renderShoppingTreeModal = function() {
-    var cleanDate = getActiveCleanDateV109();
-    var wasDone = isShoppingMarkedDoneV109(cleanDate);
-    var wasAutoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+    var cleanDate = getActiveCleanDateV110();
+    var wasDone = isShoppingMarkedDoneV110(cleanDate);
+    var wasAutoCleaned = Boolean(shoppingDoneMapV110[cleanDate] && shoppingDoneMapV110[cleanDate].autoCleaned);
 
-    if (_baseRenderShoppingTreeV109) {
-      _baseRenderShoppingTreeV109();
+    if (_baseRenderShoppingTreeV110) {
+      _baseRenderShoppingTreeV110();
     }
 
-    // v10.1이 덮어쓴 localStorage에 shoppingCompleted를 다시 박아넣음
     if (wasDone) {
-      setShoppingMarkedDoneV109(cleanDate, true, wasAutoCleaned);
+      setShoppingMarkedDoneV110(cleanDate, true, wasAutoCleaned);
       try {
         var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
         if (raw) {
@@ -11892,7 +11891,7 @@
         }
       } catch (e) {}
     } else {
-      getSyncedShoppingTreeV109(cleanDate);
+      getSyncedShoppingTreeV110(cleanDate);
     }
 
     var badgeEl = document.getElementById('shoppingModalDateBadge');
@@ -11912,12 +11911,11 @@
       titleEl.textContent = '장보기 목록(총 ' + totalCnt + '품목)';
     }
 
-    window.updateShoppingFooterButtonsV109(cleanDate);
+    window.updateShoppingFooterButtonsV110(cleanDate);
   };
 
-  // [장보기 열기] 달력에 확정·예정된 상태인지 확인 후 오픈
   window.openShoppingListModal = async function() {
-    var cleanDate = getActiveCleanDateV109();
+    var cleanDate = getActiveCleanDateV110();
     if (!currentTrayIds || currentTrayIds.length === 0) {
       await showCustomAlert('식판에 모아진 메뉴가 없습니다.\n반찬바구니에서 메뉴를 먼저 담아주세요.', '🍱');
       return;
@@ -11940,20 +11938,19 @@
     window.activeMemoGroupIdV10 = null;
 
     window.renderShoppingTreeModal();
-    window.updateShoppingFooterButtonsV109(cleanDate);
+    window.updateShoppingFooterButtonsV110(cleanDate);
 
     var modal = document.getElementById('shoppingListModal');
     if (modal) modal.classList.remove('hidden');
   };
 
-  // [✅ 장보기 완료 버튼 클릭]
   window.completeShoppingAndCommit = async function() {
     if (!isLeader) {
       return await showCustomAlert('장보기 완료되어 수정이 안됩니다.', '😊');
     }
 
-    var cleanDate = getActiveCleanDateV109();
-    var tree = getSyncedShoppingTreeV109(cleanDate);
+    var cleanDate = getActiveCleanDateV110();
+    var tree = getSyncedShoppingTreeV110(cleanDate);
 
     if (!tree || !Array.isArray(tree.groups)) {
       await showCustomAlert('장보기 목록 데이터가 없습니다.', '⚠️');
@@ -11971,14 +11968,12 @@
       return;
     }
 
-    // 체크된 품목이 있는 그룹들을 자동으로 잠금(locked = true) 처리
     tree.groups.forEach(function(g) {
       var hasChecked = (g.items || []).some(function(it) { return Boolean(it && it.checked); });
       if (hasChecked) g.locked = true;
     });
 
-    // 전용 완료 저장소와 트리 양쪽에 완료 상태 기록!
-    setShoppingMarkedDoneV109(cleanDate, true, false);
+    setShoppingMarkedDoneV110(cleanDate, true, false);
     tree.shoppingCompleted = true;
     tree.autoCleaned = false;
     tree.updatedAt = Date.now();
@@ -11997,12 +11992,11 @@
     window.activeMemoGroupIdV10 = null;
 
     window.renderShoppingTreeModal();
-    window.updateShoppingFooterButtonsV109(cleanDate);
+    window.updateShoppingFooterButtonsV110(cleanDate);
   };
 
-  // [결과 공유 클릭 시 미체크 재료·메뉴 자동 삭제 및 DB 저장 함수]
-  async function autoDeleteUncheckedAndSaveOnShareV109(cleanDate) {
-    var tree = getSyncedShoppingTreeV109(cleanDate);
+  async function autoDeleteUncheckedAndSaveOnShareV110(cleanDate) {
+    var tree = getSyncedShoppingTreeV110(cleanDate);
     if (!tree || !Array.isArray(tree.groups)) return false;
 
     var keptMenuGroups = [];
@@ -12075,7 +12069,7 @@
       updatedAt: Date.now()
     };
 
-    setShoppingMarkedDoneV109(cleanDate, true, true);
+    setShoppingMarkedDoneV110(cleanDate, true, true);
     var allTrees = {};
     try {
       var raw = localStorage.getItem(SHOPPING_STORAGE_KEY);
@@ -12089,7 +12083,7 @@
     var firstPhotoId = (currentSavedPhotoIds && currentSavedPhotoIds.length > 0) ? currentSavedPhotoIds[0] : (currentSavedPhotoId || 'default_4');
 
     persistentConfirmedSet.add(cleanDate);
-    savePersistentConfirmedDatesV109();
+    savePersistentConfirmedDatesV110();
 
     try {
       var rawConfOnly = localStorage.getItem(CONFIRMED_ONLY_DATES_KEY);
@@ -12173,7 +12167,6 @@
     return true;
   }
 
-  // [결과 공유 버튼 클릭] 막힘 없이 풀업 메뉴 즉시 오픈!
   window.toggleShoppingSharePullup = async function(e) {
     if (e) { e.stopPropagation(); e.preventDefault(); }
     var pullup = document.getElementById('shoppingSharePullupMenu');
@@ -12185,10 +12178,10 @@
       return;
     }
 
-    upgradeSharePullupAndPreviewUIV109();
+    upgradeSharePullupAndPreviewUIV110();
 
-    var cleanDate = getActiveCleanDateV109();
-    var tree = getSyncedShoppingTreeV109(cleanDate);
+    var cleanDate = getActiveCleanDateV110();
+    var tree = getSyncedShoppingTreeV110(cleanDate);
 
     var hasChecked = tree && Array.isArray(tree.groups) && tree.groups.some(function(g) {
       return Array.isArray(g.items) && g.items.some(function(it) { return Boolean(it && it.checked); });
@@ -12202,19 +12195,16 @@
     var completeBtn = document.getElementById('shoppingCompleteActionBtn');
     var isBtnShowingDone = completeBtn && completeBtn.innerText.indexOf('완료됨') !== -1;
 
-    // '장보기 완료'가 이미 눌렸거나 버튼에 '최종완료됨'이 표시되어 있으면 통과!
-    if (!isShoppingMarkedDoneV109(cleanDate) && !isBtnShowingDone) {
+    if (!isShoppingMarkedDoneV110(cleanDate) && !isBtnShowingDone) {
       await showCustomAlert('먼저 가운데 [✅ 장보기 완료] 버튼을 눌러 장보기를 완료해 주세요.', '🛒');
       return;
     }
 
-    // 혹시 완료 플래그가 누락되었더라도 강제 동기화
-    setShoppingMarkedDoneV109(cleanDate, true, Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned));
+    setShoppingMarkedDoneV110(cleanDate, true, Boolean(shoppingDoneMapV110[cleanDate] && shoppingDoneMapV110[cleanDate].autoCleaned));
 
-    // 미체크 재료와 메뉴 자동 삭제 저장 수행
-    var isAlreadyAutoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+    var isAlreadyAutoCleaned = Boolean(shoppingDoneMapV110[cleanDate] && shoppingDoneMapV110[cleanDate].autoCleaned);
     if (isLeader && !isAlreadyAutoCleaned) {
-      await autoDeleteUncheckedAndSaveOnShareV109(cleanDate);
+      await autoDeleteUncheckedAndSaveOnShareV110(cleanDate);
     }
 
     pullup.classList.remove('hidden');
@@ -12222,9 +12212,13 @@
   };
 
   // =========================================================================
-  // 파트 D: 문자 복사 (10자 구분선) & 슬림 직사각형 JPG 캔버스 렌더링 (진한 감청색 + 품목 개수)
+  // 파트 D:
+  //  [2번 요구사항] 문자로 복사: '세종꿈의교회' 다음 밑으로 한 칸 떼지 말고 바로 구분선을 넣고,
+  //                 밑에는 2열이 되지 않도록 '• 목록 (총 00품목)' 으로 표시
+  //  [3번 요구사항] 이미지 저장: 구분선은 각 타이틀과 문자의 폭보다 조금 길게 하고,
+  //                 품목은 들여쓰기로 구분선 시작 시점과 상하 수직 기준선을 맞춤
   // =========================================================================
-  function formatOrderDatesV109(cleanDateStr) {
+  function formatOrderDatesV110(cleanDateStr) {
     var raw = String(cleanDateStr || '').trim();
     var m = raw.match(/(\d{4})년\s*(\d{1,2})월\s*(\d{1,2})일/);
     if (m) {
@@ -12243,10 +12237,10 @@
     return { textDate: fallback, imageDate: fallback + '(일)' };
   }
 
-  function extractOrderSharePayloadV109() {
-    var cleanDate = getActiveCleanDateV109();
-    var dateInfo = formatOrderDatesV109(cleanDate);
-    var tree = getSyncedShoppingTreeV109(cleanDate);
+  function extractOrderSharePayloadV110() {
+    var cleanDate = getActiveCleanDateV110();
+    var dateInfo = formatOrderDatesV110(cleanDate);
+    var tree = getSyncedShoppingTreeV110(cleanDate);
     var groupsOut = [];
     var totalItemsCount = 0;
 
@@ -12282,14 +12276,14 @@
 
   var LINE_10_CHARS = '──────────';
 
-  function buildCompactOrderTextV109(payload) {
+  // [2번 요구사항] '세종꿈의교회' 밑에 빈 줄 없이 바로 구분선 + '• 목록 (총 00품목)'
+  function buildCompactOrderTextV110(payload) {
     var lines = [
       payload.displayDate,
       LINE_10_CHARS,
       '세종꿈의교회',
-      '',
       LINE_10_CHARS,
-      '-주문 목록(총' + payload.totalItemsCount + ' 품목)-'
+      '• 목록 (총 ' + payload.totalItemsCount + '품목)'
     ];
     payload.groups.forEach(function(g) {
       lines.push('● ' + g.name + ' (' + g.count + ')');
@@ -12302,13 +12296,13 @@
     return lines.join('\n');
   }
 
-  var QUALITY_PRESETS_V109 = {
+  var QUALITY_PRESETS_V110 = {
     standard: { label: '표준',     baseWidth: 480, quality: 0.78 },
     high:     { label: '고화질',   baseWidth: 680, quality: 0.88 },
     ultra:    { label: '초고화질', baseWidth: 920, quality: 0.95 }
   };
 
-  function wrapCanvasLinesV109(ctx, text, maxWidth) {
+  function wrapCanvasLinesV110(ctx, text, maxWidth) {
     var str = String(text || '');
     if (!str || ctx.measureText(str).width <= maxWidth) return [str];
     var res = [], cur = '';
@@ -12321,7 +12315,7 @@
     return res;
   }
 
-  function strokeRoundedRectV109(ctx, x, y, w, h, r) {
+  function strokeRoundedRectV110(ctx, x, y, w, h, r) {
     var radius = Math.min(r, w / 2, h / 2);
     ctx.beginPath();
     ctx.moveTo(x + radius, y);
@@ -12337,42 +12331,67 @@
     ctx.stroke();
   }
 
-  function renderCompactOrderCanvasV109(payload, qualityKey) {
-    var preset = QUALITY_PRESETS_V109[qualityKey] || QUALITY_PRESETS_V109.standard;
-    var BASE_W = 320;
+  // [3번 요구사항] 구분선은 각 타이틀과 문자의 폭보다 조금 길게 하고, 품목은 들여쓰기로 구분선 시작 시점과 상하 수직 정렬 일치
+  function renderCompactOrderCanvasV110(payload, qualityKey) {
+    var preset = QUALITY_PRESETS_V110[qualityKey] || QUALITY_PRESETS_V110.standard;
+    var BASE_W = 310;
     var scale = preset.baseWidth / BASE_W;
 
-    var sideMargin = 16;
-    var lineStartX = sideMargin;
-    var lineEndX   = BASE_W - sideMargin;
-    var branchX    = lineStartX + 4;
-    var itemTextX  = lineStartX + 17;
-    var menuMaxW   = lineEndX - (lineStartX + 13);
-    var itemMaxW   = lineEndX - itemTextX;
-
     var mCtx = document.createElement('canvas').getContext('2d');
-    var topPad = 12, bottomPad = 12, headerH = 87, footerH = 50;
+
+    // 로고+타이틀 및 '-주문 목록(총 00 품목)-' 문자의 실제 가로폭 측정
+    var logoImg = document.getElementById('printLogoImg') || document.querySelector('header img[src*="tlogo"]');
+    var titleImg = document.getElementById('printTitleImg') || document.querySelector('header img[src*="ttitle"]');
+    var brandW = 148;
+    if (logoImg && logoImg.complete && logoImg.naturalWidth > 0 && titleImg && titleImg.complete && titleImg.naturalWidth > 0) {
+      var targetH = 24, innerLogoH = 18;
+      var innerLogoW = (logoImg.naturalWidth / logoImg.naturalHeight) * innerLogoH;
+      var boxW = innerLogoW + 7;
+      var tW = (titleImg.naturalWidth / titleImg.naturalHeight) * targetH;
+      brandW = boxW + 6 + tW;
+    }
+
+    var orderHeaderText = '-주문 목록(총 ' + payload.totalItemsCount + ' 품목)-';
+    mCtx.font = '900 15px Pretendard, sans-serif';
+    var orderTextW = mCtx.measureText(orderHeaderText).width;
+    mCtx.font = '900 14.5px Pretendard, sans-serif';
+    var dateTextW = mCtx.measureText(payload.imageDate).width;
+
+    // 타이틀과 문자 폭 중 가장 넓은 것보다 좌우로 조금(약 18px씩, 총 36px) 더 길게 구분선 폭을 설정!
+    var maxHeaderTextW = Math.max(brandW, orderTextW, dateTextW);
+    var dividerLen = Math.min(BASE_W - 44, Math.max(196, Math.round(maxHeaderTextW + 36)));
+
+    // 구분선 시작 시점(lineStartX) = 들여쓰기 된 품목들의 상하 시작 기준점!
+    var lineStartX = Math.round((BASE_W - dividerLen) / 2); // 중앙 정렬된 구분선의 시작 X좌표 (자연스러운 들여쓰기 효과)
+    var lineEndX   = lineStartX + dividerLen;               // 구분선의 끝 X좌표
+    var rightLimit = BASE_W - 14;                           // 우측 최대 텍스트 한계선
+    var branchX    = lineStartX + 4;                        // 트리 기호(├, └) 시작 위치
+    var itemTextX  = lineStartX + 17;                       // 하위 재료/비고 텍스트 시작 위치
+    var menuMaxW   = rightLimit - (lineStartX + 13);
+    var itemMaxW   = rightLimit - itemTextX;
+
+    var topPad = 14, bottomPad = 14, headerH = 87, footerH = 50;
     var totalBaseH = topPad + headerH;
 
     var preparedGroups = [];
     payload.groups.forEach(function(g) {
       var menuHeaderStr = g.name + ' (' + g.count + ')';
       mCtx.font = '900 13.5px Pretendard, sans-serif';
-      var wrappedTitle = wrapCanvasLinesV109(mCtx, menuHeaderStr, menuMaxW);
+      var wrappedTitle = wrapCanvasLinesV110(mCtx, menuHeaderStr, menuMaxW);
       totalBaseH += wrappedTitle.length * 17 + 1;
 
       var treeRows = [], totalChildren = g.items.length + g.memoLines.length, childIdx = 0;
       mCtx.font = '800 12.5px Pretendard, sans-serif';
       g.items.forEach(function(itName) {
         childIdx++;
-        var wrapped = wrapCanvasLinesV109(mCtx, itName, itemMaxW);
+        var wrapped = wrapCanvasLinesV110(mCtx, itName, itemMaxW);
         treeRows.push({ branch: childIdx === totalChildren ? '└' : '├', lines: wrapped, isMemo: false });
         totalBaseH += wrapped.length * 15.5;
       });
       mCtx.font = '700 11.5px Pretendard, sans-serif';
       g.memoLines.forEach(function(mLine) {
         childIdx++;
-        var wrapped = wrapCanvasLinesV109(mCtx, mLine, itemMaxW);
+        var wrapped = wrapCanvasLinesV110(mCtx, mLine, itemMaxW);
         treeRows.push({ branch: childIdx === totalChildren ? '└' : '├', lines: wrapped, isMemo: true });
         totalBaseH += wrapped.length * 14.5;
       });
@@ -12398,22 +12417,20 @@
     var curY = topPad;
 
     // 1. 로고 타이틀
-    var logoImg = document.getElementById('printLogoImg') || document.querySelector('header img[src*="tlogo"]');
-    var titleImg = document.getElementById('printTitleImg') || document.querySelector('header img[src*="ttitle"]');
     if (logoImg && logoImg.complete && logoImg.naturalWidth > 0 && titleImg && titleImg.complete && titleImg.naturalWidth > 0) {
-      var targetH = 24, innerLogoH = 18;
-      var innerLogoW = (logoImg.naturalWidth / logoImg.naturalHeight) * innerLogoH;
-      var boxW = innerLogoW + 7;
-      var tW = (titleImg.naturalWidth / titleImg.naturalHeight) * targetH;
-      var gap = 6;
-      var startX = (BASE_W - (boxW + gap + tW)) / 2;
+      var targetH2 = 24, innerLogoH2 = 18;
+      var innerLogoW2 = (logoImg.naturalWidth / logoImg.naturalHeight) * innerLogoH2;
+      var boxW2 = innerLogoW2 + 7;
+      var tW2 = (titleImg.naturalWidth / titleImg.naturalHeight) * targetH2;
+      var gap2 = 6;
+      var startX = (BASE_W - (boxW2 + gap2 + tW2)) / 2;
 
       ctx.strokeStyle = '#cbd5e1';
       ctx.lineWidth = 1.1;
-      strokeRoundedRectV109(ctx, startX, curY, boxW, targetH, 5);
+      strokeRoundedRectV110(ctx, startX, curY, boxW2, targetH2, 5);
       try {
-        ctx.drawImage(logoImg, startX + 3.5, curY + (targetH - innerLogoH) / 2, innerLogoW, innerLogoH);
-        ctx.drawImage(titleImg, startX + boxW + gap, curY, tW, targetH);
+        ctx.drawImage(logoImg, startX + 3.5, curY + (targetH2 - innerLogoH2) / 2, innerLogoW2, innerLogoH2);
+        ctx.drawImage(titleImg, startX + boxW2 + gap2, curY, tW2, targetH2);
       } catch (e) {}
     } else {
       ctx.fillStyle = '#0f172a'; ctx.font = '900 16px Pretendard, sans-serif'; ctx.textAlign = 'center';
@@ -12421,7 +12438,7 @@
     }
     curY += 24 + 7;
 
-    // 2. 가는 구분선
+    // 2. 가는 구분선 (타이틀과 문자 폭보다 조금 길게 설정된 lineStartX ~ lineEndX)
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 1.0;
     ctx.beginPath();
@@ -12441,10 +12458,10 @@
     ctx.fillStyle = '#0f172a';
     ctx.font = '900 15px Pretendard, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('-주문 목록(총 ' + payload.totalItemsCount + ' 품목)-', BASE_W / 2, curY);
+    ctx.fillText(orderHeaderText, BASE_W / 2, curY);
     curY += 20;
 
-    // 5. 굵은 구분선 (위 구분선과 동일 길이)
+    // 5. 굵은 구분선 (위 가는 구분선과 동일한 길이: lineStartX ~ lineEndX)
     ctx.strokeStyle = '#475569';
     ctx.lineWidth = 2.2;
     ctx.beginPath();
@@ -12453,10 +12470,10 @@
     ctx.stroke();
     curY += 9;
 
-    // 6. 목록 나열 (진한 감청색 + 품목 개수, 아래 구분선 시작점과 수직 정렬 일치)
+    // 6. 목록 나열 (들여쓰기 된 구분선 시작점 lineStartX 와 상하 수직 기준선 완벽 일치!)
     ctx.textAlign = 'left';
     preparedGroups.forEach(function(grp) {
-      ctx.fillStyle = '#1e3a8a';
+      ctx.fillStyle = '#1e3a8a'; // 진한 감청색
       ctx.font = '900 13.5px Pretendard, sans-serif';
       grp.titleLines.forEach(function(tLine, tIdx) {
         if (tIdx === 0) ctx.fillText('●', lineStartX, curY + 0.5);
@@ -12481,7 +12498,7 @@
       curY += 4;
     });
 
-    // 7. '끝.'
+    // 7. '끝.' (들여쓰기 된 구분선 시작점 lineStartX에 맞춤)
     curY += 2;
     ctx.fillStyle = '#334155';
     ctx.font = '900 12.5px Pretendard, sans-serif';
@@ -12501,42 +12518,42 @@
     return { dataUrl: dataUrl, width: outW, height: outH, kbStr: kbStr, ext: 'jpg', mime: 'image/jpeg', preset: preset };
   }
 
-  var curShareModeV109 = 'image', curQualKeyV109 = 'standard', curImgObjV109 = null, curTextStrV109 = '', curPayloadV109 = null;
+  var curShareModeV110 = 'image', curQualKeyV110 = 'standard', curImgObjV110 = null, curTextStrV110 = '', curPayloadV110 = null;
 
   window.switchOrderImageQuality = function(qualityKey) {
-    if (!QUALITY_PRESETS_V109[qualityKey]) qualityKey = 'standard';
-    curQualKeyV109 = qualityKey;
+    if (!QUALITY_PRESETS_V110[qualityKey]) qualityKey = 'standard';
+    curQualKeyV110 = qualityKey;
     ['standard', 'high', 'ultra'].forEach(function(k) {
       var btn = document.getElementById('tabQual_' + k);
       if (btn) btn.className = (k === qualityKey)
         ? 'py-1 rounded-lg border-2 border-teal-600 bg-teal-600 text-white font-extrabold shadow-2xs transition'
         : 'py-1 rounded-lg border border-slate-300 bg-white text-slate-600 font-bold hover:bg-slate-50 transition';
     });
-    if (!curPayloadV109) curPayloadV109 = extractOrderSharePayloadV109();
-    curImgObjV109 = renderCompactOrderCanvasV109(curPayloadV109, qualityKey);
-    var imgTag = document.getElementById('orderPreviewImgTag'); if (imgTag) imgTag.src = curImgObjV109.dataUrl;
-    var specEl = document.getElementById('orderPreviewSpecText'); if (specEl) specEl.innerText = curImgObjV109.preset.label + ' JPG (' + curImgObjV109.width + '×' + curImgObjV109.height + 'px)';
-    var sizeEl = document.getElementById('orderPreviewSizeBadge'); if (sizeEl) sizeEl.innerText = '크기: ' + curImgObjV109.kbStr;
+    if (!curPayloadV110) curPayloadV110 = extractOrderSharePayloadV110();
+    curImgObjV110 = renderCompactOrderCanvasV110(curPayloadV110, qualityKey);
+    var imgTag = document.getElementById('orderPreviewImgTag'); if (imgTag) imgTag.src = curImgObjV110.dataUrl;
+    var specEl = document.getElementById('orderPreviewSpecText'); if (specEl) specEl.innerText = curImgObjV110.preset.label + ' JPG (' + curImgObjV110.width + '×' + curImgObjV110.height + 'px)';
+    var sizeEl = document.getElementById('orderPreviewSizeBadge'); if (sizeEl) sizeEl.innerText = '크기: ' + curImgObjV110.kbStr;
   };
 
   window.openOrderSharePreview = async function(mode, qualityKey) {
     if (typeof window.closeShoppingSharePullup === 'function') window.closeShoppingSharePullup();
-    upgradeSharePullupAndPreviewUIV109();
+    upgradeSharePullupAndPreviewUIV110();
 
-    var cleanDate = getActiveCleanDateV109();
-    var isAlreadyAutoCleaned = Boolean(shoppingDoneMapV109[cleanDate] && shoppingDoneMapV109[cleanDate].autoCleaned);
+    var cleanDate = getActiveCleanDateV110();
+    var isAlreadyAutoCleaned = Boolean(shoppingDoneMapV110[cleanDate] && shoppingDoneMapV110[cleanDate].autoCleaned);
     if (isLeader && !isAlreadyAutoCleaned) {
-      await autoDeleteUncheckedAndSaveOnShareV109(cleanDate);
+      await autoDeleteUncheckedAndSaveOnShareV110(cleanDate);
     }
 
-    var payload = extractOrderSharePayloadV109();
+    var payload = extractOrderSharePayloadV110();
     if (!payload.groups || payload.groups.length === 0 || payload.totalItemsCount === 0) {
       await showCustomAlert('공유할 주문 품목이 없습니다.', '🛒');
       return;
     }
 
-    curPayloadV109 = payload;
-    curShareModeV109 = mode;
+    curPayloadV110 = payload;
+    curShareModeV110 = mode;
 
     var modal = document.getElementById('shoppingOrderPreviewModal');
     var titleEl = document.getElementById('orderPreviewHeaderTitle');
@@ -12553,14 +12570,14 @@
       if (confirmBtn) confirmBtn.innerText = '확정 (이미지 저장)';
       window.switchOrderImageQuality(qualityKey || 'standard');
     } else {
-      if (titleEl) titleEl.innerText = '문자 복사 미리보기 (총 ' + payload.totalItemsCount + '품목)';
+      if (titleEl) titleEl.innerText = '문자로 복사 미리보기 (총 ' + payload.totalItemsCount + '품목)';
       if (qualBar) qualBar.classList.add('hidden');
       if (imgWrap) imgWrap.classList.add('hidden');
       if (txtWrap) txtWrap.classList.remove('hidden');
-      if (confirmBtn) confirmBtn.innerText = '확정 (문자 복사)';
-      curTextStrV109 = buildCompactOrderTextV109(payload);
+      if (confirmBtn) confirmBtn.innerText = '확정 (문자로 복사)';
+      curTextStrV110 = buildCompactOrderTextV110(payload);
       var preEl = document.getElementById('orderPreviewTextContent');
-      if (preEl) preEl.textContent = curTextStrV109;
+      if (preEl) preEl.textContent = curTextStrV110;
     }
 
     if (modal) {
@@ -12571,9 +12588,9 @@
   };
 
   window.confirmAndExecuteOrderShare = async function() {
-    var payload = curPayloadV109 || extractOrderSharePayloadV109();
-    if (curShareModeV109 === 'text') {
-      var txt = curTextStrV109 || buildCompactOrderTextV109(payload);
+    var payload = curPayloadV110 || extractOrderSharePayloadV110();
+    if (curShareModeV110 === 'text') {
+      var txt = curTextStrV110 || buildCompactOrderTextV110(payload);
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) { await navigator.clipboard.writeText(txt); }
         else {
@@ -12586,7 +12603,7 @@
       return;
     }
 
-    var imgObj = curImgObjV109 || renderCompactOrderCanvasV109(payload, curQualKeyV109);
+    var imgObj = curImgObjV110 || renderCompactOrderCanvasV110(payload, curQualKeyV110);
     var safeDate = payload.displayDate.replace(/[^0-9가-힣a-zA-Z_-]/g, '_');
     var fileName = '주문목록_' + safeDate + '_' + imgObj.preset.label + '.jpg';
     try {
@@ -12612,5 +12629,5 @@
   renderArchiveGrid();
 })();
 </script>
-<!-- ================= [패치 v10.9 END] ================= -->
+<!-- ================= [패치 v10.10 END] ================= -->
 </body></html>
