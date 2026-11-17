@@ -13989,4 +13989,228 @@
 })();
 </script>
 <!-- ================= [패치 v10.14 END] ================= -->
+<!-- ================= [패치 v10.15 START: 일반 팀원 풀다운 메뉴 확인만 허용 & 반찬 선택 시 상세창 열람 허용 후 실행 차단] ================= -->
+<script id="sejongPatchScriptV115">
+(function applyMemberPermissionPatchV115() {
+  var MSG_MENU_CONFIRMED_V115 = "식단이 확정 되었습니다.";
+
+  function smileConfirmedAlertV115() {
+    return showCustomAlert(MSG_MENU_CONFIRMED_V115, "😊");
+  }
+
+  // =========================================================================
+  // 1) 일반 팀원(!isLeader): "반찬등록/삭제/불러오기" 풀다운 메뉴는 펼쳐서 확인만 가능하고,
+  //    하위 항목(＋반찬등록, 반찬삭제, 불러오기/저장) 터치 시 진입을 막고 확정 안내 표시
+  // =========================================================================
+  window.handleBasketMenuAction = function(actionType) {
+    closeBasketSlideMenu();
+    if (!isLeader) {
+      smileConfirmedAlertV115();
+      return;
+    }
+    if (actionType === "add") {
+      exitBasketDeleteMode();
+      openAddDishModal();
+    } else if (actionType === "delete") {
+      enterBasketDeleteMode();
+    } else if (actionType === "csv") {
+      exitBasketDeleteMode();
+      openCsvModal();
+    }
+  };
+
+  // =========================================================================
+  // 2) 일반 팀원(!isLeader): 반찬 바구니(또는 식판)에서 반찬을 터치하면
+  //    바로 막지 않고 한 단계 더 들어가 해당 반찬의 세부 정보창(#removeTrayConfirmModal)을 열어줌!
+  //    이후 창 내부에서 [예(Y)]를 눌러 실제로 변경하려 할 때만 확정 안내를 띄우며 차단!
+  // =========================================================================
+  var pendingModeV115 = "add"; // "add" | "remove"
+  var pendingDishIdV115 = null;
+
+  function renderDishInfoBoxForAllUsersV115(dishId) {
+    var modal = document.getElementById("removeTrayConfirmModal");
+    var nameEl = document.getElementById("removeTrayTargetName");
+    if (!modal || !nameEl) return;
+
+    nameEl.className = "text-sm font-black text-slate-800 truncate";
+
+    var infoBox = document.getElementById("removeTrayDishInfoBox");
+    if (!infoBox) {
+      infoBox = document.createElement("div");
+      infoBox.id = "removeTrayDishInfoBox";
+      nameEl.parentNode.insertBefore(infoBox, nameEl.nextSibling);
+    }
+
+    var item = (masterBasket || []).find(function(d) { return String(d.id) === String(dishId); });
+    if (!item) {
+      infoBox.classList.add("hidden");
+      infoBox.innerHTML = "";
+      return;
+    }
+
+    var kgStr = (item.kg && item.kg !== "적당량") ? String(item.kg).trim() : "";
+    var noteStr = item.note ? String(item.note).trim() : "";
+    var recipeStr = (item.recipe && item.recipe !== "기본 조리") ? String(item.recipe).trim() : "";
+
+    var rowsHtml = "";
+    if (kgStr) {
+      rowsHtml +=
+        '<div class="dish-info-row-v103">' +
+          '<span class="dish-info-tag-v103">준비량</span>' +
+          '<span class="dish-info-val-v103">' + kgStr + '</span>' +
+        '</div>';
+    }
+    if (noteStr) {
+      rowsHtml +=
+        '<div class="dish-info-row-v103">' +
+          '<span class="dish-info-tag-v103">재 료</span>' +
+          '<span class="dish-info-val-v103">' + noteStr + '</span>' +
+        '</div>';
+    }
+    if (recipeStr) {
+      rowsHtml +=
+        '<div class="dish-info-row-v103">' +
+          '<span class="dish-info-tag-v103">조 리</span>' +
+          '<span class="dish-info-val-v103">' + recipeStr + '</span>' +
+        '</div>';
+    }
+
+    if (!rowsHtml) {
+      rowsHtml =
+        '<div class="dish-info-row-v103">' +
+          '<span class="dish-info-tag-v103">정 보</span>' +
+          '<span class="dish-info-val-v103 text-slate-400">등록된 세부 재료 정보가 없습니다.</span>' +
+        '</div>';
+    }
+
+    infoBox.innerHTML = rowsHtml;
+    infoBox.classList.remove("hidden");
+  }
+
+  function getConfirmPromptElementV115() {
+    var modal = document.getElementById("removeTrayConfirmModal");
+    if (!modal) return null;
+    var promptEl = document.getElementById("removeTrayPromptText");
+    if (!promptEl) {
+      var pTags = modal.querySelectorAll("p");
+      if (pTags.length >= 2) {
+        promptEl = pTags[1];
+        promptEl.id = "removeTrayPromptText";
+      }
+    }
+    return promptEl;
+  }
+
+  // 식판에서 제외 확인창 열기 (팀장·팀원 모두 창은 열려서 내용 확인 가능)
+  window.requestRemoveFromTray = function(id) {
+    pendingModeV115 = "remove";
+    pendingDishIdV115 = id;
+    pendingRemoveDishId = id;
+
+    var item = (masterBasket || []).find(function(d) { return String(d.id) === String(id); });
+    var nameEl = document.getElementById("removeTrayTargetName");
+    if (nameEl) nameEl.innerText = item ? ("[" + item.name + "]") : "";
+
+    renderDishInfoBoxForAllUsersV115(id);
+
+    var promptEl = getConfirmPromptElementV115();
+    if (promptEl) promptEl.innerText = "식판에서 제외 할까요.?";
+
+    var modal = document.getElementById("removeTrayConfirmModal");
+    if (modal) modal.classList.remove("hidden");
+  };
+
+  // 식판에 올리기 확인창 열기 (팀장·팀원 모두 창은 열려서 내용 확인 가능)
+  window.requestAddToTrayV101 = function(id) {
+    pendingModeV115 = "add";
+    pendingDishIdV115 = id;
+    pendingRemoveDishId = id;
+
+    var item = (masterBasket || []).find(function(d) { return String(d.id) === String(id); });
+    var nameEl = document.getElementById("removeTrayTargetName");
+    if (nameEl) nameEl.innerText = item ? ("[" + item.name + "]") : "";
+
+    renderDishInfoBoxForAllUsersV115(id);
+
+    var promptEl = getConfirmPromptElementV115();
+    if (promptEl) promptEl.innerText = "식판에 올릴까요.?";
+
+    var modal = document.getElementById("removeTrayConfirmModal");
+    if (modal) modal.classList.remove("hidden");
+  };
+
+  // 반찬 바구니에서 반찬 터치 시: 팀원도 막지 않고 한 단계 더 들어가 확인창 오픈
+  window.toggleDishInTray = async function(id) {
+    var sInput = document.getElementById("basketSearch");
+    var hadSearch = sInput && sInput.value.trim().length > 0;
+    if (hadSearch) {
+      sInput.value = "";
+      renderBasket();
+      renderArchiveGrid();
+    }
+
+    if (currentTrayIds.includes(id)) {
+      window.requestRemoveFromTray(id);
+    } else {
+      window.requestAddToTrayV101(id);
+    }
+  };
+
+  // 열린 확인창에서 [예(Y)] / [아니오(N)] 터치 시: 일반 팀원이 [예(Y)]를 누르면 그때 확정 안내 후 차단!
+  window.confirmRemoveFromTray = async function(isYes) {
+    var modal = document.getElementById("removeTrayConfirmModal");
+    if (modal) modal.classList.add("hidden");
+
+    var targetId = pendingDishIdV115 || pendingRemoveDishId;
+    var mode = pendingModeV115;
+    pendingDishIdV115 = null;
+    pendingRemoveDishId = null;
+
+    if (!isYes || !targetId) return;
+
+    // 일반 팀원은 창을 열어 내용 확인까지만 가능하고, [예(Y)]로 실제 반영하려 하면 차단
+    if (!isLeader) {
+      await smileConfirmedAlertV115();
+      return;
+    }
+
+    if (mode === "add") {
+      if (!currentTrayIds.includes(targetId)) {
+        currentTrayIds.push(targetId);
+      }
+      if (typeof window.sortTrayIdsByCategoryOrder === "function") {
+        window.sortTrayIdsByCategoryOrder(currentTrayIds);
+      }
+      window.newlyAddedTrayDishId = targetId;
+      window.trayHighlightLockUntil = Date.now() + 650;
+
+      renderTray();
+      renderArchiveGrid();
+
+      var trayBox = document.getElementById("trayCardBox");
+      if (trayBox) {
+        requestAnimationFrame(function() {
+          trayBox.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+      }
+      await syncCurrentStateToDb();
+    } else {
+      await removeFromTray(targetId);
+    }
+  };
+
+  // 식판에 담긴 반찬 이름을 눌러 열리는 세부사항 설정창(#dishDetailModal)도 팀원은 열람만 가능하고 수정·저장은 차단
+  var _prevOpenDishDetailModalV115 = openDishDetailModal;
+  openDishDetailModal = function(id) {
+    if (_prevOpenDishDetailModalV115) _prevOpenDishDetailModalV115(id);
+    var dModal = document.getElementById("dishDetailModal");
+    if (!dModal) return;
+    var inputs = dModal.querySelectorAll("input, textarea");
+    inputs.forEach(function(inp) {
+      inp.readOnly = !isLeader;
+    });
+  };
+})();
+</script>
+<!-- ================= [패치 v10.15 END] ================= -->
 </body></html>
