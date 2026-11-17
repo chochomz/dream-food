@@ -7203,10 +7203,7 @@
     text-align: left !important;
   }
   /* 포커스 이동 시 카드 트랜지션 흔들림 방지 */
-  #loginGateCard {
-    will-change: auto !important;
-    transition: none !important;
-  }
+  #loginGateCard { will-change: transform !important; transition: transform 0.2s ease-out !important; }
 </style>
 <script>
 (function applyPatchV96() {
@@ -12658,7 +12655,7 @@
 
 
   // =========================================================================
-  // 1-A) 공유된 카톡방에서 이미지('ksfoodlog.png') 클릭 시 브라우저의 새로운 창으로 열기
+  // 1-A) 공유된 카톡방에서 이미지('ksfoodlogo.png') 클릭 시 브라우저의 새로운 창으로 열기
   // =========================================================================
   (function openNewBrowserWindowFromKakaoV112() {
     try {
@@ -12689,8 +12686,8 @@
   // =========================================================================
   // 1-B) 카카오 JavaScript SDK 초기화 및 카톡방 카드 공유 함수
   //      - 웹앱 버튼 이미지: ksffoodlogo.png (설명서 사이즈 h-6)
-  //      - 카톡방 표시 이미지: ksfoodlog.png
-  //      - 카톡방 이미지 밑 문구: '환영합니다. 어서오세요'
+  //      - 카톡방 표시 이미지: ksfoodlogo.png
+  //      - 카톡방 이미지 밑 문구: '식단관리에 오셔서 환영합니다'
   // =========================================================================
   function ensureKakaoSdkInitializedV112() {
     if (typeof window.Kakao === 'undefined' || !window.Kakao) return false;
@@ -12721,8 +12718,8 @@
     shareUrlObj.searchParams.set('openExternal', '1');
     var finalShareUrl = shareUrlObj.href;
 
-    // 카톡방에 표시될 전용 이미지('ksfoodlog.png')의 절대 URL
-    var kakaoCardImageUrl = new URL('ksfoodlog.png', window.location.href).href;
+    // 카톡방에 표시될 전용 이미지('ksfoodlogo.png')의 절대 URL
+    var kakaoCardImageUrl = new URL('ksfoodlogo.png', window.location.href).href;
 
     // 1순위: 카카오 JavaScript SDK (Kakao.Share.sendDefault) 실행
     if (ensureKakaoSdkInitializedV112() && window.Kakao.Share) {
@@ -12730,7 +12727,7 @@
         window.Kakao.Share.sendDefault({
           objectType: 'feed',
           content: {
-            title: '환영합니다. 어서오세요',
+            title: "\u3000\u3000\u3000식단관리에 오셔서 환영합니다",
             imageUrl: kakaoCardImageUrl,
             imageWidth: 800,
             imageHeight: 400,
@@ -12752,8 +12749,8 @@
       if (navigator.share) {
         try {
           await navigator.share({
-            title: '환영합니다. 어서오세요',
-            text: '환영합니다. 어서오세요',
+            title: "\u3000\u3000\u3000식단관리에 오셔서 환영합니다",
+            text: '식단관리에 오셔서 환영합니다',
             url: finalShareUrl
           });
           return;
@@ -13350,4 +13347,179 @@
   }
 })();
 
+<!-- ================= [패치 v10.13 START] ================= -->
+<style id="sejongPatchStyleV113">
+  /* 로그인 창이 키보드 위로 부드럽고 확실하게 올라가도록 설정 */
+  #loginGateCard {
+    will-change: transform, margin !important;
+    transition: transform 0.2s ease-out, margin-top 0.2s ease-out !important;
+  }
+  #loginGateModal.kb-active-top {
+    align-items: flex-start !important;
+    padding-top: 18px !important;
+  }
+</style>
+<script id="sejongPatchScriptV113">
+(function applyDirectPatchV113() {
+  var KAKAO_JS_API_KEY = "aace078d23aee8677e745306537dc162";
+  // 카카오톡 카드형 피드 하단에서 중앙정렬로 보이도록 전각 공백 패딩 적용
+  var CENTERED_WELCOME_MSG = "\u3000\u3000\u3000식단관리에 오셔서 환영합니다";
+
+  function initKakaoSdkV113() {
+    if (typeof window.Kakao === "undefined" || !window.Kakao) return false;
+    try {
+      if (!window.Kakao.isInitialized()) {
+        window.Kakao.init(KAKAO_JS_API_KEY);
+      }
+      return window.Kakao.isInitialized();
+    } catch (e) { return false; }
+  }
+
+  // [1] 카카오톡 공유 함수 완전 재정의 (상단 ksfoodlogo.png 클릭 시 링크 연결 + 하단 중앙정렬 문구)
+  window.shareToKakaoTalkV112 = async function(e) {
+    if (e) { e.preventDefault(); e.stopPropagation(); }
+    var basePageUrl = window.location.origin + window.location.pathname;
+    var shareUrlObj = new URL(basePageUrl);
+    shareUrlObj.searchParams.set("openExternal", "1");
+    var finalShareUrl = shareUrlObj.href;
+    var kakaoCardImageUrl = new URL("ksfoodlogo.png", window.location.href).href;
+
+    if (initKakaoSdkV113() && window.Kakao.Share) {
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: "feed",
+          content: {
+            title: CENTERED_WELCOME_MSG,
+            imageUrl: kakaoCardImageUrl,
+            imageWidth: 800,
+            imageHeight: 400,
+            link: {
+              mobileWebUrl: finalShareUrl,
+              webUrl: finalShareUrl
+            }
+          }
+        });
+        return;
+      } catch (err) {
+        console.warn("Kakao.Share error:", err);
+      }
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "식단관리에 오셔서 환영합니다",
+          text: "식단관리에 오셔서 환영합니다",
+          url: finalShareUrl
+        });
+      } catch (err2) {}
+    }
+  };
+
+  // [2] 로그인 창 이름/코드 터치 시 화면 상단으로 끌어올리기 (모바일 키보드 가림 완벽 해결)
+  var kbTimerV113 = null;
+  window.adjustLoginCardForKeyboard = function(isFocused) {
+    var modal = document.getElementById("loginGateModal");
+    var card  = document.getElementById("loginGateCard");
+    if (!card || !modal) return;
+    if (kbTimerV113) { clearTimeout(kbTimerV113); kbTimerV113 = null; }
+
+    if (isFocused) {
+      modal.classList.add("kb-active-top");
+      card.style.transform = "translateY(-12px)";
+      try { modal.scrollTop = 0; } catch (e) {}
+    } else {
+      kbTimerV113 = setTimeout(function() {
+        var act = document.activeElement;
+        if (!act || (act.id !== "gateUserName" && act.id !== "gateAccessCode")) {
+          modal.classList.remove("kb-active-top");
+          card.style.transform = "translateY(0px)";
+        }
+      }, 160);
+    }
+  };
+
+  // [3] 이름 입력 완료 시 자동으로 코드 입력창(#gateAccessCode)으로 커서 이동
+  var advanceTimerV113 = null;
+  var lastMovedNameV113 = "";
+  var isImeComposingV113 = false;
+
+  function focusToCodeFieldV113(valStr) {
+    var codeEl = document.getElementById("gateAccessCode");
+    if (!codeEl) return;
+    lastMovedNameV113 = valStr;
+    window.adjustLoginCardForKeyboard(true);
+    codeEl.value = "";
+    try { codeEl.focus({ preventScroll: true }); } catch (e) { codeEl.focus(); }
+  }
+
+  window.handleGateNameAutoAdvance = function(inputEl, evt, isCompositionEnd) {
+    if (advanceTimerV113) { clearTimeout(advanceTimerV113); advanceTimerV113 = null; }
+    if (!inputEl) return;
+    window.adjustLoginCardForKeyboard(true);
+
+    var val = String(inputEl.value || "").trim();
+    if (!val || val.length < 2) {
+      lastMovedNameV113 = "";
+      return;
+    }
+
+    var matched = (typeof findMatchedGateMember === "function") ? findMatchedGateMember(val) : null;
+
+    // 1순위: 등록된 이름(관리자, 팀장, 팀원, 또는 등록 멤버)과 일치하면 즉시 코드창으로 이동
+    if (matched && (!isImeComposingV113 || isCompositionEnd)) {
+      advanceTimerV113 = setTimeout(function() {
+        var cur = String(inputEl.value || "").trim();
+        if (document.activeElement === inputEl && cur.length >= 2 && lastMovedNameV113 !== cur) {
+          focusToCodeFieldV113(cur);
+        }
+      }, 70);
+      return;
+    }
+
+    // 2순위: 한글 입력(2글자 이상) 완료 후 손을 떼면 자동으로 코드창으로 이동
+    var waitMs = isCompositionEnd ? 220 : (matched ? 220 : 520);
+    advanceTimerV113 = setTimeout(function() {
+      var cur = String(inputEl.value || "").trim();
+      if (document.activeElement === inputEl && cur.length >= 2 && lastMovedNameV113 !== cur) {
+        focusToCodeFieldV113(cur);
+      }
+    }, waitMs);
+  };
+
+  function bindLoginInputsV113() {
+    var nameEl = document.getElementById("gateUserName");
+    var codeEl = document.getElementById("gateAccessCode");
+    if (nameEl) {
+      nameEl.onfocus = function() { window.adjustLoginCardForKeyboard(true); };
+      nameEl.onblur  = function() { window.adjustLoginCardForKeyboard(false); };
+      nameEl.addEventListener("touchstart", function() { window.adjustLoginCardForKeyboard(true); }, { passive: true });
+      nameEl.addEventListener("compositionstart", function() { isImeComposingV113 = true; });
+      nameEl.addEventListener("compositionend", function(ev) {
+        isImeComposingV113 = false;
+        window.handleGateNameAutoAdvance(nameEl, ev, true);
+      });
+      nameEl.oninput = function(ev) {
+        if (ev && typeof ev.isComposing === "boolean") isImeComposingV113 = ev.isComposing;
+        window.handleGateNameAutoAdvance(nameEl, ev, false);
+      };
+      nameEl.onkeydown = function(ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          focusToCodeFieldV113(String(nameEl.value || "").trim());
+        }
+      };
+    }
+    if (codeEl) {
+      codeEl.onfocus = function() { window.adjustLoginCardForKeyboard(true); };
+      codeEl.onblur  = function() { window.adjustLoginCardForKeyboard(false); };
+      codeEl.addEventListener("touchstart", function() { window.adjustLoginCardForKeyboard(true); }, { passive: true });
+    }
+  }
+
+  bindLoginInputsV113();
+  window.addEventListener("load", bindLoginInputsV113);
+  setTimeout(bindLoginInputsV113, 150);
+})();
+</script>
+<!-- ================= [패치 v10.13 END] ================= -->
 </body></html>
