@@ -13147,4 +13147,207 @@
   }
 })();
 
+
+
+<!-- ================= [패치 v10.13 START: 카톡 공유 카드(ksfoodlogo.png + 중앙정렬 환영문구) & 로그인창 상단 이동/자동 전환] ================= -->
+<style id="sejongPatchStyleV113">
+  /* v9.6에서 막혀 있던 로그인 카드 상단 이동 트랜지션 복원 */
+  #loginGateCard {
+    will-change: transform !important;
+    transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+</style>
+
+<script id="sejongPatchScriptV113">
+(function applyPatchV113() {
+  // =========================================================================
+  // 1) 카카오톡 공유 모듈 (ksfoodlogo.png 상단 이미지 클릭 링크 + 하단 중앙정렬 문구)
+  // =========================================================================
+  var KAKAO_JS_API_KEY = "aace078d23aee8677e745306537dc162";
+  // 카카오톡 피드 하단에서 시각적으로 중앙정렬로 보이도록 전각 공백(Ideographic Space) 패딩 적용
+  var KAKAO_CENTERED_WELCOME_TITLE = "\u3000\u3000\u3000식단관리에 오셔서 환영합니다";
+
+  function ensureKakaoReadyV113() {
+    if (typeof window.Kakao === 'undefined' || !window.Kakao) return false;
+    try {
+      if (!window.Kakao.isInitialized()) {
+        window.Kakao.init(KAKAO_JS_API_KEY);
+      }
+      return window.Kakao.isInitialized();
+    } catch (e) {
+      return false;
+    }
+  }
+
+  window.shareToKakaoTalkV112 = async function(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    // 1. 카톡에서 이미지 클릭 시 외부 브라우저 새 창으로 열리도록 링크 구성
+    var basePageUrl = window.location.origin + window.location.pathname;
+    var shareUrlObj = new URL(basePageUrl);
+    shareUrlObj.searchParams.set('openExternal', '1');
+    var finalShareUrl = shareUrlObj.href;
+
+    // 2. 카드형 피드 윗부분 이미지: ksfoodlogo.png 절대 주소
+    var kakaoCardImageUrl = new URL('ksfoodlogo.png', window.location.href).href;
+
+    // 3. 카카오 SDK 피드 전송 (상단 ksfoodlogo.png 클릭 시 링크 연결 + 하단 중앙정렬 문구)
+    if (ensureKakaoReadyV113() && window.Kakao.Share) {
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: KAKAO_CENTERED_WELCOME_TITLE,
+            imageUrl: kakaoCardImageUrl,
+            imageWidth: 800,
+            imageHeight: 400,
+            link: {
+              mobileWebUrl: finalShareUrl,
+              webUrl: finalShareUrl
+            }
+          }
+        });
+        return;
+      } catch (sdkErr) {
+        console.warn('Kakao.Share 오류:', sdkErr);
+      }
+    }
+
+    // 폴백(모바일 기본 공유창)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: '식단관리에 오셔서 환영합니다',
+          text: '식단관리에 오셔서 환영합니다',
+          url: finalShareUrl
+        });
+      } catch (err) {}
+    }
+  };
+
+  // 상단 카톡공유 버튼에 새 함수 재연결
+  var kakaoBtn = document.getElementById('kakaoShareHeaderBtn');
+  if (kakaoBtn) {
+    kakaoBtn.onclick = function(ev) { window.shareToKakaoTalkV112(ev); };
+  }
+
+  // =========================================================================
+  // 2) 로그인 창 이름·코드 터치 시 위로 스크롤(이동) & 이름 입력 완료 후 코드창 자동 이동
+  // =========================================================================
+  var kbBlurTimerV113 = null;
+
+  window.adjustLoginCardForKeyboard = function(isFocused) {
+    var card = document.getElementById('loginGateCard');
+    var modal = document.getElementById('loginGateModal');
+    if (!card) return;
+
+    if (kbBlurTimerV113) {
+      clearTimeout(kbBlurTimerV113);
+      kbBlurTimerV113 = null;
+    }
+
+    if (isFocused) {
+      // 모바일 키보드가 올라올 때 입력이 편하도록 카드를 위쪽(-85px)으로 부드럽게 이동
+      card.style.transform = 'translateY(-85px)';
+      if (modal && typeof modal.scrollTo === 'function') {
+        try { modal.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+      }
+    } else {
+      kbBlurTimerV113 = setTimeout(function() {
+        var active = document.activeElement;
+        if (!active || (active.id !== 'gateUserName' && active.id !== 'gateAccessCode')) {
+          card.style.transform = 'translateY(0px)';
+        }
+      }, 150);
+    }
+  };
+
+  var autoAdvanceTimerV113 = null;
+  var lastAdvancedNameV113 = '';
+
+  function moveFocusToCodeInputV113(nameInputEl, currentVal) {
+    var codeEl = document.getElementById('gateAccessCode');
+    if (!codeEl) return;
+    lastAdvancedNameV113 = currentVal;
+    window.adjustLoginCardForKeyboard(true);
+    codeEl.value = '';
+    try {
+      codeEl.focus({ preventScroll: true });
+    } catch (err) {
+      codeEl.focus();
+    }
+  }
+
+  window.handleGateNameAutoAdvance = function(inputEl, evt, isCompositionEnd) {
+    if (autoAdvanceTimerV113) {
+      clearTimeout(autoAdvanceTimerV113);
+      autoAdvanceTimerV113 = null;
+    }
+    if (!inputEl) return;
+
+    // 입력 중에도 로그인 창이 위쪽 위치를 유지하도록 보장
+    window.adjustLoginCardForKeyboard(true);
+
+    var rawVal = String(inputEl.value || '').trim();
+    if (!rawVal || rawVal.length < 2) {
+      lastAdvancedNameV113 = '';
+      return;
+    }
+
+    // 한글 조합 중이면 조합 완료 후 또는 타이핑 멈춤 시점에 처리
+    var isComposingNow = Boolean(evt && evt.isComposing && !isCompositionEnd);
+    var matchedMember = (typeof findMatchedGateMember === 'function') ? findMatchedGateMember(rawVal) : null;
+
+    // 1) 등록된 이름(관리자, 팀장, 팀원 또는 DB 멤버)과 일치하면 빠르게 코드창으로 자동 이동
+    if (matchedMember) {
+      var fastDelay = isComposingNow ? 180 : 90;
+      autoAdvanceTimerV113 = setTimeout(function() {
+        var cur = String(inputEl.value || '').trim();
+        var stillMatched = (typeof findMatchedGateMember === 'function') ? findMatchedGateMember(cur) : null;
+        if (stillMatched && document.activeElement === inputEl && lastAdvancedNameV113 !== cur) {
+          moveFocusToCodeInputV113(inputEl, cur);
+        }
+      }, fastDelay);
+      return;
+    }
+
+    // 2) 일반 한글 이름(2글자 이상) 입력 완료 후 잠시 손을 떼면 자동으로 코드창으로 이동
+    var normalDelay = isCompositionEnd ? 320 : 620;
+    autoAdvanceTimerV113 = setTimeout(function() {
+      var cur = String(inputEl.value || '').trim();
+      if (cur.length >= 2 && document.activeElement === inputEl && lastAdvancedNameV113 !== cur) {
+        moveFocusToCodeInputV113(inputEl, cur);
+      }
+    }, normalDelay);
+  };
+
+  // 이름 입력창과 코드 입력창에 이벤트 확실하게 재장착
+  var nameInp = document.getElementById('gateUserName');
+  var codeInp = document.getElementById('gateAccessCode');
+
+  if (nameInp) {
+    nameInp.onfocus = function() { window.adjustLoginCardForKeyboard(true); };
+    nameInp.onblur  = function() { window.adjustLoginCardForKeyboard(false); };
+    nameInp.oninput = function(ev) { window.handleGateNameAutoAdvance(this, ev, false); };
+    nameInp.addEventListener('compositionend', function(ev) {
+      window.handleGateNameAutoAdvance(this, ev, true);
+    });
+    nameInp.onkeydown = function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        var cur = String(this.value || '').trim();
+        moveFocusToCodeInputV113(this, cur);
+      }
+    };
+  }
+
+  if (codeInp) {
+    codeInp.onfocus = function() { window.adjustLoginCardForKeyboard(true); };
+    codeInp.onblur  = function() { window.adjustLoginCardForKeyboard(false); };
+  }
+})();
+
 </body></html>
