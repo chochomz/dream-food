@@ -82,6 +82,12 @@
   </script>
 
   <meta charset="UTF-8">
+  <!-- [사파리 즐겨찾기 & 홈화면 전용 아이콘 고정 v10.14] -->
+  <link rel="apple-touch-icon" sizes="180x180" href="./hlogo.png?app=sejongfood_v114">
+  <link rel="apple-touch-icon-precomposed" sizes="180x180" href="./hlogo.png?app=sejongfood_v114">
+  <link rel="icon" type="image/png" sizes="192x192" href="./hlogo.png?app=sejongfood_v114">
+  <link rel="shortcut icon" type="image/png" href="./hlogo.png?app=sejongfood_v114">
+  <!-- [/사파리 즐겨찾기 & 홈화면 전용 아이콘 고정 v10.14] -->
   <!-- [카카오톡 공유 OG 메타태그 & SDK v10.12] -->
   <meta property="og:type" content="website">
   <meta property="og:title" content="식단관리에 오셔서 환영합니다">
@@ -349,7 +355,7 @@
                 <span class="text-[10px] text-rose-400">선택/전체</span>
               </button>
               <button type="button" onclick="handleBasketMenuAction('csv')" class="w-full px-3 py-2 text-left text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center justify-between">
-                <span>불러오기</span>
+                <span>불러오기/저장</span>
                 <span class="text-[10px] text-slate-400">CSV파일</span>
               </button>
             </div>
@@ -3317,7 +3323,7 @@
           if (dow === 0) {
             const thisSundayStr = formatWeekOptionString(curObj);
             const isSelected = (thisSundayStr === selectedDateStr), isTodaySunday = (thisSundayStr === todayWeekStr);
-            const hasPlanOrArch = confirmedSet.has(thisSundayStr) || Boolean(weeklyPlanMap && weeklyPlanMap[thisSundayStr] && (weeklyPlanMap[thisSundayStr].trayIds || []).length > 0);
+            const hasPlanOrArch = confirmedSet.has(thisSundayStr);
             const footnote = getSundayStatusFootnote(curObj, hasPlanOrArch);
 
             const borderCls = isSelected
@@ -12286,7 +12292,6 @@
       g.items.forEach(function(itName) { lines.push('  ' + itName); });
       g.memoLines.forEach(function(mLine) { lines.push('  * ' + mLine); });
     });
-    lines.push('');
     lines.push(LINE_10_CHARS);
     lines.push('-식당 사역팀 제공-');
     return lines.join('\n');
@@ -13522,4 +13527,466 @@
 })();
 </script>
 <!-- ================= [패치 v10.13 END] ================= -->
+<!-- ================= [패치 v10.14 START: 사파리 아이콘 고정 / 상세창 확대·복사 차단 / 빈식판 예정 방지 / 문자복사 공백제거 / 현재재료포함 CSV 저장·업데이트] ================= -->
+<style id="sejongPatchStyleV114">
+  /* [2번] 지난 식단 관리 카드 및 상세창 길게 누를 때 복사하기/돋보기 원천 차단 */
+  #archiveGrid, #archiveGrid *,
+  #archiveModal, #archiveModal *:not(input):not(textarea) {
+    -webkit-touch-callout: none !important;
+    -webkit-user-select: none !important;
+    user-select: none !important;
+  }
+  /* 상세창 내부 입력칸: 터치 시 복사 콜아웃 차단 및 확대 없는 고정 레이아웃 */
+  #archiveModal input, #archiveModal textarea {
+    -webkit-touch-callout: none !important;
+    touch-action: manipulation !important;
+  }
+</style>
+<script id="sejongPatchScriptV114">
+(function applyPatchV114() {
+
+  // =========================================================================
+  // [1번] 사파리(iOS Safari) 즐겨찾기/홈화면 추가 시 목장이야기 아이콘 대체 현상 해결
+  //      현재 폴더의 hlogo.png를 180x180 전용 PNG Data URL 및 고유 캐시 키로 강제 고정
+  // =========================================================================
+  (function enforceUniqueSafariIconV114() {
+    try {
+      var iconHref = new URL("./hlogo.png?app=sejongfood_v114", window.location.href).href;
+      // 기존 body나 head에 흩어져 있던 아이콘 태그 모두 갱신
+      document.querySelectorAll("link[rel*=\"icon\"]").forEach(function(el) {
+        el.href = iconHref;
+      });
+
+      // 사파리가 도메인 루트(/apple-touch-icon.png)의 목장이야기 캐시를 가져오지 못하도록
+      // hlogo.png를 캔버스 180x180 이미지로 구워 head 최상단 apple-touch-icon에 직접 주입
+      var img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = function() {
+        try {
+          var c = document.createElement("canvas");
+          c.width = 180; c.height = 180;
+          var ctx = c.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, 180, 180);
+          var scale = Math.min(164 / img.naturalWidth, 164 / img.naturalHeight);
+          var w = img.naturalWidth * scale;
+          var h = img.naturalHeight * scale;
+          ctx.drawImage(img, (180 - w) / 2, (180 - h) / 2, w, h);
+          var dataUrl = c.toDataURL("image/png");
+          document.querySelectorAll("link[rel*=\"apple-touch-icon\"]").forEach(function(link) {
+            link.href = dataUrl;
+          });
+        } catch (err) {}
+      };
+      img.src = iconHref;
+    } catch (e) {}
+  })();
+
+  // =========================================================================
+  // [2번] 지난 식단 관리 길게 눌러 상세창 뜰 때 복사하기 차단 & 화면 확대(입력창 터치 포함) 완전 고정
+  // =========================================================================
+  var viewportMetaEl = document.querySelector('meta[name="viewport"]');
+  var DEFAULT_VIEWPORT_CONTENT = "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover";
+  var LOCKED_VIEWPORT_CONTENT  = "width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover";
+
+  window.lockViewportZoomV114 = function(lock) {
+    if (!viewportMetaEl) viewportMetaEl = document.querySelector('meta[name="viewport"]');
+    if (!viewportMetaEl) return;
+    if (lock) {
+      viewportMetaEl.setAttribute("content", LOCKED_VIEWPORT_CONTENT);
+    } else {
+      viewportMetaEl.setAttribute("content", DEFAULT_VIEWPORT_CONTENT);
+    }
+  };
+
+  // 지난 식단 그리드에서 터치 시작 시 뷰포트 확대 잠금 및 텍스트 선택 즉시 해제(사파리 복사하기 팝업 원천 차단)
+  var archGridEl = document.getElementById("archiveGrid");
+  if (archGridEl) {
+    archGridEl.addEventListener("touchstart", function() {
+      window.lockViewportZoomV114(true);
+      if (window.getSelection) {
+        try { window.getSelection().removeAllRanges(); } catch (e) {}
+      }
+    }, { passive: true });
+
+    archGridEl.addEventListener("touchend", function() {
+      setTimeout(function() {
+        var archModal = document.getElementById("archiveModal");
+        if (!archModal || archModal.classList.contains("hidden")) {
+          window.lockViewportZoomV114(false);
+        }
+      }, 300);
+    }, { passive: true });
+  }
+
+  var _prevOpenArchiveModalV114 = openArchiveModal;
+  openArchiveModal = function(id) {
+    // 상세창이 열리는 즉시 화면 확대를 1.0배율로 완전 고정(입력창 터치 시에도 절대 확대 안 됨)
+    window.lockViewportZoomV114(true);
+    if (window.getSelection) {
+      try { window.getSelection().removeAllRanges(); } catch (e) {}
+    }
+    if (_prevOpenArchiveModalV114) _prevOpenArchiveModalV114(id);
+
+    var archModal = document.getElementById("archiveModal");
+    if (archModal) {
+      archModal.querySelectorAll("input, textarea").forEach(function(inp) {
+        inp.addEventListener("focus", function() {
+          window.lockViewportZoomV114(true);
+        });
+      });
+    }
+  };
+
+  var _prevCloseArchiveModalV114 = closeArchiveModal;
+  closeArchiveModal = function() {
+    if (_prevCloseArchiveModalV114) _prevCloseArchiveModalV114();
+    setTimeout(function() {
+      window.lockViewportZoomV114(false);
+    }, 150);
+  };
+
+  // =========================================================================
+  // [3번] 식판에 아무것도 없으면(0종) 식단삭제나 식단확정 일자에 달력 "예정/확정/완료" 표시 원천 차단
+  // =========================================================================
+  window.hasValidDishesForCalendarDateV114 = function(sundayStr) {
+    var cleanDate = normalizeCompactDateStr(sundayStr);
+    if (!cleanDate) return false;
+    if (typeof deletedDatesSet !== "undefined" && deletedDatesSet && deletedDatesSet.has(cleanDate)) {
+      return false;
+    }
+    // 현재 화면에서 선택 중인 날짜이고 식판이 비어있다면(0종), 아직 확정된 메뉴가 없는 것이므로 표시 안 함
+    var curSelectedDate = normalizeCompactDateStr((document.getElementById("currentDate") && document.getElementById("currentDate").value) || "");
+    var plan = (typeof weeklyPlanMap !== "undefined" && weeklyPlanMap) ? (weeklyPlanMap[cleanDate] || weeklyPlanMap[sundayStr]) : null;
+    var matchedArch = (archiveList || []).find(function(a) { return a && normalizeCompactDateStr(a.date) === cleanDate; });
+
+    var archCount = (matchedArch && Array.isArray(matchedArch.dishIds)) ? matchedArch.dishIds.filter(Boolean).length : 0;
+    var planCount = (plan && Array.isArray(plan.trayIds)) ? plan.trayIds.filter(Boolean).length : 0;
+
+    // 현재 선택된 날짜에서 메뉴를 다 비웠고 지난 식단 기록도 없다면 false
+    if (cleanDate === curSelectedDate && (!currentTrayIds || currentTrayIds.length === 0) && archCount === 0) {
+      return false;
+    }
+    return (archCount > 0 || planCount > 0);
+  };
+
+  // 빈 식판(0종)인 날짜가 persistentConfirmedSet이나 weeklyPlanMap에 남아 달력에 뜨는 현상 자동 정리
+  function purgeEmptyDatesFromCalendarV114() {
+    if (typeof weeklyPlanMap !== "undefined" && weeklyPlanMap) {
+      Object.keys(weeklyPlanMap).forEach(function(k) {
+        var p = weeklyPlanMap[k];
+        var cDate = normalizeCompactDateStr(k);
+        var hasTray = p && Array.isArray(p.trayIds) && p.trayIds.filter(Boolean).length > 0;
+        var hasArch = Array.isArray(archiveList) && archiveList.some(function(a) {
+          return a && normalizeCompactDateStr(a.date) === cDate && Array.isArray(a.dishIds) && a.dishIds.length > 0;
+        });
+        if (!hasTray && !hasArch) {
+          delete weeklyPlanMap[k];
+          if (window.persistentConfirmedSetV108) window.persistentConfirmedSetV108.delete(cDate);
+        }
+      });
+      if (typeof saveLocalWeeklyPlans === "function") saveLocalWeeklyPlans();
+    }
+    if (window.persistentConfirmedSetV108) {
+      Array.from(window.persistentConfirmedSetV108).forEach(function(cDate) {
+        if (!window.hasValidDishesForCalendarDateV114(cDate)) {
+          window.persistentConfirmedSetV108.delete(cDate);
+        }
+      });
+      try {
+        localStorage.setItem("sejong_confirmed_dates_v106", JSON.stringify(Array.from(window.persistentConfirmedSetV108)));
+      } catch (e) {}
+    }
+  }
+
+  getConfirmedSundaySet = function() {
+    purgeEmptyDatesFromCalendarV114();
+    var set = new Set();
+    if (Array.isArray(archiveList)) {
+      archiveList.forEach(function(a) {
+        if (a && a.date && Array.isArray(a.dishIds) && a.dishIds.filter(Boolean).length > 0) {
+          var cDate = normalizeCompactDateStr(a.date);
+          if (!(typeof deletedDatesSet !== "undefined" && deletedDatesSet && deletedDatesSet.has(cDate))) {
+            set.add(cDate);
+          }
+        }
+      });
+    }
+    if (typeof weeklyPlanMap !== "undefined" && weeklyPlanMap) {
+      Object.keys(weeklyPlanMap).forEach(function(k) {
+        var p = weeklyPlanMap[k];
+        var cDate = normalizeCompactDateStr(k);
+        if (p && Array.isArray(p.trayIds) && p.trayIds.filter(Boolean).length > 0 && p.unconfirmedByReload !== true) {
+          if (p.isConfirmedPlan || p.confirmedOnly || p.shoppingCompleted || (window.persistentConfirmedSetV108 && window.persistentConfirmedSetV108.has(cDate))) {
+            if (!(typeof deletedDatesSet !== "undefined" && deletedDatesSet && deletedDatesSet.has(cDate))) {
+              set.add(cDate);
+            }
+          }
+        }
+      });
+    }
+    return set;
+  };
+
+  window.isDateConfirmedOnCalendarV106 = function(dateStr) {
+    var cleanDate = normalizeCompactDateStr(dateStr);
+    if (!window.hasValidDishesForCalendarDateV114(cleanDate)) return false;
+    var confirmedSet = getConfirmedSundaySet();
+    return confirmedSet.has(cleanDate);
+  };
+
+  // 식단삭제 실행 시 persistentConfirmedSet에서도 확실히 제거하여 달력에 "예정"이 절대 남지 않게 보장
+  var _prevDeleteCurrentDateMenuV114 = deleteCurrentDateMenu;
+  deleteCurrentDateMenu = async function() {
+    var rawDate = (document.getElementById("currentDate") && document.getElementById("currentDate").value) || getCurrentWeekSundayString();
+    var cleanDate = normalizeCompactDateStr(rawDate);
+    await _prevDeleteCurrentDateMenuV114();
+    if (window.persistentConfirmedSetV108) {
+      window.persistentConfirmedSetV108.delete(cleanDate);
+      try {
+        localStorage.setItem("sejong_confirmed_dates_v106", JSON.stringify(Array.from(window.persistentConfirmedSetV108)));
+      } catch (e) {}
+    }
+    purgeEmptyDatesFromCalendarV114();
+  };
+
+  // 식판에서 마지막 남은 메뉴를 개별 제외(✕)하여 0종이 되었을 때도 달력 예정 표시 자동 해제
+  var _prevRemoveFromTrayV114 = removeFromTray;
+  removeFromTray = async function(id) {
+    await _prevRemoveFromTrayV114(id);
+    if (!currentTrayIds || currentTrayIds.length === 0) {
+      var cleanDate = normalizeCompactDateStr((document.getElementById("currentDate") && document.getElementById("currentDate").value) || "");
+      if (cleanDate) {
+        if (typeof weeklyPlanMap !== "undefined" && weeklyPlanMap && weeklyPlanMap[cleanDate]) {
+          delete weeklyPlanMap[cleanDate];
+          if (typeof saveLocalWeeklyPlans === "function") saveLocalWeeklyPlans();
+        }
+        if (window.persistentConfirmedSetV108) {
+          window.persistentConfirmedSetV108.delete(cleanDate);
+        }
+        await syncCurrentStateToDb();
+      }
+    }
+  };
+
+  // =========================================================================
+  // [5번] "반찬등록/삭제/불러오기" 중 "불러오기" -> "불러오기/저장" 수정 &
+  //       1단계 "CSV 기본양식 다운로드" 우측에 [현재재료포함] 체크박스 추가 및 DB 백업/수정/업로드
+  // =========================================================================
+  function upgradeCsvModalAndDropdownUIV114() {
+    // 1) 드롭다운 메뉴의 "불러오기" -> "불러오기/저장"으로 변경
+    var csvMenuBtn = document.querySelector('#basketSlideDropdown button[onclick*="csv"]');
+    if (csvMenuBtn) {
+      var firstSpan = csvMenuBtn.querySelector("span:first-child");
+      if (firstSpan) firstSpan.textContent = "불러오기/저장";
+    }
+
+    // 2) CSV 모달 헤더 및 1단계 영역 레이아웃 개편 (버튼 폭 축소 + 같은 라인 오른쪽에 [현재재료포함] 체크박스)
+    var csvModal = document.getElementById("csvModal");
+    if (!csvModal) return;
+    var titleEl = csvModal.querySelector("h3");
+    if (titleEl) titleEl.textContent = "📂 엑셀(CSV) 반찬 불러오기 / 저장";
+
+    var dlBtn = csvModal.querySelector('button[onclick*="downloadCsvTemplate"]');
+    if (dlBtn && !document.getElementById("includeCurrentDbCheckboxV114")) {
+      var step1Box = dlBtn.parentElement;
+      var step1Text = step1Box ? step1Box.querySelector("p") : null;
+      if (step1Text) {
+        step1Text.textContent = "1단계: 양식 또는 현재 재료를 다운받아 작성·수정하세요.";
+      }
+
+      var rowWrap = document.createElement("div");
+      rowWrap.className = "flex items-center justify-between gap-2 w-full";
+
+      dlBtn.className = "flex-1 bg-white border border-indigo-300 text-indigo-900 font-extrabold py-2 px-2.5 rounded-lg shadow-2xs hover:bg-indigo-100 text-[11.5px] whitespace-nowrap transition active:scale-95";
+      dlBtn.innerHTML = "📥 CSV 기본양식 다운로드";
+
+      var chkLabel = document.createElement("label");
+      chkLabel.className = "inline-flex items-center gap-1.5 bg-white border border-indigo-200 px-2.5 py-2 rounded-lg cursor-pointer select-none shrink-0 shadow-2xs hover:bg-indigo-50/60 transition";
+      chkLabel.innerHTML =
+        '<input type="checkbox" id="includeCurrentDbCheckboxV114" class="w-4 h-4 accent-indigo-700 rounded cursor-pointer">' +
+        '<span class="text-[11.5px] font-extrabold text-indigo-950 whitespace-nowrap">현재재료포함</span>';
+
+      dlBtn.parentNode.insertBefore(rowWrap, dlBtn);
+      rowWrap.appendChild(dlBtn);
+      rowWrap.appendChild(chkLabel);
+    }
+  }
+  upgradeCsvModalAndDropdownUIV114();
+
+  // CSV 셀 이스케이프 헬퍼 (쉼표나 줄바꿈이 들어있는 재료/조리법도 엑셀에서 열이 밀리지 않게 보호)
+  function escapeCsvCellV114(val) {
+    var str = String(val == null ? "" : val).replace(/\r?\n/g, " ").trim();
+    if (str.indexOf(",") !== -1 || str.indexOf('"') !== -1) {
+      return '"' + str.replace(/"/g, '""') + '"';
+    }
+    return str;
+  }
+
+  // 1단계 다운로드: [현재재료포함] 체크 시 현재 masterBasket의 모든 반찬 DB를 카테고리순으로 담아 다운로드
+  window.downloadCsvTemplate = function() {
+    var chk = document.getElementById("includeCurrentDbCheckboxV114");
+    var includeCurrent = Boolean(chk && chk.checked);
+    var csvLines = ["카테고리,반찬이름,준비kg,주재료(구매처/비고),조리방법"];
+
+    if (includeCurrent && Array.isArray(masterBasket) && masterBasket.length > 0) {
+      var catOrder = { "밥/국": 1, "메인반찬": 2, "어린이반찬": 3, "일반/김치": 4, "사이드메뉴": 5 };
+      var sortedBasket = masterBasket.slice().sort(function(a, b) {
+        var rA = catOrder[a.cat] || 99;
+        var rB = catOrder[b.cat] || 99;
+        if (rA !== rB) return rA - rB;
+        return String(a.name || "").localeCompare(String(b.name || ""), "ko");
+      });
+
+      sortedBasket.forEach(function(item) {
+        if (!item || !item.name) return;
+        var catStr    = escapeCsvCellV114(item.cat || "일반/김치");
+        var nameStr   = escapeCsvCellV114(item.name || "");
+        var kgStr     = escapeCsvCellV114(item.kg || "적당량");
+        var noteStr   = escapeCsvCellV114(item.note || (item.price ? String(item.price) : ""));
+        var recipeStr = escapeCsvCellV114(item.recipe || "기본 조리");
+        csvLines.push([catStr, nameStr, kgStr, noteStr, recipeStr].join(","));
+      });
+    } else {
+      csvLines.push("밥/국,강황쌀밥,35kg,쌀 35kg / 강황가루,강황가루 풀어 취사");
+      csvLines.push("메인반찬,오징어채소볶음,35kg,손질오징어 25kg / 양배추 10kg,양배추와 매콤하게 볶음");
+      csvLines.push("어린이반찬,비엔나소시지케첩볶음(👶),15kg,비엔나소시지 12kg / 케첩,케첩과 올리고당 코팅");
+    }
+
+    var csvContent = "\uFEFF" + csvLines.join("\r\n") + "\r\n";
+    var blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = includeCurrent ? "세종꿈의교회_반찬바구니_현재재료DB.csv" : "세종꿈의교회_반찬바구니_기본양식.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1000);
+  };
+
+  // 2단계 불러오기/저장: 기존 반찬과 이름이 같으면 중복 생성하지 않고 수정 내용으로 업데이트(덮어쓰기) + 새 반찬은 신규 추가
+  window.importCsvFile = async function() {
+    var fileInput = document.getElementById("csvFileInput");
+    var file = fileInput && fileInput.files ? fileInput.files[0] : null;
+    if (!file) {
+      await showCustomAlert("불러올 CSV 파일을 선택해주세요!", "📂");
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onload = async function(e) {
+      var buffer = e.target.result;
+      var text = new TextDecoder("utf-8").decode(buffer);
+      if (text.indexOf("\uFFFD") !== -1) {
+        text = new TextDecoder("euc-kr").decode(buffer);
+      }
+
+      var lines = text.split(/\r?\n/);
+      var addedCount = 0;
+      var updatedCount = 0;
+      var itemsToSaveInDb = [];
+
+      function normalizeKeyName(str) {
+        return String(str || "").replace(/\(👶\)/g, "").replace(/\s+/g, "").trim();
+      }
+
+      for (var i = 0; i < lines.length; i++) {
+        var line = lines[i].trim();
+        if (!line) continue;
+        var cols = (typeof window.parseCsvLineRespectQuotes === "function")
+          ? window.parseCsvLineRespectQuotes(line)
+          : line.split(",");
+
+        if (i === 0 && (cols[0].indexOf("카테고리") !== -1 || cols[0].indexOf("분류") !== -1 || (cols[1] && cols[1].indexOf("이름") !== -1))) {
+          continue;
+        }
+        if (cols.length < 2) continue;
+
+        var cat = normalizeCategoryName(cols[0]);
+        var name = String(cols[1] || "").trim();
+        if (!name) continue;
+        if (cat === "어린이반찬" && name.indexOf("👶") === -1) {
+          name += "(👶)";
+        }
+
+        var kgVal     = String(cols[2] || "적당량").trim() || "적당량";
+        var noteVal   = (cols.length >= 5 ? String(cols[3] || "") : "").trim();
+        var recipeVal = (cols.length >= 5 ? String(cols[4] || "기본 조리") : String(cols[3] || "기본 조리")).trim() || "기본 조리";
+
+        // 기존 masterBasket에 동일한 반찬 이름(👶 제외한 순수 이름 기준)이 있는지 검색
+        var targetKey = normalizeKeyName(name);
+        var existingItem = (masterBasket || []).find(function(d) {
+          return d && normalizeKeyName(d.name) === targetKey;
+        });
+
+        if (existingItem) {
+          existingItem.cat    = cat;
+          existingItem.name   = name;
+          existingItem.kg     = kgVal;
+          existingItem.note   = noteVal;
+          existingItem.recipe = recipeVal;
+          itemsToSaveInDb.push(existingItem);
+          updatedCount++;
+        } else {
+          var newId = "csv_" + Date.now() + "_" + i + "_" + Math.random().toString(36).slice(2, 5);
+          var newItem = {
+            id: newId,
+            cat: cat,
+            name: name,
+            kg: kgVal,
+            price: 0,
+            note: noteVal,
+            recipe: recipeVal,
+            createdAt: Date.now() + i
+          };
+          masterBasket.unshift(newItem);
+          itemsToSaveInDb.push(newItem);
+          addedCount++;
+        }
+      }
+
+      try {
+        localStorage.setItem("sejong_fast_basket_cache_v1", JSON.stringify(masterBasket));
+      } catch (err) {}
+
+      if (db && itemsToSaveInDb.length > 0) {
+        setCloudStatusLamp("saving");
+        try {
+          for (var c = 0; c < itemsToSaveInDb.length; c += 350) {
+            var chunk = itemsToSaveInDb.slice(c, c + 350);
+            var batch = db.batch();
+            chunk.forEach(function(item) {
+              batch.set(db.collection("basket").doc(String(item.id)), item, { merge: true });
+            });
+            await batch.commit();
+          }
+          setCloudStatusLamp("connected");
+        } catch (err2) {
+          console.warn("CSV DB 저장 경고:", err2);
+          setCloudStatusLamp("disconnected");
+        }
+      }
+
+      await syncCurrentStateToDb();
+      closeCsvModal();
+      renderTray();
+      renderBasket();
+      renderArchiveGrid();
+
+      if (fileInput) fileInput.value = "";
+      await showCustomAlert(
+        "CSV 반찬 바구니 반영 완료!\n• 신규 등록: " + addedCount + "개\n• 기존 반찬 수정(업데이트): " + updatedCount + "개",
+        "🎉"
+      );
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  purgeEmptyDatesFromCalendarV114();
+  renderTray();
+  renderArchiveGrid();
+})();
+</script>
+<!-- ================= [패치 v10.14 END] ================= -->
 </body></html>
