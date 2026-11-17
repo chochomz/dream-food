@@ -2221,8 +2221,8 @@
 
         if (anyOpen && !isLocked) {
           savedScrollY = window.scrollY || document.documentElement.scrollTop || 0;
-          document.body.style.top = '-' + savedScrollY + 'px';
-          document.body.classList.add('modal-scroll-locked');
+          /* [1단계 해제됨] document.body.style.top 고정 제거 */
+          /* [1단계 해제됨] document.body.classList.add("modal-scroll-locked"); */
           isLocked = true;
         } else if (!anyOpen && isLocked) {
           document.body.classList.remove('modal-scroll-locked');
@@ -14213,4 +14213,35 @@
 })();
 </script>
 <!-- ================= [패치 v10.15 END] ================= -->
+<!-- ================= [먹통해결 1단계 START: body.modal-scroll-locked 강제 고정 해제] ================= -->
+<style id="sejongStep1ScrollUnlockStyle">
+  /* body가 position: fixed 및 overflow: hidden으로 얼어붙는 현상 원천 차단 */
+  body, body.modal-scroll-locked {
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    position: relative !important;
+    top: auto !important;
+    touch-action: pan-x pan-y pinch-zoom !important;
+  }
+</style>
+<script id="sejongStep1ScrollUnlockScript">
+(function unlockBodyScrollStep1() {
+  function forceUnlockBody() {
+    if (document.body.classList.contains("modal-scroll-locked")) {
+      document.body.classList.remove("modal-scroll-locked");
+    }
+    if (document.body.style.top) {
+      document.body.style.top = "";
+    }
+    if (document.body.style.position === "fixed") {
+      document.body.style.position = "";
+    }
+  }
+  forceUnlockBody();
+  document.addEventListener("touchstart", forceUnlockBody, { passive: true });
+  document.addEventListener("pointerdown", forceUnlockBody, { passive: true });
+  document.addEventListener("click", forceUnlockBody, { passive: true });
+})();
+</script>
+<!-- ================= [먹통해결 1단계 END] ================= -->
 </body></html>
